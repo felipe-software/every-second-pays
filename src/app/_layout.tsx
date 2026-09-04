@@ -1,20 +1,40 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
-import { useColorScheme } from "react-native";
+import "../global.css";
 
-import { AnimatedSplashOverlay } from "@/components/animated-icon";
-import AppTabs from "@/components/app-tabs";
+import {
+    Archivo_400Regular,
+    Archivo_500Medium,
+    Archivo_600SemiBold,
+    Archivo_700Bold,
+    useFonts,
+} from "@expo-google-fonts/archivo";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 
 SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
-    const colorScheme = useColorScheme();
+export default function RootLayout() {
+    const [fontsLoaded] = useFonts({
+        Archivo: Archivo_400Regular,
+        "Archivo-Medium": Archivo_500Medium,
+        "Archivo-SemiBold": Archivo_600SemiBold,
+        "Archivo-Bold": Archivo_700Bold,
+    });
+
+    useEffect(() => {
+        if (fontsLoaded) {
+            SplashScreen.hideAsync();
+        }
+    }, [fontsLoaded]);
+
+    if (!fontsLoaded) return null;
+
     return (
-        <ThemeProvider
-            value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-        >
-            <AnimatedSplashOverlay />
-            <AppTabs />
-        </ThemeProvider>
+        <KeyboardProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" />
+            </Stack>
+        </KeyboardProvider>
     );
 }
