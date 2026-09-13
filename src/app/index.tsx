@@ -1,97 +1,91 @@
-import { Button as NativeButton, Host, Text as NativeText } from "@expo/ui";
+import { StatusBar } from "expo-status-bar";
+import { router } from "expo-router";
 import { NumberFlow } from "number-flow-react-native";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
-import { Uniwind } from "uniwind";
 
 import { PaymentSheet, PrimaryButton } from "@/features/earnings/payment-sheet";
 import {
-    INITIAL_SOURCES,
     PaymentDraft,
     PaymentSource,
     currentShift,
     earnedToday,
     formatMoney,
     formatTime,
-    hoursPerDay,
-    labelDays,
     ratePerSecond,
 } from "@/features/earnings/model";
 import { useEarningsTheme } from "@/features/earnings/theme";
+import { EarningsBackground } from "@/features/earnings/earnings-background";
+import { useEarningsStore } from "@/features/earnings/store";
 
-const ACCENT_TINTS = ["#E8763A", "#EC9060", "#F2B38E"];
-
-function createDemoClock() {
-    const date = new Date();
-    date.setDate(date.getDate() + ((3 - date.getDay() + 7) % 7));
-    date.setHours(14);
-    return date;
-}
-
-function useLiveDemoClock() {
-    const [startedAt] = useState(Date.now);
-    const [demoStartedAt] = useState(() => createDemoClock().getTime());
-    const [now, setNow] = useState(() => new Date(demoStartedAt));
+function useLiveClock() {
+    const [now, setNow] = useState(() => new Date());
 
     useEffect(() => {
         const timer = setInterval(() => {
-            setNow(new Date(demoStartedAt + (Date.now() - startedAt)));
+            setNow(new Date());
         }, 200);
         return () => clearInterval(timer);
-    }, [demoStartedAt, startedAt]);
+    }, []);
 
     return now;
 }
 
-function SourceRow({
-    source,
-    now,
-    index,
-    onPress,
-}: {
-    source: PaymentSource;
-    now: Date;
-    index: number;
-    onPress: () => void;
-}) {
+function shiftLabel(start: number, end: number) {
+    const startLabel = formatTime(start);
+    const endLabel = formatTime(end);
+    const suffix = endLabel.endsWith("AM") ? " AM" : " PM";
+    return startLabel.endsWith(suffix)
+        ? `${startLabel.slice(0, -suffix.length)}–${endLabel}`
+        : `${startLabel}–${endLabel}`;
+}
+
+function scheduleLabel(source: PaymentSource) {
+    const weekdays = source.days.length === 5 && [1, 2, 3, 4, 5].every((day) => source.days.includes(day));
+    const days = weekdays
+        ? "Mon–Fri"
+        : source.days
+              .slice()
+              .sort((a, b) => a - b)
+              .map((day) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][day])
+              .join(", ");
+    return `${days} · ${source.shifts.map((shift) => shiftLabel(shift.start, shift.end)).join(", ")}`;
+}
+
+function SourceRow({ source, now, onPress }: { source: PaymentSource; now: Date; onPress: () => void }) {
     const shift = currentShift(source, now);
-    const hours = hoursPerDay(source);
-    const subtitle =
-        source.frequency === "once"
-            ? `One-time · ${source.when === "today" ? "landed today" : "scheduled"}`
-            : shift
-              ? `Working now · until ${formatTime(shift.end)}`
-              : `${labelDays(source.days)} · ${Number.isInteger(hours) ? hours : hours.toFixed(1)}h a day`;
+    const active = Boolean(shift);
+    const subtitle = source.frequency === "once"
+        ? source.when === "today" ? "Landed today" : "Scheduled"
+        : scheduleLabel(source);
+    const state = source.frequency === "once" ? (source.when === "today" ? "Paid" : "Scheduled") : shift
+        ? `Until ${formatTime(shift.end)}`
+        : "Idle";
 
     return (
         <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Edit ${source.name}`}
             onPress={onPress}
-            className="mb-0.5 flex-row items-center gap-3 rounded-[14px] bg-raised px-3.5 py-3.5 active:opacity-70"
+            className={`flex-row items-start gap-[18px] rounded-2xl px-5 py-[18px] active:opacity-75 ${active ? "bg-active" : "bg-row"}`}
         >
-            <View
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: shift ? "#E8763A" : ACCENT_TINTS[index % ACCENT_TINTS.length] }}
-            />
-            <View className="min-w-0 flex-1 gap-0.5">
-                <Text numberOfLines={1} className="font-sans text-[14px] font-semibold tracking-[-0.15px] text-ink">
+            <View className="min-w-0 flex-1 gap-1.5">
+                <Text numberOfLines={1} className="font-sans text-[17px] font-semibold tracking-[-0.25px] text-ink">
                     {source.name}
                 </Text>
-                <Text numberOfLines={1} className="font-sans text-[11px] text-muted">
+                <Text numberOfLines={1} className="font-sans text-[12.5px] text-muted">
                     {subtitle}
                 </Text>
             </View>
-            <Text
-                className={`font-sans text-[14px] font-bold ${
-                    shift || source.frequency === "once" ? "text-ink" : "text-muted"
-                }`}
-            >
-                ${formatMoney(earnedToday(source, now))}
-            </Text>
-            <Text className="font-sans text-[20px] text-muted/60">›</Text>
+            <View className="items-end gap-1.5">
+                <Text className={`font-sans text-[17px] font-semibold ${active || source.frequency === "once" ? "text-ink" : "text-muted"}`}>
+                    ${formatMoney(earnedToday(source, now))}
+                </Text>
+                <Text className={`font-sans text-[12px] font-medium ${active ? "text-accent-deep" : "text-muted"}`}>
+                    {state}
+                </Text>
+            </View>
         </Pressable>
     );
 }
@@ -99,22 +93,23 @@ function SourceRow({
 export default function EarningsScreen() {
     const insets = useSafeAreaInsets();
     const { colors, isDark } = useEarningsTheme();
-    const now = useLiveDemoClock();
-    const [sources, setSources] = useState<PaymentSource[]>(INITIAL_SOURCES);
+    const now = useLiveClock();
+    const sources = useEarningsStore((state) => state.sources);
+    const ready = useEarningsStore((state) => state.ready);
+    const saving = useEarningsStore((state) => state.saving);
+    const loadError = useEarningsStore((state) => state.loadError);
+    const load = useEarningsStore((state) => state.load);
+    const save = useEarningsStore((state) => state.save);
+    const remove = useEarningsStore((state) => state.remove);
     const [sheetOpen, setSheetOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
 
+    useEffect(() => { void load(); }, [load]);
+
     const editingSource = sources.find((source) => source.id === editingId);
-    const total = useMemo(
-        () => sources.reduce((sum, source) => sum + earnedToday(source, now), 0),
-        [now, sources],
-    );
+    const total = useMemo(() => sources.reduce((sum, source) => sum + earnedToday(source, now), 0), [now, sources]);
     const liveRate = useMemo(
-        () =>
-            sources.reduce(
-                (sum, source) => sum + (currentShift(source, now) ? ratePerSecond(source) : 0),
-                0,
-            ),
+        () => sources.reduce((sum, source) => sum + (currentShift(source, now) ? ratePerSecond(source) : 0), 0),
         [now, sources],
     );
     const displayTotal = Math.round(total * 100) / 100;
@@ -127,145 +122,129 @@ export default function EarningsScreen() {
     };
 
     const closeSheet = () => {
+        if (useEarningsStore.getState().saving) return;
         setSheetOpen(false);
         setEditingId(null);
     };
 
-    const saveSource = (draft: PaymentDraft, id?: number) => {
-        const record: PaymentSource = {
-            ...draft,
-            id: id ?? Math.max(0, ...sources.map((source) => source.id)) + 1,
-            amount: Number(draft.amount),
-            days: [...draft.days],
-            shifts: draft.shifts.map((shift) => ({ ...shift })),
-        };
-        setSources((current) =>
-            id == null ? [...current, record] : current.map((source) => (source.id === id ? record : source)),
-        );
-        closeSheet();
+    const saveSource = async (draft: PaymentDraft, id?: number) => {
+        if (useEarningsStore.getState().saving) return;
+        try {
+            await save(draft, id);
+            closeSheet();
+        } catch {
+            Alert.alert("Couldn't save", "Your changes haven't been saved. Please try again.");
+        }
+    };
+
+    const removeSource = async (id: number) => {
+        if (useEarningsStore.getState().saving) return;
+        try {
+            await remove(id);
+            closeSheet();
+        } catch {
+            Alert.alert("Couldn't delete", "Your payment source is still saved. Please try again.");
+        }
     };
 
     return (
-        <View className="flex-1 bg-canvas">
+        <View className="flex-1 items-center bg-canvas">
             <StatusBar style={isDark ? "light" : "dark"} />
-            <View className="absolute -top-52 left-1/2 h-[430px] w-[560px] -translate-x-1/2 rounded-full bg-[#f8c9ad]/25 dark:bg-accent/15" />
+            <View className="relative w-full max-w-[430px] flex-1 overflow-hidden bg-canvas">
+                <EarningsBackground />
 
-            <View
-                accessible
-                accessibilityLabel={isDark ? "Use light theme" : "Use dark theme"}
-                accessibilityRole="button"
-                className="absolute left-[18px] z-10 h-11 w-11"
-                style={{ top: insets.top + 12 }}
-            >
-                <Host style={{ width: 44, height: 44 }}>
-                    <NativeButton
-                        onPress={() => Uniwind.setTheme(isDark ? "light" : "dark")}
-                        testID="theme-toggle"
-                        variant="text"
-                        style={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: 22,
-                            backgroundColor: colors.field,
-                        }}
-                    >
-                        <NativeText
-                            textStyle={{
-                                color: colors.ink,
-                                fontSize: 19,
-                                fontWeight: "600",
-                            }}
-                        >
-                            {isDark ? "☀" : "☾"}
-                        </NativeText>
-                    </NativeButton>
-                </Host>
-            </View>
-
-            <View className="flex-1" style={{ paddingTop: insets.top }}>
-                <View className="items-center pt-[84px]">
-                    <View className="h-[94px] flex-row items-start justify-center">
-                        <Text className="mt-7 mr-1 font-sans text-[30px] font-medium text-muted">$</Text>
-                        <View className="h-[86px] overflow-hidden">
+                <View className="flex-1" style={{ paddingTop: insets.top }}>
+                    <View className="absolute right-[22px] z-10" style={{ top: insets.top + 8 }}>
+                        <Pressable testID="open-settings" accessibilityRole="button" accessibilityLabel="Settings"
+                            onPress={() => router.navigate("/settings")}
+                            className="min-h-11 flex-row items-center gap-2 rounded-full bg-row px-4 active:opacity-70">
+                            <Text style={{ color: colors.ink, fontSize: 20 }}>⚙</Text>
+                            <Text className="font-sans text-[13px] font-semibold text-ink">Settings</Text>
+                        </Pressable>
+                    </View>
+                    <View className="items-center pt-[84px]">
+                        <View className="min-h-[92px] flex-row items-center justify-center">
+                            <Text className="mr-1 font-sans text-[32px] font-medium text-muted">$</Text>
                             <NumberFlow
                                 value={whole}
-                                mask={true}
+                                mask
                                 locales="en-US"
                                 format={{ maximumFractionDigits: 0 }}
                                 trend={1}
                                 style={{
                                     color: colors.ink,
                                     fontFamily: "Archivo-Bold",
-                                    fontSize: 80,
+                                    fontSize: 88,
                                     fontWeight: "700",
-                                    letterSpacing: -4,
-                                    lineHeight: 86,
+                                    letterSpacing: -4.4,
                                 }}
                             />
-                        </View>
-                        <Text className="mt-12 font-sans text-[34px] font-semibold tracking-[-1px] text-muted">.</Text>
-                        <View className="mt-10 h-[42px] overflow-hidden">
+                            <Text className="font-sans text-[36px] font-semibold tracking-[-1px] text-muted">.</Text>
                             <NumberFlow
                                 value={cents}
-                                mask={true}
+                                mask
                                 locales="en-US"
                                 format={{ minimumIntegerDigits: 2, maximumFractionDigits: 0, useGrouping: false }}
                                 trend={1}
                                 style={{
                                     color: colors.muted,
                                     fontFamily: "Archivo-SemiBold",
-                                    fontSize: 34,
+                                    fontSize: 36,
                                     fontWeight: "600",
                                     letterSpacing: -1,
-                                    lineHeight: 42,
                                 }}
                             />
                         </View>
+                        <Text className="mt-4 font-sans text-[12.5px] font-semibold text-accent-deep">
+                            {loadError ? "Sources unavailable" : !ready ? "Loading your sources…" : liveRate > 0 ? `+$${formatMoney(liveRate, 4)} every second` : "Off the clock"}
+                        </Text>
                     </View>
-                    <Text className="mt-1 font-sans text-[12px] font-semibold text-accent-deep">
-                        {liveRate > 0 ? `+$${formatMoney(liveRate, 4)} every second` : "Off the clock"}
-                    </Text>
+
+                    <ScrollView
+                        className="mt-16 flex-1 px-[22px]"
+                        contentContainerStyle={{ gap: 10, paddingBottom: Math.max(40, insets.bottom + 20) }}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {loadError ? (
+                            <View className="gap-3 py-4">
+                                <Text className="text-center font-sans text-[14px] text-muted">Could not load your saved sources.</Text>
+                                <PrimaryButton label="Try again" onPress={() => void load()} />
+                            </View>
+                        ) : ready && sources.length === 0 ? (
+                            <View testID="empty-sources" className="gap-2 py-4">
+                                <Text className="text-center font-sans text-[17px] font-semibold text-ink">No payment sources yet</Text>
+                                <Text className="text-center font-sans text-[14px] text-muted">Add your first source to start counting.</Text>
+                            </View>
+                        ) : null}
+                        {sources.map((source) => (
+                            <SourceRow
+                                key={source.id}
+                                source={source}
+                                now={now}
+                                onPress={() => {
+                                    setEditingId(source.id);
+                                    setSheetOpen(true);
+                                }}
+                            />
+                        ))}
+                        <View className="mt-1">
+                            <PrimaryButton label="Add a payment source" disabled={!ready} onPress={openNewSource} testID="new-source" />
+                        </View>
+                    </ScrollView>
                 </View>
 
-                <ScrollView
-                    className="mt-7 flex-1 px-[22px]"
-                    contentContainerStyle={{ paddingBottom: 128 }}
-                    showsVerticalScrollIndicator={false}
-                >
-                    {sources.map((source, index) => (
-                        <SourceRow
-                            key={source.id}
-                            source={source}
-                            index={index}
-                            now={now}
-                            onPress={() => {
-                                setEditingId(source.id);
-                                setSheetOpen(true);
-                            }}
-                        />
-                    ))}
-                    <Text className="py-4 text-center font-sans text-[11px] text-muted">Tap a source to edit it</Text>
-                </ScrollView>
+                {sheetOpen ? (
+                    <PaymentSheet
+                        isPresented
+                        source={editingSource}
+                        now={now}
+                        saving={saving}
+                        onDismiss={closeSheet}
+                        onDelete={removeSource}
+                        onSave={saveSource}
+                    />
+                ) : null}
             </View>
-
-            <View className="absolute right-0 bottom-0 left-0 rounded-t-[28px] bg-sheet px-6 pt-5 pb-8 shadow-2xl">
-                <View className="absolute top-2 left-1/2 h-1 w-9 -translate-x-1/2 rounded-full bg-field" />
-                <PrimaryButton label="＋  New payment source" onPress={openNewSource} testID="new-source" />
-            </View>
-
-            {sheetOpen ? (
-                <PaymentSheet
-                    isPresented
-                    source={editingSource}
-                    now={now}
-                    onDismiss={closeSheet}
-                    onDelete={(id) => {
-                        setSources((current) => current.filter((source) => source.id !== id));
-                        closeSheet();
-                    }}
-                    onSave={saveSource}
-                />
-            ) : null}
         </View>
     );
 }

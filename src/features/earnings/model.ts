@@ -41,37 +41,6 @@ export const HOUR_PRESETS: { label: string; shifts: Shift[] }[] = [
     { label: "Evenings, 6 to 10", shifts: [{ start: 1080, end: 1320 }] },
 ];
 
-export const INITIAL_SOURCES: PaymentSource[] = [
-    {
-        id: 1,
-        name: "Northwind Studio",
-        frequency: "month",
-        amount: 5200,
-        days: [1, 2, 3, 4, 5],
-        shifts: [
-            { start: 540, end: 660 },
-            { start: 720, end: 1020 },
-        ],
-    },
-    {
-        id: 2,
-        name: "Reyes Dental — night desk",
-        frequency: "hour",
-        amount: 34,
-        days: [2, 4, 6],
-        shifts: [{ start: 1080, end: 1320 }],
-    },
-    {
-        id: 3,
-        name: "Halcyon logo commission",
-        frequency: "once",
-        amount: 850,
-        when: "today",
-        days: [],
-        shifts: [],
-    },
-];
-
 export const EMPTY_DRAFT: PaymentDraft = {
     name: "",
     amount: "",

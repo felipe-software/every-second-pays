@@ -13,7 +13,7 @@ export function useKeyboardBottomSpacing() {
     }));
 
     const sheetStyle = useAnimatedStyle(() => ({
-        height: windowHeight * (0.68 + progress.value * 0.16),
+        height: windowHeight * (0.82 + progress.value * 0.14),
     }));
 
     return { bottomSpacingStyle, sheetStyle };
