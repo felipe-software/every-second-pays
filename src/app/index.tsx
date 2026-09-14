@@ -1,6 +1,6 @@
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Alert, ScrollView, Text, View } from "react-native";
+import { Alert, Platform, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { EarningsBackground } from "@/features/earnings/earnings-background";
@@ -104,7 +104,7 @@ export default function EarningsScreen() {
 
                     <ScrollView
                         className="mt-14 flex-1 px-[22px]"
-                        contentContainerStyle={{ gap: 10, paddingBottom: 32 }}
+                        contentContainerStyle={{ gap: 10, paddingBottom: Platform.OS === "android" ? 124 : 32 }}
                         showsVerticalScrollIndicator={false}
                     >
                         {loadError ? (

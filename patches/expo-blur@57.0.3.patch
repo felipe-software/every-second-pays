@@ -1,0 +1,21 @@
+diff --git a/android/src/main/java/expo/modules/blur/ExpoBlurView.kt b/android/src/main/java/expo/modules/blur/ExpoBlurView.kt
+index 71344c8df533c25facea5fe7f5ed91528d15c1ed..17eba61aa71ecdfb19dbdebd0327d789e6ce6677 100644
+--- a/android/src/main/java/expo/modules/blur/ExpoBlurView.kt
++++ b/android/src/main/java/expo/modules/blur/ExpoBlurView.kt
+@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
+ import android.content.Context
+ import android.graphics.Color
+ import android.os.Build
++import eightbitlab.com.blurview.BlurController
+ import eightbitlab.com.blurview.BlurView
+ import expo.modules.blur.enums.BlurMethod
+ import expo.modules.blur.enums.TintStyle
+@@ -159,7 +160,7 @@ class ExpoBlurView(context: Context, appContext: AppContext) : ExpoView(context,
+     val dimezisBlurTarget = blurTarget?.blurTargetView
+       ?: throw BlurViewConfigurationException("The BlurView targeting blur target with id: $blurTargetId couldn't find the target")
+ 
+-    blurView.setupWith(dimezisBlurTarget)
++    blurView.setupWith(dimezisBlurTarget, BlurController.DEFAULT_SCALE_FACTOR, false)
+       .setFrameClearDrawable(decorView.background)
+       .setBlurRadius(blurRadius / blurReduction)
+ 

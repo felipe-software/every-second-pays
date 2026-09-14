@@ -9,6 +9,7 @@ import {
 } from "@expo-google-fonts/archivo";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import AppTabs from "@/components/app-tabs";
 import { useAppearanceSync } from "@/features/appearance/use-appearance-sync";
@@ -40,9 +41,11 @@ export default function RootLayout() {
 
     return (
         <I18nProvider>
-            <KeyboardProvider>
-                <AppTabs />
-            </KeyboardProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+                <KeyboardProvider>
+                    <AppTabs />
+                </KeyboardProvider>
+            </GestureHandlerRootView>
         </I18nProvider>
     );
 }
