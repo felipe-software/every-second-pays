@@ -25,7 +25,7 @@ export function LanguageMenu({ preference, disabled, onChange }: LanguageMenuPro
                 <Pressable accessibilityLabel={t("common.close")} onPress={() => setOpen(false)} className="flex-1 items-center justify-center bg-black/20 px-8">
                     <View className="w-full max-w-[340px] overflow-hidden rounded-3xl bg-row p-2">
                         {LANGUAGE_OPTIONS.map((option) => (
-                            <Pressable key={option.value} testID={`language-${option.value}`} accessibilityRole="radio" accessibilityState={{ checked: option.value === preference }} onPress={() => { setOpen(false); onChange(option.value); }} className="min-h-12 flex-row items-center gap-3 rounded-2xl px-3">
+                            <Pressable key={option.value} testID={`language-${option.value}`} accessibilityRole="radio" accessibilityState={{ checked: option.value === preference }} onPress={(event) => { setOpen(false); onChange(option.value, { x: event.nativeEvent.pageX, y: event.nativeEvent.pageY }); }} className="min-h-12 flex-row items-center gap-3 rounded-2xl px-3">
                                 {option.flag ? <Image source={option.flag} style={{ width: 24, height: 24 }} /> : <SymbolView name="globe" size={22} tintColor={colors.muted} />}
                                 <Text className="flex-1 font-sans text-[16px] text-ink">{option.label ?? t("settings.languageSystem")}</Text>
                                 {option.value === preference ? <Text className="text-accent-deep">✓</Text> : null}

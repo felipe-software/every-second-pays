@@ -6,8 +6,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AccentColorPicker } from "@/features/appearance/accent-color-picker";
 import { AppearanceSelector } from "@/features/appearance/appearance-selector";
-import type { Appearance } from "@/features/appearance/palettes";
+import type { Appearance, PaletteId, ThemeMode } from "@/features/appearance/palettes";
 import { useAppearanceStore } from "@/features/appearance/store";
+import {
+    runInterfaceTransition,
+    type ThemeTransitionOrigin,
+    useReduceMotion,
+} from "@/features/appearance/theme-transition";
 import { EarningsBackground } from "@/features/earnings/earnings-background";
 import { useEarningsTheme } from "@/features/earnings/theme";
 import { useI18n } from "@/features/i18n/i18n";
@@ -18,6 +23,7 @@ export default function SettingsScreen() {
     const { colors, isDark } = useEarningsTheme();
     const { t } = useI18n();
     const { appearance, saving, loading, loadError, update, load } = useAppearanceStore();
+    const reduceMotion = useReduceMotion();
     const [saveError, setSaveError] = useState(false);
     const disabled = saving || loading || loadError;
 
@@ -28,6 +34,16 @@ export default function SettingsScreen() {
         } catch {
             setSaveError(true);
         }
+    };
+
+    const changeMode = (mode: ThemeMode, origin: ThemeTransitionOrigin) => {
+        if (mode === appearance.mode) return;
+        runInterfaceTransition(() => { void change({ mode }); }, origin, reduceMotion);
+    };
+
+    const changePalette = (palette: PaletteId, origin: ThemeTransitionOrigin) => {
+        if (palette === appearance.palette) return;
+        runInterfaceTransition(() => { void change({ palette }); }, origin, reduceMotion);
     };
 
     return (
@@ -47,17 +63,17 @@ export default function SettingsScreen() {
                     <AppearanceSelector
                         appearance={appearance}
                         disabled={disabled}
-                        onChange={(mode) => void change({ mode })}
+                        onChange={changeMode}
                     />
 
                     <Text className="mt-8 mb-3 ml-1 font-sans text-[13px] font-semibold text-muted">{t("settings.accentColor")}</Text>
                     <AccentColorPicker
                         appearance={appearance}
                         disabled={disabled}
-                        onChange={(palette) => void change({ palette })}
+                        onChange={changePalette}
                     />
 
-                    <LanguageSelector />
+                    <LanguageSelector reduceMotion={reduceMotion} />
 
                     {loadError || saveError ? (
                         <View className="mt-5 flex-row items-center gap-2 px-1">

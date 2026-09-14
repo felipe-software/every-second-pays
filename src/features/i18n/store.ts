@@ -42,10 +42,15 @@ export const useLanguageStore = create<LanguageState>((set, get) => ({
         if (!get().hydrated || get().loading || get().loadError || get().saving) {
             throw new Error("Language preference unavailable.");
         }
-        set({ saving: true });
+        const previousPreference = get().preference;
+        if (preference === previousPreference) return;
+
+        set({ preference, saving: true });
         try {
             await Storage.setItem(STORAGE_KEY, preference);
-            set({ preference });
+        } catch (error) {
+            set({ preference: previousPreference });
+            throw error;
         } finally {
             set({ saving: false });
         }

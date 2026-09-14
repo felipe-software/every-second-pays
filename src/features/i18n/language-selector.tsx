@@ -1,17 +1,22 @@
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
+import {
+    runInterfaceTransition,
+    type ThemeTransitionOrigin,
+} from "@/features/appearance/theme-transition";
+
 import { useI18n } from "./i18n";
 import { LanguageMenu } from "./language-menu";
 import { type LanguagePreference, useLanguageStore } from "./store";
 
-export function LanguageSelector() {
+export function LanguageSelector({ reduceMotion }: { reduceMotion: boolean }) {
     const { t } = useI18n();
     const { preference, hydrated, saving, loading, loadError, update, load } = useLanguageStore();
     const [saveError, setSaveError] = useState(false);
-    const disabled = !hydrated || saving || loading || loadError;
+    const disabled = !hydrated || loading || loadError;
 
-    const change = async (value: LanguagePreference) => {
+    const persist = async (value: LanguagePreference) => {
         setSaveError(false);
         try {
             await update(value);
@@ -20,10 +25,15 @@ export function LanguageSelector() {
         }
     };
 
+    const change = (value: LanguagePreference, origin?: ThemeTransitionOrigin) => {
+        if (value === preference || saving) return;
+        void persist(value);
+    };
+
     return (
         <View testID="language-selector" className="mt-8">
-            <View className="overflow-hidden rounded-[18px] bg-row" style={{ opacity: disabled ? 0.5 : 1 }}>
-                <LanguageMenu preference={preference} disabled={disabled} onChange={(value) => void change(value)} />
+            <View className="overflow-hidden rounded-[18px] bg-row">
+                <LanguageMenu preference={preference} disabled={disabled} onChange={change} />
             </View>
             {loadError || saveError ? (
                 <Text accessibilityLiveRegion="polite" className="mt-3 px-1 font-sans text-[12.5px] leading-5 text-muted">

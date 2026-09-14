@@ -4,6 +4,7 @@ import { useI18n } from "@/features/i18n/i18n";
 import type { TranslationKey } from "@/features/i18n/translations";
 
 import { getThemeColors, type Appearance, type ThemeMode } from "./palettes";
+import type { ThemeTransitionOrigin } from "./theme-transition";
 
 const MODES: ThemeMode[] = ["system", "light", "dark"];
 const MODE_KEYS: Record<ThemeMode, TranslationKey> = {
@@ -23,7 +24,7 @@ function AppearancePreview({
     active: boolean;
     palette: Appearance["palette"];
     disabled: boolean;
-    onPress: () => void;
+    onPress: (origin: ThemeTransitionOrigin) => void;
 }) {
     const { t, formatMoney } = useI18n();
     const label = t(MODE_KEYS[mode]);
@@ -39,8 +40,8 @@ function AppearancePreview({
             accessibilityLabel={t("settings.modeAccessibility", { mode: label })}
             accessibilityState={{ checked: active, disabled }}
             disabled={disabled}
-            onPress={onPress}
-            className="min-w-0 flex-1 items-center active:opacity-70"
+            onPress={(event) => onPress({ x: event.nativeEvent.pageX, y: event.nativeEvent.pageY })}
+            className="min-w-0 flex-1 items-center "
         >
             <View
                 className="h-[116px] w-full overflow-hidden rounded-[16px] border-[3px] p-2"
@@ -85,7 +86,7 @@ function AppearancePreview({
                     />
                 </View>
                 <View
-                    className="absolute bottom-2 left-1/2 h-1.5 w-7 -translate-x-1/2 rounded-full"
+                    className="absolute bottom-2 self-center h-1.5 w-7 rounded-full"
                     style={{ backgroundColor: preview.accent }}
                 />
             </View>
@@ -113,7 +114,7 @@ export function AppearanceSelector({
 }: {
     appearance: Appearance;
     disabled: boolean;
-    onChange: (mode: ThemeMode) => void;
+    onChange: (mode: ThemeMode, origin: ThemeTransitionOrigin) => void;
 }) {
     return (
         <View className="flex-row gap-2" accessibilityRole="radiogroup">
@@ -124,7 +125,7 @@ export function AppearanceSelector({
                     active={appearance.mode === mode}
                     palette={appearance.palette}
                     disabled={disabled}
-                    onPress={() => onChange(mode)}
+                    onPress={(origin) => onChange(mode, origin)}
                 />
             ))}
         </View>

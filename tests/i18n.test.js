@@ -7,6 +7,8 @@ let calendars;
 const savedPreferences = new Map();
 let failRead = false;
 let failWrite = false;
+let holdWrite = false;
+let releaseWrite;
 mock.module("expo-sqlite/kv-store", () => ({
     default: {
         getItem: async (key) => {
@@ -14,6 +16,7 @@ mock.module("expo-sqlite/kv-store", () => ({
             return savedPreferences.get(key) ?? null;
         },
         setItem: async (key, value) => {
+            if (holdWrite) await new Promise((resolve) => { releaseWrite = resolve; });
             if (failWrite) throw new Error("write failed");
             savedPreferences.set(key, value);
         },
@@ -47,6 +50,8 @@ beforeEach(() => {
     calendars = [{ uses24hourClock: true }];
     failRead = false;
     failWrite = false;
+    holdWrite = false;
+    releaseWrite = undefined;
     savedPreferences.clear();
     resetLanguage();
 });
@@ -67,6 +72,30 @@ test("manual language overrides the device and survives rehydration", async () =
     resetLanguage();
     await languageStore.getState().load();
     expect(languageStore.getState().preference).toBe("system");
+});
+
+test("applies a language immediately while persistence is pending", async () => {
+    await languageStore.getState().load();
+    holdWrite = true;
+
+    const update = languageStore.getState().update("pt");
+    expect(languageStore.getState()).toMatchObject({ preference: "pt", saving: true });
+    expect(readI18n().language).toBe("pt");
+
+    releaseWrite();
+    await update;
+    expect(languageStore.getState().saving).toBe(false);
+
+    resetLanguage();
+    await languageStore.getState().load();
+    expect(languageStore.getState().preference).toBe("pt");
+});
+
+test("does not persist an unchanged language", async () => {
+    await languageStore.getState().load();
+    await languageStore.getState().update("system");
+    expect(savedPreferences.has("language")).toBe(false);
+    expect(languageStore.getState().saving).toBe(false);
 });
 
 test("manual language without a native locale keeps Hermes-compatible decimal formatting", async () => {

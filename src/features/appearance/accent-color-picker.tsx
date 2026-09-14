@@ -4,6 +4,7 @@ import { useI18n } from "@/features/i18n/i18n";
 import type { TranslationKey } from "@/features/i18n/translations";
 
 import { PALETTES, type Appearance, type PaletteId } from "./palettes";
+import type { ThemeTransitionOrigin } from "./theme-transition";
 
 const PALETTE_KEYS: Record<PaletteId, TranslationKey> = {
     orange: "palette.orange",
@@ -20,7 +21,7 @@ export function AccentColorPicker({
 }: {
     appearance: Appearance;
     disabled: boolean;
-    onChange: (palette: PaletteId) => void;
+    onChange: (palette: PaletteId, origin: ThemeTransitionOrigin) => void;
 }) {
     const { t } = useI18n();
     return (
@@ -41,7 +42,10 @@ export function AccentColorPicker({
                             accessibilityLabel={label}
                             accessibilityState={{ checked: selected, disabled }}
                             disabled={disabled}
-                            onPress={() => onChange(palette.id)}
+                            onPress={(event) => onChange(
+                                palette.id,
+                                { x: event.nativeEvent.pageX, y: event.nativeEvent.pageY },
+                            )}
                             className="h-12 w-12 items-center justify-center rounded-full active:opacity-60"
                             style={{
                                 borderColor: selected ? palette.accent : "transparent",

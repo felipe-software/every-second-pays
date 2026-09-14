@@ -1,3 +1,5 @@
+import type { ThemeTransitionOrigin } from "@/features/appearance/theme-transition";
+
 import type { LanguagePreference } from "./store";
 
 export const LANGUAGE_OPTIONS = [
@@ -11,5 +13,5 @@ export const LANGUAGE_OPTIONS = [
 export type LanguageMenuProps = {
     preference: LanguagePreference;
     disabled: boolean;
-    onChange: (value: LanguagePreference) => void;
+    onChange: (value: LanguagePreference, origin?: ThemeTransitionOrigin) => void;
 };
