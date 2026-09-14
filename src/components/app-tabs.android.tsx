@@ -49,13 +49,13 @@ function AndroidTabBar(props: JellyNavigationProps) {
                         maxWidth={188}
                         colors={{
                             surface: colors.row,
-                            selectedSurface: colors.active,
-                            activeContent: colors.accentDeep,
+                            selectedSurface: colors.accent,
+                            activeContent: colors.canvas,
                             inactiveContent: colors.muted,
                         }}
                         config={{
                             layout: { iconSize: 23, itemHeight: 56, trackHeight: 64 },
-                            pillJelly: { pressedScale: 1.2 },
+                            pillJelly: { pressedScale: 1.4,  },
                         }}
                         containerStyle={styles.jellyContainer}
                         touchFeedbackColor={colors.accent}
