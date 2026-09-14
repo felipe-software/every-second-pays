@@ -1,10 +1,30 @@
-import { Image } from "expo-image";
+import { useEffect, useState } from "react";
 import { Platform, Text, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
+import Animated, {
+    Easing,
+    FadeIn,
+    FadeOut,
+    ReduceMotion,
+    useAnimatedProps,
+    useSharedValue,
+    withDelay,
+    withTiming,
+} from "react-native-reanimated";
+import Svg, { G, Mask, Path } from "react-native-svg";
 
 import { useI18n } from "@/features/i18n/i18n";
 
 import { useEarningsTheme } from "./theme";
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+const ARROW_CURVE_LENGTH = 180;
+const ARROW_HEAD_LENGTH = 64;
+const ARROW_CURVE_DELAY = 180;
+const ARROW_CURVE_DURATION = 720;
+const ARROW_HEAD_DELAY = ARROW_CURVE_DELAY + ARROW_CURVE_DURATION * 0.25;
+const ARROW_HEAD_DURATION = 720;
+const TEXT_ENTER_DELAY = ARROW_CURVE_DELAY + ARROW_CURVE_DURATION * 0.25;
+const TEXT_ENTER_DURATION = 320 * 1.1;
 
 export function EmptySourcesMessage() {
     const { t } = useI18n();
@@ -15,10 +35,50 @@ export function EmptySourcesMessage() {
     );
 }
 
-function FirstSourceArrow({ color }: { color: string }) {
-    if (Platform.OS === "android") {
-        return (
-            <Svg width={156} height={90} viewBox="0 0 156 90" fill="none" accessible={false}>
+function FirstSourceArrow({ color, onPress }: { color: string; onPress: () => void }) {
+    const curveOffset = useSharedValue(ARROW_CURVE_LENGTH);
+    const headProgress = useSharedValue(0);
+    const curveAnimatedProps = useAnimatedProps(() => ({ strokeDashoffset: curveOffset.value }));
+    const headAnimatedProps = useAnimatedProps(() => ({
+        strokeDashoffset: ARROW_HEAD_LENGTH * (1 - headProgress.value),
+    }));
+
+    useEffect(() => {
+        curveOffset.set(withDelay(ARROW_CURVE_DELAY, withTiming(0, {
+            duration: ARROW_CURVE_DURATION,
+            easing: Easing.out(Easing.cubic),
+            reduceMotion: ReduceMotion.System,
+        })));
+        headProgress.set(withDelay(ARROW_HEAD_DELAY, withTiming(1, {
+            duration: ARROW_HEAD_DURATION,
+            easing: Easing.out(Easing.cubic),
+            reduceMotion: ReduceMotion.System,
+        })));
+    }, [curveOffset, headProgress]);
+
+    return (
+        <Svg width={156} height={90} viewBox="0 0 156 90" fill="none" accessible={false}>
+            <Mask id="first-source-arrow-reveal" x={0} y={0} width={156} height={90} maskUnits="userSpaceOnUse">
+                <AnimatedPath
+                    animatedProps={curveAnimatedProps}
+                    d="M8 8 C48 3 118 12 129 48 C132 58 132 68 130 81"
+                    stroke="white"
+                    strokeWidth={7}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeDasharray={ARROW_CURVE_LENGTH}
+                />
+                <AnimatedPath
+                    animatedProps={headAnimatedProps}
+                    d="M118 68 Q124 76 130 82 Q138 76 144 69"
+                    stroke="white"
+                    strokeWidth={7}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeDasharray={[ARROW_HEAD_LENGTH, ARROW_HEAD_LENGTH]}
+                />
+            </Mask>
+            <G mask="url(#first-source-arrow-reveal)">
                 <Path
                     d="M8 8 C48 3 118 12 129 48 C132 58 132 68 130 81"
                     stroke={color}
@@ -34,40 +94,54 @@ function FirstSourceArrow({ color }: { color: string }) {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                 />
-            </Svg>
-        );
-    }
-
-    const arrow = `<svg xmlns="http://www.w3.org/2000/svg" width="156" height="90" viewBox="0 0 156 90" fill="none"><g stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 8 C48 3 118 12 129 48 C132 58 132 68 130 81" stroke-dasharray="6 7"/><path d="M118 68 Q124 76 130 82 Q138 76 144 69"/></g></svg>`;
-
-    return (
-        <Image
-            source={{ uri: `data:image/svg+xml;utf8,${encodeURIComponent(arrow)}` }}
-            style={{ width: 156, height: 90 }}
-            contentFit="contain"
-            accessible={false}
-        />
+                <Path
+                    d="M8 8 C48 3 118 12 129 48 C132 58 132 68 130 81 M118 68 Q124 76 130 82 Q138 76 144 69"
+                    stroke="transparent"
+                    strokeWidth={18}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    onPress={onPress}
+                />
+            </G>
+        </Svg>
     );
 }
 
 export function EmptySourcesCallout({ bottomInset }: { bottomInset: number }) {
     const { colors } = useEarningsTheme();
     const { t } = useI18n();
+    const [animationKey, setAnimationKey] = useState(0);
     const bottom = Platform.OS === "android"
         ? Math.max(bottomInset, 20) + 80
         : Math.max(bottomInset + 4, 12);
 
     return (
-        <View
-            pointerEvents="none"
+        <Animated.View
+            pointerEvents="box-none"
             accessibilityElementsHidden
             importantForAccessibility="no-hide-descendants"
             testID="first-source-callout"
             className="absolute right-[26px] items-end"
             style={{ bottom }}
+            exiting={FadeOut.duration(180).reduceMotion(ReduceMotion.System)}
         >
-            <Text className="mr-10 max-w-[250px] font-sans text-[15px] font-medium text-accent-deep" style={{ transform: [{ rotate: "-4deg" }] }}>{t("home.addSource")}</Text>
-            <FirstSourceArrow color={colors.accentDeep} />
-        </View>
+            <Animated.Text
+                key={`first-source-text-${animationKey}`}
+                className="mr-10 max-w-[250px] font-sans text-[15px] font-medium text-accent-deep"
+                style={{ transform: [{ rotate: "-4deg" }] }}
+                entering={FadeIn
+                    .delay(TEXT_ENTER_DELAY)
+                    .duration(TEXT_ENTER_DURATION)
+                    .reduceMotion(ReduceMotion.System)}
+                onPress={() => setAnimationKey((current) => current + 1)}
+            >
+                {t("home.addSource")}
+            </Animated.Text>
+            <FirstSourceArrow
+                key={`first-source-arrow-${animationKey}`}
+                color={colors.accentDeep}
+                onPress={() => setAnimationKey((current) => current + 1)}
+            />
+        </Animated.View>
     );
 }

@@ -1,6 +1,6 @@
 import { TrueSheet } from "@lodev09/react-native-true-sheet";
 import { useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 
 import { useI18n } from "@/features/i18n/i18n";
 
@@ -103,6 +103,7 @@ export function PaymentSheet({ source, now, saving = false, onDismiss, onDelete,
     return (
         <TrueSheet
             ref={sheetRef}
+            backgroundColor={Platform.OS === "ios" ? undefined : colors.sheet}
             detents={[0.82, 1]}
             initialDetentIndex={0}
             dimmed
@@ -173,7 +174,7 @@ export function PaymentSheet({ source, now, saving = false, onDismiss, onDelete,
             <PaymentSummary draft={draft} amount={amount} token={token} onTokenChange={setToken} />
             <ScrollView
                 className="flex-1"
-                style={{ backgroundColor: `${colors.raised}A6` }}
+                style={{ backgroundColor: colors.sheetContent }}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 20 }}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}

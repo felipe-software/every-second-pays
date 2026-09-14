@@ -1,4 +1,4 @@
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, Text, TextInput, View } from "react-native";
 
 import { useI18n } from "@/features/i18n/i18n";
 
@@ -28,13 +28,16 @@ export function NativeField({
             placeholderTextColor={colors.muted}
             keyboardType={numeric ? "decimal-pad" : "default"}
             autoCapitalize={numeric ? "none" : "words"}
-            autoFocus
             selectionColor={colors.accent}
             style={{
                 height: large ? 76 : 58,
                 paddingHorizontal: large ? 4 : 18,
                 paddingVertical: large ? 8 : 15,
-                backgroundColor: large ? "transparent" : colors.field,
+                backgroundColor: large
+                    ? "transparent"
+                    : Platform.OS === "ios"
+                        ? colors.fieldGlass
+                        : colors.field,
                 borderRadius: 16,
                 color: colors.ink,
                 fontFamily: large ? "Archivo-Bold" : "Archivo-Medium",
