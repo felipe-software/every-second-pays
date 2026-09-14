@@ -47,7 +47,6 @@ function AppearancePreview({
                 style={{
                     backgroundColor: preview.canvas,
                     borderColor: active ? preview.accent : preview.soft,
-                    opacity: disabled ? 0.5 : 1,
                 }}
             >
                 {followsDevice ? (

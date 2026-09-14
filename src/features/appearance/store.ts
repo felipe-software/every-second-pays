@@ -27,11 +27,18 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
     },
     update: async (change) => {
         if (!get().hydrated || get().loading || get().loadError || get().saving) throw new Error("Preferences unavailable.");
+        const previousAppearance = get().appearance;
         const appearance = parseAppearance({ ...get().appearance, ...change });
-        set({ saving: true });
+        if (appearance.mode === previousAppearance.mode && appearance.palette === previousAppearance.palette) return;
+
+        // Apply the choice before persisting it so the control and theme update in
+        // the same frame instead of briefly showing a disabled intermediate state.
+        set({ appearance, saving: true });
         try {
             await writeAppearancePreference(appearance);
-            set({ appearance });
+        } catch (error) {
+            set({ appearance: previousAppearance });
+            throw error;
         } finally {
             set({ saving: false });
         }

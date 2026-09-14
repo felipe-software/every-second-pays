@@ -5,6 +5,8 @@ import { Database } from "bun:sqlite";
 const sqlite = new Database(":memory:");
 let failRead = false;
 let failWrite = false;
+let holdAppearanceWrite = false;
+let releaseAppearanceWrite;
 mock.module("expo-sqlite", () => ({
     openDatabaseAsync: async () => ({
         execAsync: async (sql) => sqlite.exec(sql),
@@ -14,6 +16,9 @@ mock.module("expo-sqlite", () => ({
             return sqlite.query(sql).all();
         },
         runAsync: async (sql, ...params) => {
+            if (holdAppearanceWrite && sql.includes("app_preferences")) {
+                await new Promise((resolve) => { releaseAppearanceWrite = resolve; });
+            }
             if (failWrite) throw new Error("write failed");
             const result = sqlite.query(sql).run(...params);
             return { changes: result.changes, lastInsertRowId: Number(result.lastInsertRowid) };
@@ -22,6 +27,7 @@ mock.module("expo-sqlite", () => ({
 }));
 
 const { useEarningsStore: store } = await import("../src/features/earnings/store");
+const { useAppearanceStore: appearanceStore } = await import("../src/features/appearance/store");
 const draft = {
     name: "Client's salary",
     amount: "5200",
@@ -30,14 +36,25 @@ const draft = {
     shifts: [{ start: 540, end: 1020 }],
 };
 const resetMemory = () => store.setState({ sources: [], ready: false, loading: false, saving: false, loadError: false });
+const resetAppearance = () => appearanceStore.setState({
+    appearance: { mode: "system", palette: "orange" },
+    hydrated: false,
+    loading: false,
+    saving: false,
+    loadError: false,
+});
 
 beforeEach(async () => {
     failRead = false;
     failWrite = false;
+    holdAppearanceWrite = false;
+    releaseAppearanceWrite = undefined;
     resetMemory();
     await store.getState().load();
     sqlite.exec("DELETE FROM payment_sources");
+    sqlite.exec("DELETE FROM app_preferences");
     resetMemory();
+    resetAppearance();
 });
 
 test("starts empty without seeds", async () => {
@@ -97,4 +114,47 @@ test("rejects invalid amounts and duplicate concurrent submissions", async () =>
     await expect(store.getState().save(draft)).rejects.toThrow();
     await first;
     expect(store.getState().sources).toHaveLength(1);
+});
+
+test("applies appearance immediately while persistence is pending", async () => {
+    await appearanceStore.getState().load();
+    holdAppearanceWrite = true;
+
+    const update = appearanceStore.getState().update({ palette: "blue" });
+
+    expect(appearanceStore.getState()).toMatchObject({
+        appearance: { mode: "system", palette: "blue" },
+        saving: true,
+    });
+
+    await Promise.resolve();
+    releaseAppearanceWrite();
+    await update;
+    resetAppearance();
+    await appearanceStore.getState().load();
+    expect(appearanceStore.getState()).toMatchObject({
+        appearance: { mode: "system", palette: "blue" },
+        saving: false,
+    });
+});
+
+test("restores the previous appearance when persistence fails", async () => {
+    await appearanceStore.getState().load();
+    failWrite = true;
+
+    await expect(appearanceStore.getState().update({ mode: "dark" })).rejects.toThrow("write failed");
+
+    expect(appearanceStore.getState()).toMatchObject({
+        appearance: { mode: "system", palette: "orange" },
+        saving: false,
+    });
+});
+
+test("does not persist an unchanged appearance", async () => {
+    await appearanceStore.getState().load();
+
+    await appearanceStore.getState().update({ mode: "system", palette: "orange" });
+
+    expect(sqlite.query("SELECT * FROM app_preferences").all()).toEqual([]);
+    expect(appearanceStore.getState().saving).toBe(false);
 });

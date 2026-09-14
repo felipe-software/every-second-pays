@@ -46,7 +46,6 @@ export function AccentColorPicker({
                             style={{
                                 borderColor: selected ? palette.accent : "transparent",
                                 borderWidth: 2,
-                                opacity: disabled ? 0.5 : 1,
                             }}
                         >
                             <View className="h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: palette.accent }}>
