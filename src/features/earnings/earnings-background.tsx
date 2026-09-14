@@ -18,8 +18,8 @@ export const EarningsBackground = memo(function EarningsBackground() {
                 testID="earnings-background-blur"
                 blurTarget={target}
                 blurMethod="dimezisBlurView"
-                intensity={40}
-                blurReductionFactor={0.4}
+                intensity={72}
+                blurReductionFactor={0.6}
                 tint={isDark ? "dark" : "light"}
                 style={StyleSheet.absoluteFill}
             />

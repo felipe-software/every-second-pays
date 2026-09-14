@@ -1,0 +1,16 @@
+steps:
+  - echo: Start with an empty account and English selected. Verify the native
+      floating language menu and a saved Portuguese selection.
+  - launch: software.felipe.everysecondpays
+  - tool: await-ui-element
+    args:
+      condition: visible
+      selector:
+        text: No payment sources yet
+      timeoutMs: 15000
+  - tool: await-ui-element
+    args:
+      condition: visible
+      selector:
+        text: No payment sources yet
+      timeoutMs: 15000

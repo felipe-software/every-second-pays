@@ -16,30 +16,20 @@ export type PaymentDraft = Omit<PaymentSource, "id" | "amount"> & {
     amount: string;
 };
 
-export const DAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
-export const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+export const FREQUENCIES: Frequency[] = ["hour", "week", "month", "year", "second", "once"];
 
-export const FREQUENCIES: { value: Frequency; label: string }[] = [
-    { value: "hour", label: "per hour" },
-    { value: "week", label: "per week" },
-    { value: "month", label: "per month" },
-    { value: "year", label: "per year" },
-    { value: "second", label: "per second" },
-    { value: "once", label: "once" },
-];
-
-export const HOUR_PRESETS: { label: string; shifts: Shift[] }[] = [
-    { label: "9 to 5", shifts: [{ start: 540, end: 1020 }] },
+export const HOUR_PRESETS = [
+    { id: "nineToFive", shifts: [{ start: 540, end: 1020 }] },
     {
-        label: "9–11, then 12–5",
+        id: "splitDay",
         shifts: [
             { start: 540, end: 660 },
             { start: 720, end: 1020 },
         ],
     },
-    { label: "Mornings, 8 to 12", shifts: [{ start: 480, end: 720 }] },
-    { label: "Evenings, 6 to 10", shifts: [{ start: 1080, end: 1320 }] },
-];
+    { id: "mornings", shifts: [{ start: 480, end: 720 }] },
+    { id: "evenings", shifts: [{ start: 1080, end: 1320 }] },
+] as const;
 
 export const EMPTY_DRAFT: PaymentDraft = {
     name: "",
@@ -50,47 +40,11 @@ export const EMPTY_DRAFT: PaymentDraft = {
     shifts: [{ start: 540, end: 1020 }],
 };
 
-export function formatMoney(value: number, digits = 2) {
-    return value.toLocaleString("en-US", {
-        minimumFractionDigits: digits,
-        maximumFractionDigits: digits,
-    });
+export function parseAmount(value: string) {
+    return Number(value.replace(",", ".")) || 0;
 }
 
-export function formatTime(totalMinutes: number) {
-    const minutes = ((totalMinutes % 1440) + 1440) % 1440;
-    const hour = Math.floor(minutes / 60);
-    const minute = minutes % 60;
-    const suffix = hour < 12 ? "AM" : "PM";
-    const hour12 = hour % 12 || 12;
-    return `${hour12}${minute ? `:${String(minute).padStart(2, "0")}` : ""} ${suffix}`;
-}
-
-export function labelDays(days: number[]) {
-    if (!days.length) return "no days yet";
-    if (days.length === 7) return "every day";
-
-    const sorted = [...days].sort((a, b) => a - b);
-    const runs: number[][] = [];
-    let current = [sorted[0]];
-    for (let index = 1; index < sorted.length; index += 1) {
-        if (sorted[index] === sorted[index - 1] + 1) current.push(sorted[index]);
-        else {
-            runs.push(current);
-            current = [sorted[index]];
-        }
-    }
-    runs.push(current);
-    return runs
-        .map((run) =>
-            run.length > 1
-                ? `${DAY_NAMES[run[0]]}–${DAY_NAMES[run.at(-1)!]}`
-                : DAY_NAMES[run[0]],
-        )
-        .join(", ");
-}
-
-export function hoursPerDay(source: Pick<PaymentSource, "shifts">) {
+export function hoursPerDay(source: { shifts: readonly Shift[] }) {
     return source.shifts.reduce(
         (total, shift) => total + Math.max(0, shift.end - shift.start) / 60,
         0,
@@ -128,7 +82,7 @@ export function earnedToday(source: PaymentSource, now: Date) {
     return elapsedSeconds * ratePerSecond(source);
 }
 
-export function sameShifts(a: Shift[], b: Shift[]) {
+export function sameShifts(a: readonly Shift[], b: readonly Shift[]) {
     return JSON.stringify(a) === JSON.stringify(b);
 }
 

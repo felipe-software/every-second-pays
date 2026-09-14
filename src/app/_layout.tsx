@@ -7,18 +7,20 @@ import {
     Archivo_700Bold,
     useFonts,
 } from "@expo-google-fonts/archivo";
-import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import AppTabs from "@/components/app-tabs";
 import { useAppearanceSync } from "@/features/appearance/use-appearance-sync";
-import { useEarningsTheme } from "@/features/earnings/theme";
+import { I18nProvider } from "@/features/i18n/i18n";
+import { useLanguageStore } from "@/features/i18n/store";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
     const appearanceReady = useAppearanceSync();
-    const { colors } = useEarningsTheme();
+    const languageReady = useLanguageStore((state) => state.hydrated);
+    const loadLanguage = useLanguageStore((state) => state.load);
     const [fontsLoaded] = useFonts({
         Archivo: Archivo_400Regular,
         "Archivo-Medium": Archivo_500Medium,
@@ -26,20 +28,21 @@ export default function RootLayout() {
         "Archivo-Bold": Archivo_700Bold,
     });
 
+    useEffect(() => { void loadLanguage(); }, [loadLanguage]);
+
     useEffect(() => {
-        if (fontsLoaded && appearanceReady) {
+        if (fontsLoaded && appearanceReady && languageReady) {
             SplashScreen.hideAsync();
         }
-    }, [fontsLoaded, appearanceReady]);
+    }, [fontsLoaded, appearanceReady, languageReady]);
 
-    if (!fontsLoaded || !appearanceReady) return null;
+    if (!fontsLoaded || !appearanceReady || !languageReady) return null;
 
     return (
-        <KeyboardProvider>
-            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }}>
-                <Stack.Screen name="index" />
-                <Stack.Screen name="settings" options={{ animation: "ios_from_right" }} />
-            </Stack>
-        </KeyboardProvider>
+        <I18nProvider>
+            <KeyboardProvider>
+                <AppTabs />
+            </KeyboardProvider>
+        </I18nProvider>
     );
 }
