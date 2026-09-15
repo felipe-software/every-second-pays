@@ -1,37 +1,90 @@
 {
-    "fill": {
-        "automatic-gradient": "extended-srgb:0.00000,0.47843,1.00000,1.00000"
-    },
-    "groups": [
+  "fill": {
+    "automatic-gradient": "extended-srgb:0.87451,0.94902,0.89412,1.00000"
+  },
+  "groups": [
+    {
+      "layers": [
         {
-            "layers": [
-                {
-                    "image-name": "expo-symbol 2.svg",
-                    "name": "expo-symbol 2",
-                    "position": {
-                        "scale": 1,
-                        "translation-in-points": [
-                            1.1008400065293245e-5, -16.046875
-                        ]
-                    }
-                },
-                {
-                    "image-name": "grid.png",
-                    "name": "grid"
-                }
-            ],
-            "shadow": {
-                "kind": "neutral",
-                "opacity": 0.5
-            },
-            "translucency": {
-                "enabled": true,
-                "value": 0.5
-            }
+          "image-name": "money-wing-left.svg",
+          "name": "Left Wing",
+          "position": {
+            "scale": 0.9,
+            "translation-in-points": [0, 0]
+          }
         }
-    ],
-    "supported-platforms": {
-        "circles": ["watchOS"],
-        "squares": "shared"
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.52
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.62
+      }
+    },
+    {
+      "layers": [
+        {
+          "image-name": "money-wing-right.svg",
+          "name": "Right Wing",
+          "position": {
+            "scale": 0.9,
+            "translation-in-points": [0, 0]
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.52
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.62
+      }
+    },
+    {
+      "layers": [
+        {
+          "image-name": "money-band.svg",
+          "name": "Band and Mark",
+          "position": {
+            "scale": 0.9,
+            "translation-in-points": [0, 0]
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.34
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.42
+      }
+    },
+    {
+      "layers": [
+        {
+          "image-name": "money-bill.svg",
+          "name": "Banknote",
+          "position": {
+            "scale": 0.9,
+            "translation-in-points": [0, 0]
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.42
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.34
+      }
     }
+  ],
+  "supported-platforms": {
+    "squares": ["iOS"]
+  }
 }
