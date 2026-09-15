@@ -1,0 +1,465 @@
+diff --git a/node_modules/react-native-jelly-tabs/.bun-tag-35d878e4191dc6e b/.bun-tag-35d878e4191dc6e
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/react-native-jelly-tabs/.bun-tag-4657ba1b6aecec01 b/.bun-tag-4657ba1b6aecec01
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/PROPS.md b/PROPS.md
+index 87e38b75267012d9a5d2eebb1bc38b63b4ddc592..367f62eb5ce3d1b262fd0c913c34b4fb4d156770 100644
+--- a/PROPS.md
++++ b/PROPS.md
+@@ -16,6 +16,7 @@ while sourcing its items and selection from the navigator.
+ | `items` | `TabsItem[]` | — | The tabs to render (**required**). |
+ | `maxWidth` | `DimensionValue` | `400` | Maximum track width; stays centered in wider parents. |
+ | `selectedIndex` | `number \| null` | uncontrolled | Controlled index. `null`/negative renders no pill. |
++| `progress` | `SharedValue<number>` | — | Bidirectional fractional pill position on the UI thread. External changes move the pill; tab bar interactions write their animated position back. |
+ | `onTabPress` | `(e: TabsChangeEvent) => boolean \| void` | — | After every completed tap or drag, including the already selected tab. Return `false` to reject. |
+ | `onTabLongPress` | `(e: TabsChangeEvent) => void` | — | When a tab is held, including the `longpress` accessibility action. |
+ | `onTabChange` | `(e: TabsChangeEvent) => void` | — | After an accepted change only. |
+diff --git a/dist/index.cjs b/dist/index.cjs
+index a2782de85c4e3e10e41323e6a6044ab29d65d852..b7305d7107544aaac3bda79157419a9bd7abaa1c 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -900,7 +900,7 @@ const getControlledSelectedIndex = (selectedIndex, tabCount) => {
+ 	if (selectedIndex === null || selectedIndex < 0 || tabCount === 0) return -1;
+ 	return Math.min(selectedIndex, getMaxTabIndex(tabCount));
+ };
+-const usePillJelly = (tabCount, config, recording = false, displayScale = 1, touchFeedbackRadius = 0, controlledSelectedIndex, onTabChange, onTabPress, onTabLongPress) => {
++const usePillJelly = (tabCount, config, recording = false, displayScale = 1, touchFeedbackRadius = 0, controlledSelectedIndex, controlledProgress, onTabChange, onTabPress, onTabLongPress) => {
+ 	const geometryScale = displayScale > 0 ? displayScale : 1;
+ 	const { layout, pillJelly } = config;
+ 	const itemHeight = layout.itemHeight * geometryScale;
+@@ -929,6 +929,7 @@ const usePillJelly = (tabCount, config, recording = false, displayScale = 1, tou
+ 	const rawPanelOffset = (0, react_native_reanimated.useSharedValue)(0);
+ 	const rawPanelOffsetVelocity = (0, react_native_reanimated.useSharedValue)(0);
+ 	const isDragging = (0, react_native_reanimated.useSharedValue)(0);
++	const progressOwnedByTabBar = (0, react_native_reanimated.useSharedValue)(0);
+ 	const releasePending = (0, react_native_reanimated.useSharedValue)(0);
+ 	const downX = (0, react_native_reanimated.useSharedValue)(0);
+ 	const webTrackPageX = (0, react_native_reanimated.useSharedValue)(NaN);
+@@ -957,10 +958,21 @@ const usePillJelly = (tabCount, config, recording = false, displayScale = 1, tou
+ 	const frameCallback = (0, react.useCallback)(({ timeSincePreviousFrame }) => {
+ 		"worklet";
+ 		advancePillJellyFrame(frameState, pillJelly.frameConfig, tabCount, timeSincePreviousFrame);
++		if (controlledProgress !== void 0 && progressOwnedByTabBar.value === 1) {
++			controlledProgress.value = value.value;
++			const positionSettled = isDragging.value === 0 && Math.abs(value.value - targetValue.value) < .001 && Math.abs(valueVelocity.value) < .001;
++			if (positionSettled) progressOwnedByTabBar.value = 0;
++		}
+ 	}, [
++		controlledProgress,
+ 		frameState,
++		isDragging,
+ 		pillJelly.frameConfig,
+-		tabCount
++		progressOwnedByTabBar,
++		tabCount,
++		targetValue,
++		value,
++		valueVelocity
+ 	]);
+ 	const frameLoop = (0, react_native_reanimated.useFrameCallback)(frameCallback, false);
+ 	const frameLoopStopTimeout = (0, react.useRef)(null);
+@@ -992,6 +1004,14 @@ const usePillJelly = (tabCount, config, recording = false, displayScale = 1, tou
+ 		tabCount,
+ 		targetValue
+ 	]);
++	(0, react_native_reanimated.useAnimatedReaction)(() => controlledProgress?.value, (nextProgress) => {
++		if (nextProgress === void 0 || tabCount === 0 || progressOwnedByTabBar.value === 1) return;
++		const nextValue = (0, react_native_reanimated.clamp)(nextProgress, 0, getMaxTabIndex(tabCount));
++		value.value = nextValue;
++		targetValue.value = nextValue;
++		valueVelocity.value = 0;
++		releasePending.value = 0;
++	}, [controlledProgress, progressOwnedByTabBar, tabCount]);
+ 	const panelOffset = (0, react_native_reanimated.useDerivedValue)(() => {
+ 		return getHorizontalPanelOffset(rawPanelOffset.value, trackWidth.value, geometryScale);
+ 	});
+@@ -1076,6 +1096,7 @@ const usePillJelly = (tabCount, config, recording = false, displayScale = 1, tou
+ 	const activateTab = (0, react.useCallback)((index) => {
+ 		if (tabCount === 0) return;
+ 		const nextIndex = Math.min(Math.max(index, 0), getMaxTabIndex(tabCount));
++		progressOwnedByTabBar.value = 1;
+ 		targetValue.value = nextIndex;
+ 		releasePending.value = 1;
+ 		setFrameLoopActive(true);
+@@ -1083,6 +1104,7 @@ const usePillJelly = (tabCount, config, recording = false, displayScale = 1, tou
+ 		confirmTabPressOnJS(nextIndex);
+ 	}, [
+ 		confirmTabPressOnJS,
++		progressOwnedByTabBar,
+ 		releasePending,
+ 		setFrameLoopActive,
+ 		tabCount,
+@@ -1105,6 +1127,7 @@ const usePillJelly = (tabCount, config, recording = false, displayScale = 1, tou
+ 	const beginGesture = (localX, localY, absoluteX) => {
+ 		"worklet";
+ 		beginTabbarInteraction(localX, localY, absoluteX);
++		progressOwnedByTabBar.value = 1;
+ 		downX.value = localX;
+ 		movedDistance.value = 0;
+ 		const tabWidth = getTabWidth(trackWidth.value, trackInset, tabCount);
+@@ -1194,7 +1217,7 @@ const getTouchFeedbackVisuals = (config, displayScale, overrides) => {
+ 		radius
+ 	};
+ };
+-const JellyTabBarHeadless = ({ backdrop, colors, config, displayScale = 1, items, maxWidth = 400, onTabChange, onTabLongPress, onTabPress, opacity, recording = false, selectedIndex, selectedBackdrop, touchFeedbackColor, touchFeedbackEnabled = true, touchFeedbackOpacity, touchFeedbackScale }) => {
++const JellyTabBarHeadless = ({ backdrop, colors, config, displayScale = 1, items, maxWidth = 400, onTabChange, onTabLongPress, onTabPress, opacity, progress, recording = false, selectedIndex, selectedBackdrop, touchFeedbackColor, touchFeedbackEnabled = true, touchFeedbackOpacity, touchFeedbackScale }) => {
+ 	const trackRef = (0, react.useRef)(null);
+ 	const [uncontrolledSelectedIndex, setUncontrolledSelectedIndex] = (0, react.useState)(0);
+ 	const [webTrackWidth, setWebTrackWidth] = (0, react.useState)(0);
+@@ -1258,7 +1281,7 @@ const JellyTabBarHeadless = ({ backdrop, colors, config, displayScale = 1, items
+ 	}, item.key));
+ 	const tabCount = tabs.length;
+ 	const semanticSelectedIndex = getSelectedItemIndex(selectedIndex === void 0 ? uncontrolledSelectedIndex : selectedIndex, tabCount);
+-	const { activateTab, activeItemStyle, gesture, panelStyle, pillClipStyle, pillContentStyle, pillMaskStyle, pressedStyle, selectedTouchFeedbackStyle, setTrackWidth, setWebTrackPageX, tabbarStyle, touchFeedbackStyle } = usePillJelly(tabCount, resolvedConfig, recording, displayScale, touchFeedback.radius, selectedIndex, handleTabChange, onTabPress ? handleTabPress : void 0, onTabLongPress ? handleTabLongPress : void 0);
++	const { activateTab, activeItemStyle, gesture, panelStyle, pillClipStyle, pillContentStyle, pillMaskStyle, pressedStyle, selectedTouchFeedbackStyle, setTrackWidth, setWebTrackPageX, tabbarStyle, touchFeedbackStyle } = usePillJelly(tabCount, resolvedConfig, recording, displayScale, touchFeedback.radius, selectedIndex, progress, handleTabChange, onTabPress ? handleTabPress : void 0, onTabLongPress ? handleTabLongPress : void 0);
+ 	const measureWebTrackPageX = (0, react.useCallback)(() => {
+ 		trackRef.current?.measureInWindow((x) => setWebTrackPageX(x));
+ 	}, [setWebTrackPageX]);
+diff --git a/dist/index.d.cts b/dist/index.d.cts
+index a5cf52aff249cebc9a143ee9c4d3877ec1c09cf4..194f06540e0fa5aaf9474bbe9c918c940b7f12f8 100644
+--- a/dist/index.d.cts
++++ b/dist/index.d.cts
+@@ -1,4 +1,4 @@
+-import { AnimatedStyle } from "react-native-reanimated";
++import { AnimatedStyle, SharedValue } from "react-native-reanimated";
+ import { ComponentType, PropsWithChildren, ReactNode } from "react";
+ import { DimensionValue, StyleProp, TextStyle, ViewStyle } from "react-native";
+ //#region src/utils/animation.d.ts
+@@ -178,6 +178,12 @@ interface JellyTabBarHeadlessProps {
+   onTabLongPress?: (event: TabsChangeEvent) => void;
+   onTabPress?: (event: TabsChangeEvent) => boolean | void;
+   opacity?: Partial<TabBarOpacity>;
++  /**
++   * Fractional pill position driven from the UI thread. Values are clamped
++   * between the first and last tab. During a tab bar interaction, the
++   * animated pill position is written back so linked content stays synced.
++   */
++  progress?: SharedValue<number>;
+   selectedIndex?: number | null;
+   selectedBackdrop?: ReactNode;
+   touchFeedbackEnabled?: boolean;
+@@ -260,9 +266,9 @@ interface JellyTabBarProps extends Omit<JellyTabBarHeadlessProps, "items" | "onT
+ declare const JellyTabBar: ({ backdrop, colors, config, containerStyle, descriptors, displayScale, floating, insets, maxWidth, navigation, state, ...headlessProps }: JellyTabBarProps) => import("react").JSX.Element;
+ //#endregion
+ //#region src/components/tabs.d.ts
+-declare const JellyTabBarHeadless: ({ backdrop, colors, config, displayScale, items, maxWidth, onTabChange, onTabLongPress, onTabPress, opacity, recording, selectedIndex, selectedBackdrop, touchFeedbackColor, touchFeedbackEnabled, touchFeedbackOpacity, touchFeedbackScale }: JellyTabBarHeadlessProps) => import("react").JSX.Element;
++declare const JellyTabBarHeadless: ({ backdrop, colors, config, displayScale, items, maxWidth, onTabChange, onTabLongPress, onTabPress, opacity, progress, recording, selectedIndex, selectedBackdrop, touchFeedbackColor, touchFeedbackEnabled, touchFeedbackOpacity, touchFeedbackScale }: JellyTabBarHeadlessProps) => import("react").JSX.Element;
+ /** @deprecated Use JellyTabBarHeadless instead. */
+-declare const JellyTabs: ({ backdrop, colors, config, displayScale, items, maxWidth, onTabChange, onTabLongPress, onTabPress, opacity, recording, selectedIndex, selectedBackdrop, touchFeedbackColor, touchFeedbackEnabled, touchFeedbackOpacity, touchFeedbackScale }: JellyTabBarHeadlessProps) => import("react").JSX.Element;
++declare const JellyTabs: ({ backdrop, colors, config, displayScale, items, maxWidth, onTabChange, onTabLongPress, onTabPress, opacity, progress, recording, selectedIndex, selectedBackdrop, touchFeedbackColor, touchFeedbackEnabled, touchFeedbackOpacity, touchFeedbackScale }: JellyTabBarHeadlessProps) => import("react").JSX.Element;
+ //#endregion
+ //#region src/components/pill-masked-view.d.ts
+ interface PillMaskedViewProps extends PropsWithChildren {
+diff --git a/dist/index.d.ts b/dist/index.d.ts
+index e945d031df414375b1c02b2f4fe27b96009a7c9a..a9708673035ea4d46594faba092766681a581432 100644
+--- a/dist/index.d.ts
++++ b/dist/index.d.ts
+@@ -1,6 +1,6 @@
+ import { ComponentType, PropsWithChildren, ReactNode } from "react";
+ import { DimensionValue, StyleProp, TextStyle, ViewStyle } from "react-native";
+-import { AnimatedStyle } from "react-native-reanimated";
++import { AnimatedStyle, SharedValue } from "react-native-reanimated";
+ //#region src/utils/animation.d.ts
+ interface SpringConfig {
+   dampingRatio: number;
+@@ -178,6 +178,12 @@ interface JellyTabBarHeadlessProps {
+   onTabLongPress?: (event: TabsChangeEvent) => void;
+   onTabPress?: (event: TabsChangeEvent) => boolean | void;
+   opacity?: Partial<TabBarOpacity>;
++  /**
++   * Fractional pill position driven from the UI thread. Values are clamped
++   * between the first and last tab. During a tab bar interaction, the
++   * animated pill position is written back so linked content stays synced.
++   */
++  progress?: SharedValue<number>;
+   selectedIndex?: number | null;
+   selectedBackdrop?: ReactNode;
+   touchFeedbackEnabled?: boolean;
+@@ -260,9 +266,9 @@ interface JellyTabBarProps extends Omit<JellyTabBarHeadlessProps, "items" | "onT
+ declare const JellyTabBar: ({ backdrop, colors, config, containerStyle, descriptors, displayScale, floating, insets, maxWidth, navigation, state, ...headlessProps }: JellyTabBarProps) => import("react").JSX.Element;
+ //#endregion
+ //#region src/components/tabs.d.ts
+-declare const JellyTabBarHeadless: ({ backdrop, colors, config, displayScale, items, maxWidth, onTabChange, onTabLongPress, onTabPress, opacity, recording, selectedIndex, selectedBackdrop, touchFeedbackColor, touchFeedbackEnabled, touchFeedbackOpacity, touchFeedbackScale }: JellyTabBarHeadlessProps) => import("react").JSX.Element;
++declare const JellyTabBarHeadless: ({ backdrop, colors, config, displayScale, items, maxWidth, onTabChange, onTabLongPress, onTabPress, opacity, progress, recording, selectedIndex, selectedBackdrop, touchFeedbackColor, touchFeedbackEnabled, touchFeedbackOpacity, touchFeedbackScale }: JellyTabBarHeadlessProps) => import("react").JSX.Element;
+ /** @deprecated Use JellyTabBarHeadless instead. */
+-declare const JellyTabs: ({ backdrop, colors, config, displayScale, items, maxWidth, onTabChange, onTabLongPress, onTabPress, opacity, recording, selectedIndex, selectedBackdrop, touchFeedbackColor, touchFeedbackEnabled, touchFeedbackOpacity, touchFeedbackScale }: JellyTabBarHeadlessProps) => import("react").JSX.Element;
++declare const JellyTabs: ({ backdrop, colors, config, displayScale, items, maxWidth, onTabChange, onTabLongPress, onTabPress, opacity, progress, recording, selectedIndex, selectedBackdrop, touchFeedbackColor, touchFeedbackEnabled, touchFeedbackOpacity, touchFeedbackScale }: JellyTabBarHeadlessProps) => import("react").JSX.Element;
+ //#endregion
+ //#region src/components/pill-masked-view.d.ts
+ interface PillMaskedViewProps extends PropsWithChildren {
+diff --git a/dist/index.js b/dist/index.js
+index fd777c05952db5bde385e6ded177c38aa6cbb8ef..08cf2ac4cfd8f08651b3928617716eadc4134db1 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -2,7 +2,7 @@ import { cloneElement, useCallback, useEffect, useMemo, useRef, useState } from
+ import { Dimensions, Platform, StyleSheet, Text, View } from "react-native";
+ import { jsx, jsxs } from "react/jsx-runtime";
+ import NativeMaskedView from "@react-native-masked-view/masked-view";
+-import Animated, { cancelAnimation, clamp, runOnJS, useAnimatedStyle, useDerivedValue, useFrameCallback, useSharedValue, withSpring } from "react-native-reanimated";
++import Animated, { cancelAnimation, clamp, runOnJS, useAnimatedReaction, useAnimatedStyle, useDerivedValue, useFrameCallback, useSharedValue, withSpring } from "react-native-reanimated";
+ import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+ import { Gesture, GestureDetector } from "react-native-gesture-handler";
+ //#region src/constants.ts
+@@ -874,7 +874,7 @@ const getControlledSelectedIndex = (selectedIndex, tabCount) => {
+ 	if (selectedIndex === null || selectedIndex < 0 || tabCount === 0) return -1;
+ 	return Math.min(selectedIndex, getMaxTabIndex(tabCount));
+ };
+-const usePillJelly = (tabCount, config, recording = false, displayScale = 1, touchFeedbackRadius = 0, controlledSelectedIndex, onTabChange, onTabPress, onTabLongPress) => {
++const usePillJelly = (tabCount, config, recording = false, displayScale = 1, touchFeedbackRadius = 0, controlledSelectedIndex, controlledProgress, onTabChange, onTabPress, onTabLongPress) => {
+ 	const geometryScale = displayScale > 0 ? displayScale : 1;
+ 	const { layout, pillJelly } = config;
+ 	const itemHeight = layout.itemHeight * geometryScale;
+@@ -903,6 +903,7 @@ const usePillJelly = (tabCount, config, recording = false, displayScale = 1, tou
+ 	const rawPanelOffset = useSharedValue(0);
+ 	const rawPanelOffsetVelocity = useSharedValue(0);
+ 	const isDragging = useSharedValue(0);
++	const progressOwnedByTabBar = useSharedValue(0);
+ 	const releasePending = useSharedValue(0);
+ 	const downX = useSharedValue(0);
+ 	const webTrackPageX = useSharedValue(NaN);
+@@ -931,10 +932,21 @@ const usePillJelly = (tabCount, config, recording = false, displayScale = 1, tou
+ 	const frameCallback = useCallback(({ timeSincePreviousFrame }) => {
+ 		"worklet";
+ 		advancePillJellyFrame(frameState, pillJelly.frameConfig, tabCount, timeSincePreviousFrame);
++		if (controlledProgress !== void 0 && progressOwnedByTabBar.value === 1) {
++			controlledProgress.value = value.value;
++			const positionSettled = isDragging.value === 0 && Math.abs(value.value - targetValue.value) < .001 && Math.abs(valueVelocity.value) < .001;
++			if (positionSettled) progressOwnedByTabBar.value = 0;
++		}
+ 	}, [
++		controlledProgress,
+ 		frameState,
++		isDragging,
+ 		pillJelly.frameConfig,
+-		tabCount
++		progressOwnedByTabBar,
++		tabCount,
++		targetValue,
++		value,
++		valueVelocity
+ 	]);
+ 	const frameLoop = useFrameCallback(frameCallback, false);
+ 	const frameLoopStopTimeout = useRef(null);
+@@ -966,6 +978,14 @@ const usePillJelly = (tabCount, config, recording = false, displayScale = 1, tou
+ 		tabCount,
+ 		targetValue
+ 	]);
++	useAnimatedReaction(() => controlledProgress?.value, (nextProgress) => {
++		if (nextProgress === void 0 || tabCount === 0 || progressOwnedByTabBar.value === 1) return;
++		const nextValue = clamp(nextProgress, 0, getMaxTabIndex(tabCount));
++		value.value = nextValue;
++		targetValue.value = nextValue;
++		valueVelocity.value = 0;
++		releasePending.value = 0;
++	}, [controlledProgress, progressOwnedByTabBar, tabCount]);
+ 	const panelOffset = useDerivedValue(() => {
+ 		return getHorizontalPanelOffset(rawPanelOffset.value, trackWidth.value, geometryScale);
+ 	});
+@@ -1050,6 +1070,7 @@ const usePillJelly = (tabCount, config, recording = false, displayScale = 1, tou
+ 	const activateTab = useCallback((index) => {
+ 		if (tabCount === 0) return;
+ 		const nextIndex = Math.min(Math.max(index, 0), getMaxTabIndex(tabCount));
++		progressOwnedByTabBar.value = 1;
+ 		targetValue.value = nextIndex;
+ 		releasePending.value = 1;
+ 		setFrameLoopActive(true);
+@@ -1057,6 +1078,7 @@ const usePillJelly = (tabCount, config, recording = false, displayScale = 1, tou
+ 		confirmTabPressOnJS(nextIndex);
+ 	}, [
+ 		confirmTabPressOnJS,
++		progressOwnedByTabBar,
+ 		releasePending,
+ 		setFrameLoopActive,
+ 		tabCount,
+@@ -1079,6 +1101,7 @@ const usePillJelly = (tabCount, config, recording = false, displayScale = 1, tou
+ 	const beginGesture = (localX, localY, absoluteX) => {
+ 		"worklet";
+ 		beginTabbarInteraction(localX, localY, absoluteX);
++		progressOwnedByTabBar.value = 1;
+ 		downX.value = localX;
+ 		movedDistance.value = 0;
+ 		const tabWidth = getTabWidth(trackWidth.value, trackInset, tabCount);
+@@ -1168,7 +1191,7 @@ const getTouchFeedbackVisuals = (config, displayScale, overrides) => {
+ 		radius
+ 	};
+ };
+-const JellyTabBarHeadless = ({ backdrop, colors, config, displayScale = 1, items, maxWidth = 400, onTabChange, onTabLongPress, onTabPress, opacity, recording = false, selectedIndex, selectedBackdrop, touchFeedbackColor, touchFeedbackEnabled = true, touchFeedbackOpacity, touchFeedbackScale }) => {
++const JellyTabBarHeadless = ({ backdrop, colors, config, displayScale = 1, items, maxWidth = 400, onTabChange, onTabLongPress, onTabPress, opacity, progress, recording = false, selectedIndex, selectedBackdrop, touchFeedbackColor, touchFeedbackEnabled = true, touchFeedbackOpacity, touchFeedbackScale }) => {
+ 	const trackRef = useRef(null);
+ 	const [uncontrolledSelectedIndex, setUncontrolledSelectedIndex] = useState(0);
+ 	const [webTrackWidth, setWebTrackWidth] = useState(0);
+@@ -1232,7 +1255,7 @@ const JellyTabBarHeadless = ({ backdrop, colors, config, displayScale = 1, items
+ 	}, item.key));
+ 	const tabCount = tabs.length;
+ 	const semanticSelectedIndex = getSelectedItemIndex(selectedIndex === void 0 ? uncontrolledSelectedIndex : selectedIndex, tabCount);
+-	const { activateTab, activeItemStyle, gesture, panelStyle, pillClipStyle, pillContentStyle, pillMaskStyle, pressedStyle, selectedTouchFeedbackStyle, setTrackWidth, setWebTrackPageX, tabbarStyle, touchFeedbackStyle } = usePillJelly(tabCount, resolvedConfig, recording, displayScale, touchFeedback.radius, selectedIndex, handleTabChange, onTabPress ? handleTabPress : void 0, onTabLongPress ? handleTabLongPress : void 0);
++	const { activateTab, activeItemStyle, gesture, panelStyle, pillClipStyle, pillContentStyle, pillMaskStyle, pressedStyle, selectedTouchFeedbackStyle, setTrackWidth, setWebTrackPageX, tabbarStyle, touchFeedbackStyle } = usePillJelly(tabCount, resolvedConfig, recording, displayScale, touchFeedback.radius, selectedIndex, progress, handleTabChange, onTabPress ? handleTabPress : void 0, onTabLongPress ? handleTabLongPress : void 0);
+ 	const measureWebTrackPageX = useCallback(() => {
+ 		trackRef.current?.measureInWindow((x) => setWebTrackPageX(x));
+ 	}, [setWebTrackPageX]);
+diff --git a/src/components/tabs.tsx b/src/components/tabs.tsx
+index bddf40e8bee7ec82a70235a608395f2b645772d7..4b352f42e53d07f8ee20232d06db4b3e335f0f7f 100644
+--- a/src/components/tabs.tsx
++++ b/src/components/tabs.tsx
+@@ -81,6 +81,7 @@ export const JellyTabBarHeadless = ({
+     onTabLongPress,
+     onTabPress,
+     opacity,
++    progress,
+     recording = false,
+     selectedIndex,
+     selectedBackdrop,
+@@ -193,6 +194,7 @@ export const JellyTabBarHeadless = ({
+         displayScale,
+         touchFeedback.radius,
+         selectedIndex,
++        progress,
+         handleTabChange,
+         onTabPress ? handleTabPress : undefined,
+         onTabLongPress ? handleTabLongPress : undefined,
+diff --git a/src/hooks/use-pill-jelly.ts b/src/hooks/use-pill-jelly.ts
+index 0e826067797b2351d951a2ccbeb95a31ae85834a..39a29f19b2b46d0692bcdef07b3aa28ac2bf578f 100644
+--- a/src/hooks/use-pill-jelly.ts
++++ b/src/hooks/use-pill-jelly.ts
+@@ -15,6 +15,8 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
+ import {
+     clamp,
+     runOnJS,
++    type SharedValue,
++    useAnimatedReaction,
+     useAnimatedStyle,
+     useDerivedValue,
+     useFrameCallback,
+@@ -41,6 +43,7 @@ export const usePillJelly = (
+     displayScale = 1,
+     touchFeedbackRadius = 0,
+     controlledSelectedIndex?: number | null,
++    controlledProgress?: SharedValue<number>,
+     onTabChange?: (index: number) => void,
+     onTabPress?: (index: number) => boolean | void,
+     onTabLongPress?: (index: number) => void,
+@@ -92,6 +95,7 @@ export const usePillJelly = (
+     const rawPanelOffsetVelocity = useSharedValue(0);
+ 
+     const isDragging = useSharedValue(0);
++    const progressOwnedByTabBar = useSharedValue(0);
+     const releasePending = useSharedValue(0);
+     const downX = useSharedValue(0);
+     const webTrackPageX = useSharedValue(Number.NaN);
+@@ -139,8 +143,33 @@ export const usePillJelly = (
+                 tabCount,
+                 timeSincePreviousFrame,
+             );
++
++            if (
++                controlledProgress !== undefined &&
++                progressOwnedByTabBar.value === 1
++            ) {
++                controlledProgress.value = value.value;
++
++                const positionSettled =
++                    isDragging.value === 0 &&
++                    Math.abs(value.value - targetValue.value) < 0.001 &&
++                    Math.abs(valueVelocity.value) < 0.001;
++                if (positionSettled) {
++                    progressOwnedByTabBar.value = 0;
++                }
++            }
+         },
+-        [frameState, pillJelly.frameConfig, tabCount],
++        [
++            controlledProgress,
++            frameState,
++            isDragging,
++            pillJelly.frameConfig,
++            progressOwnedByTabBar,
++            tabCount,
++            targetValue,
++            value,
++            valueVelocity,
++        ],
+     );
+     const frameLoop = useFrameCallback(frameCallback, false);
+     const frameLoopStopTimeout = useRef<ReturnType<typeof setTimeout> | null>(
+@@ -192,6 +221,30 @@ export const usePillJelly = (
+         targetValue,
+     ]);
+ 
++    useAnimatedReaction(
++        () => controlledProgress?.value,
++        (nextProgress) => {
++            if (
++                nextProgress === undefined ||
++                tabCount === 0 ||
++                progressOwnedByTabBar.value === 1
++            ) {
++                return;
++            }
++
++            const nextValue = clamp(
++                nextProgress,
++                0,
++                getMaxTabIndex(tabCount),
++            );
++            value.value = nextValue;
++            targetValue.value = nextValue;
++            valueVelocity.value = 0;
++            releasePending.value = 0;
++        },
++        [controlledProgress, progressOwnedByTabBar, tabCount],
++    );
++
+     const panelOffset = useDerivedValue(() => {
+         return getHorizontalPanelOffset(
+             rawPanelOffset.value,
+@@ -344,6 +397,7 @@ export const usePillJelly = (
+                 Math.max(index, 0),
+                 getMaxTabIndex(tabCount),
+             );
++            progressOwnedByTabBar.value = 1;
+             targetValue.value = nextIndex;
+             releasePending.value = 1;
+             setFrameLoopActive(true);
+@@ -352,6 +406,7 @@ export const usePillJelly = (
+         },
+         [
+             confirmTabPressOnJS,
++            progressOwnedByTabBar,
+             releasePending,
+             setFrameLoopActive,
+             tabCount,
+@@ -394,6 +449,7 @@ export const usePillJelly = (
+         "worklet";
+ 
+         beginTabbarInteraction(localX, localY, absoluteX);
++        progressOwnedByTabBar.value = 1;
+         downX.value = localX;
+         movedDistance.value = 0;
+ 
+diff --git a/src/types.ts b/src/types.ts
+index 41c747d834332a221fb9fa5848fbe16921d27588..d04eb1365da4443563315ff259d249d256cf9527 100644
+--- a/src/types.ts
++++ b/src/types.ts
+@@ -11,6 +11,7 @@ import type {
+     TextStyle,
+     ViewStyle,
+ } from "react-native";
++import type { SharedValue } from "react-native-reanimated";
+ 
+ export interface TabsIconProps {
+     color: string;
+@@ -55,6 +56,12 @@ export interface JellyTabBarHeadlessProps {
+     onTabLongPress?: (event: TabsChangeEvent) => void;
+     onTabPress?: (event: TabsChangeEvent) => boolean | void;
+     opacity?: Partial<TabBarOpacity>;
++    /**
++     * Fractional pill position driven from the UI thread. Values are clamped
++     * between the first and last tab. During a tab bar interaction, the
++     * animated pill position is written back so linked content stays synced.
++     */
++    progress?: SharedValue<number>;
+     selectedIndex?: number | null;
+     selectedBackdrop?: ReactNode;
+     touchFeedbackEnabled?: boolean;

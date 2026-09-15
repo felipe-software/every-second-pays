@@ -1,14 +1,23 @@
-import { Tabs, router } from "expo-router";
-import { type ComponentProps } from "react";
+import { router } from "expo-router";
+import { TabList, Tabs, TabTrigger, useTabTrigger } from "expo-router/ui";
+import { useCallback, useMemo } from "react";
 import { type ColorValue, Pressable, StyleSheet, View } from "react-native";
-import { JellyTabBar } from "react-native-jelly-tabs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+    JellyTabBarHeadless,
+    type TabsIconProps,
+    type TabsItem,
+} from "react-native-jelly-tabs";
 import Svg, { Path } from "react-native-svg";
 
 import { usePaymentComposerStore } from "@/features/earnings/payment-composer-store";
 import { useEarningsTheme } from "@/features/earnings/theme";
 import { useI18n } from "@/features/i18n/i18n";
+import {
+    AndroidTabPager,
+    useAndroidTabPagerProgress,
+} from "./android-tab-pager";
 
-type JellyNavigationProps = ComponentProps<typeof JellyTabBar>;
 type TabIconProps = { color: ColorValue; size: number };
 
 function PaidIcon({ color, size }: TabIconProps) {
@@ -27,10 +36,50 @@ function SettingsIcon({ color, size }: TabIconProps) {
     );
 }
 
-function AndroidTabBar(props: JellyNavigationProps) {
+function PaidJellyIcon({ color, size }: TabsIconProps) {
+    return <PaidIcon color={color} size={size} />;
+}
+
+function SettingsJellyIcon({ color, size }: TabsIconProps) {
+    return <SettingsIcon color={color} size={size} />;
+}
+
+function AndroidTabBar() {
     const { colors } = useEarningsTheme();
     const { t } = useI18n();
+    const insets = useSafeAreaInsets();
+    const indexTab = useTabTrigger({ name: "index" });
+    const settingsTab = useTabTrigger({ name: "settings" });
+    const progress = useAndroidTabPagerProgress();
     const requestNewSource = usePaymentComposerStore((state) => state.requestNewSource);
+    const items = useMemo<TabsItem[]>(() => [
+        {
+            accessibilityLabel: t("tabs.today"),
+            activeIcon: PaidJellyIcon,
+            inactiveIcon: PaidJellyIcon,
+            key: "index",
+            label: t("tabs.today"),
+            testID: "today-tab",
+        },
+        {
+            accessibilityLabel: t("tabs.settings"),
+            activeIcon: SettingsJellyIcon,
+            inactiveIcon: SettingsJellyIcon,
+            key: "settings",
+            label: t("tabs.settings"),
+            testID: "settings-tab",
+        },
+    ], [t]);
+    const selectedIndex = indexTab.trigger?.isFocused
+        ? 0
+        : settingsTab.trigger?.isFocused
+            ? 1
+            : null;
+    const selectTab = useCallback(({ index }: { index: number }) => {
+        const tab = index === 1 ? settingsTab : indexTab;
+        tab.switchTab(index === 1 ? "settings" : "index", {});
+        return true;
+    }, [indexTab, settingsTab]);
     const openPaymentComposer = () => {
         requestNewSource();
         router.navigate("/");
@@ -40,13 +89,10 @@ function AndroidTabBar(props: JellyNavigationProps) {
         <View pointerEvents="box-none" style={styles.dock}>
             <View
                 pointerEvents="box-none"
-                style={[styles.dockContent, { paddingBottom: Math.max(props.insets.bottom, 20) }]}
+                style={[styles.dockContent, { paddingBottom: Math.max(insets.bottom, 20) }]}
             >
                 <View pointerEvents="box-none" style={styles.jellyTrack}>
-                    <JellyTabBar
-                        {...props}
-                        insets={{ ...props.insets, bottom: 0, left: 0, right: 0 }}
-                        maxWidth={188}
+                    <JellyTabBarHeadless
                         colors={{
                             surface: colors.row,
                             selectedSurface: colors.accent,
@@ -55,9 +101,15 @@ function AndroidTabBar(props: JellyNavigationProps) {
                         }}
                         config={{
                             layout: { iconSize: 23, itemHeight: 56, trackHeight: 64 },
-                            pillJelly: { pressedScale: 1.4,  },
+                            pillJelly: { pressedScale: 1.2, frameConfig: {  } },
+                            distortion: { pressedScale: 1.1 }
                         }}
-                        containerStyle={styles.jellyContainer}
+
+                        items={items}
+                        maxWidth={188}
+                        onTabPress={selectTab}
+                        progress={progress}
+                        selectedIndex={selectedIndex}
                         touchFeedbackColor={colors.accent}
                     />
                 </View>
@@ -87,33 +139,20 @@ function AndroidTabBar(props: JellyNavigationProps) {
 }
 
 export default function AppTabs() {
-    const { t } = useI18n();
+    const { colors } = useEarningsTheme();
 
     return (
-        <Tabs
-            screenOptions={{ headerShown: false }}
-            tabBar={(props) => <AndroidTabBar {...props} />}
-        >
-            <Tabs.Screen
-                name="index"
-                options={{
-                    title: t("tabs.today"),
-                    tabBarAccessibilityLabel: t("tabs.today"),
-                    tabBarButtonTestID: "today-tab",
-                    tabBarIcon: ({ color, size }) => <PaidIcon color={color} size={size} />,
-                }}
-            />
-            <Tabs.Screen
-                name="settings"
-                options={{
-                    title: t("tabs.settings"),
-                    tabBarAccessibilityLabel: t("tabs.settings"),
-                    tabBarButtonTestID: "settings-tab",
-                    tabBarIcon: ({ color, size }) => <SettingsIcon color={color} size={size} />,
-                }}
-            />
-            <Tabs.Screen name="add" options={{ href: null }} />
-            <Tabs.Screen name="explore" options={{ href: null }} />
+        <Tabs>
+            <AndroidTabPager backgroundColor={colors.canvas}>
+                <AndroidTabBar />
+            </AndroidTabPager>
+
+            <TabList style={styles.hiddenTabList}>
+                <TabTrigger href="/" name="index" />
+                <TabTrigger href="/settings" name="settings" />
+                <TabTrigger href="/add" name="add" />
+                <TabTrigger href="/explore" name="explore" />
+            </TabList>
         </Tabs>
     );
 }
@@ -140,13 +179,6 @@ const styles = StyleSheet.create({
         width: 188,
         height: 64,
     },
-    jellyContainer: {
-        width: "100%",
-        paddingTop: 0,
-        paddingRight: 0,
-        paddingBottom: 0,
-        paddingLeft: 0,
-    },
     actionShell: {
         width: 64,
         height: 64,
@@ -164,5 +196,8 @@ const styles = StyleSheet.create({
     },
     actionPressed: {
         opacity: 0.72,
+    },
+    hiddenTabList: {
+        display: "none",
     },
 });

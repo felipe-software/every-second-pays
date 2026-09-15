@@ -43,7 +43,7 @@ export default function SettingsScreen() {
 
     const changePalette = (palette: PaletteId, origin: ThemeTransitionOrigin) => {
         if (palette === appearance.palette) return;
-        runInterfaceTransition(() => { void change({ palette }); }, origin, reduceMotion);
+        runInterfaceTransition(() => { void change({ palette }); }, origin, reduceMotion, { durationMs: 1000 });
     };
 
     return (
