@@ -56,6 +56,10 @@ type MoneyBurst = {
 };
 
 const FLIGHT_DURATION = 640;
+const COUNTER_IMPACT_SCALE: Record<MoneyTransfer["target"], number> = {
+    cents: 1.045,
+    whole: 1.1,
+};
 
 function randomBetween(min: number, max: number) {
     return min + Math.random() * (max - min);
@@ -219,11 +223,12 @@ export function MoneyCounterCelebration({
 
         cancelAnimation(counterScale);
         counterScale.set(1);
+        const impactScale = COUNTER_IMPACT_SCALE[transfer.target];
         counterScale.set(withDelay(
             MONEY_IMPACT_DELAY,
             withSequence(
                 ReduceMotion.System,
-                withTiming(1.1, {
+                withTiming(impactScale, {
                     duration: 105,
                     easing: Easing.out(Easing.quad),
                     reduceMotion: ReduceMotion.System,

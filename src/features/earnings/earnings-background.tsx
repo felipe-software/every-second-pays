@@ -12,27 +12,39 @@ import Animated, {
     withTiming,
 } from "react-native-reanimated";
 
-import { MONEY_IMPACT_DELAY } from "./money-counter-celebration";
+import { MONEY_IMPACT_DELAY, type MoneyTransfer } from "./money-counter-celebration";
 import { useEarningsTheme } from "./theme";
 
-export const EarningsBackground = memo(function EarningsBackground({ celebrationId }: { celebrationId?: number }) {
+const SATURATION_IMPACT_OPACITY: Record<MoneyTransfer["target"], { dark: number; light: number }> = {
+    cents: { dark: 0.08, light: 0.1 },
+    whole: { dark: 0.18, light: 0.22 },
+};
+
+export const EarningsBackground = memo(function EarningsBackground({
+    celebrationId,
+    celebrationTarget,
+}: {
+    celebrationId?: number;
+    celebrationTarget?: MoneyTransfer["target"];
+}) {
     const target = useRef<View | null>(null);
     const { colors, isDark } = useEarningsTheme();
     const saturationPulse = useSharedValue(0);
     const pulseStyle = useAnimatedStyle(() => ({
-        opacity: saturationPulse.get() * (isDark ? 0.18 : 0.22),
+        opacity: saturationPulse.get(),
     }));
 
     useEffect(() => {
-        if (!celebrationId) return;
+        if (!celebrationId || !celebrationTarget) return;
 
         cancelAnimation(saturationPulse);
         saturationPulse.set(0);
+        const impactOpacity = SATURATION_IMPACT_OPACITY[celebrationTarget][isDark ? "dark" : "light"];
         saturationPulse.set(withDelay(
             MONEY_IMPACT_DELAY,
             withSequence(
                 ReduceMotion.System,
-                withTiming(1, {
+                withTiming(impactOpacity, {
                     duration: 105,
                     easing: Easing.out(Easing.quad),
                     reduceMotion: ReduceMotion.System,
@@ -47,7 +59,7 @@ export const EarningsBackground = memo(function EarningsBackground({ celebration
         ));
 
         return () => cancelAnimation(saturationPulse);
-    }, [celebrationId, saturationPulse]);
+    }, [celebrationId, celebrationTarget, isDark, saturationPulse]);
 
     return (
         <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>

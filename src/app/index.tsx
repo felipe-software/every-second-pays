@@ -214,7 +214,10 @@ export default function EarningsScreen() {
         <View className="flex-1 items-center bg-canvas">
             <StatusBar style={isDark ? "light" : "dark"} />
             <View className="relative w-full max-w-[430px] flex-1 overflow-hidden bg-canvas">
-                <EarningsBackground celebrationId={moneyTransfer?.id} />
+                <EarningsBackground
+                    celebrationId={moneyTransfer?.id}
+                    celebrationTarget={moneyTransfer?.target}
+                />
 
                 <View className="flex-1" style={{ paddingTop: insets.top }}>
                     <EarningsHeader
