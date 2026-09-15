@@ -1,22 +1,25 @@
-import { MenuView, type MenuAction } from "@expo/ui/community/menu";
+import {
+    DropdownMenu,
+    DropdownMenuItem,
+    Host,
+    Icon,
+    RNHostView,
+    Text as ComposeText,
+} from "@expo/ui/jetpack-compose";
 import { Image } from "expo-image";
 import { SymbolView } from "expo-symbols";
-import { Text, useWindowDimensions, View } from "react-native";
+import { useState } from "react";
+import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
 import { useEarningsTheme } from "@/features/earnings/theme";
 
 import { useI18n } from "./i18n";
 import { LANGUAGE_OPTIONS, type LanguageMenuProps } from "./language-options";
-import type { LanguagePreference } from "./store";
 
-const FLAG_EMOJI: Record<LanguagePreference, string> = {
-    system: "🌐",
-    en: "🇺🇸",
-    pt: "🇧🇷",
-    es: "🇪🇸",
-    fr: "🇫🇷",
-};
+const GLOBE_ICON = require("../../../assets/icons/globe.xml");
+const CHECK_ICON = require("../../../assets/icons/check.xml");
+const MENU_RADIUS = 24;
 
 function UpDownChevron({ color }: { color: string }) {
     return (
@@ -27,22 +30,21 @@ function UpDownChevron({ color }: { color: string }) {
 }
 
 export function LanguageMenu({ preference, disabled, onChange }: LanguageMenuProps) {
+    const [open, setOpen] = useState(false);
     const { t } = useI18n();
     const { colors, isDark } = useEarningsTheme();
     const { width } = useWindowDimensions();
     const menuWidth = Math.min(width, 430) - 44;
     const selected = LANGUAGE_OPTIONS.find((option) => option.value === preference)!;
-    const actions: MenuAction[] = LANGUAGE_OPTIONS.map((option) => ({
-        id: option.value,
-        title: `${FLAG_EMOJI[option.value]}  ${option.label ?? t("settings.languageSystem")}`,
-        state: option.value === preference ? "on" : "off",
-        titleColor: colors.ink,
-    }));
+
     const trigger = (
-        <View
+        <Pressable
+            testID="language-menu"
             accessible
             accessibilityRole="button"
-            accessibilityState={{ disabled, expanded: false }}
+            accessibilityState={{ disabled, expanded: open }}
+            disabled={disabled}
+            onPress={() => setOpen(true)}
             className="min-h-[58px] flex-row items-center gap-2.5 px-4"
             style={{ width: menuWidth }}
         >
@@ -54,20 +56,73 @@ export function LanguageMenu({ preference, disabled, onChange }: LanguageMenuPro
             )}
             <Text className="font-sans text-[14px] text-muted">{selected.label ?? t("settings.languageSystem")}</Text>
             <UpDownChevron color={colors.muted} />
-        </View>
+        </Pressable>
     );
 
     if (disabled) return trigger;
 
     return (
-        <MenuView
-            testID="language-menu"
-            actions={actions}
-            colorScheme={isDark ? "dark" : "light"}
-            onPressAction={({ nativeEvent }) => onChange(nativeEvent.event as LanguagePreference)}
-            style={{ width: menuWidth }}
-        >
+        <View style={{ width: menuWidth }}>
             {trigger}
-        </MenuView>
+            <Host
+                matchContents
+                colorScheme={isDark ? "dark" : "light"}
+                style={{ position: "absolute", top: 0, right: 0, width: 1, height: 58 }}
+            >
+                <DropdownMenu
+                    expanded={open}
+                    onDismissRequest={() => setOpen(false)}
+                    color={colors.row}
+                    cornerRadius={MENU_RADIUS}
+                    shadowElevation={12}
+                >
+                    <DropdownMenu.Trigger>
+                        <RNHostView matchContents>
+                            <View style={{ width: 1, height: 58 }} />
+                        </RNHostView>
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Items>
+                        {LANGUAGE_OPTIONS.map((option) => {
+                            const checked = option.value === preference;
+                            return (
+                                <DropdownMenuItem
+                                    key={option.value}
+                                    onClick={() => {
+                                        setOpen(false);
+                                        onChange(option.value);
+                                    }}
+                                    elementColors={{
+                                        textColor: checked ? colors.accentDeep : colors.ink,
+                                        leadingIconColor: colors.muted,
+                                        trailingIconColor: colors.accentDeep,
+                                    }}
+                                >
+                                    <DropdownMenuItem.LeadingIcon>
+                                        <Icon
+                                            source={option.flag ?? GLOBE_ICON}
+                                            size={option.flag ? 24 : 22}
+                                            tint={option.flag ? null : colors.muted}
+                                        />
+                                    </DropdownMenuItem.LeadingIcon>
+                                    <DropdownMenuItem.Text>
+                                        <ComposeText
+                                            color={checked ? colors.accentDeep : colors.ink}
+                                            style={{ fontFamily: "Archivo", fontSize: 16 }}
+                                        >
+                                            {option.label ?? t("settings.languageSystem")}
+                                        </ComposeText>
+                                    </DropdownMenuItem.Text>
+                                    {checked ? (
+                                        <DropdownMenuItem.TrailingIcon>
+                                            <Icon source={CHECK_ICON} size={18} tint={colors.accentDeep} />
+                                        </DropdownMenuItem.TrailingIcon>
+                                    ) : null}
+                                </DropdownMenuItem>
+                            );
+                        })}
+                    </DropdownMenu.Items>
+                </DropdownMenu>
+            </Host>
+        </View>
     );
 }
