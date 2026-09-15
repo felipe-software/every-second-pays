@@ -1,6 +1,6 @@
 ## Project environment
 
-Environment inspected with Argent on 2026-09-13. Recheck running processes before starting a server.
+Environment inspected with Argent on 2026-09-15. Recheck running processes before starting a server.
 
 ```json
 {
@@ -8,7 +8,7 @@ Environment inspected with Argent on 2026-09-13. Recheck running processes befor
   "is_react_native": true,
   "is_native_ios": false,
   "is_native_android": false,
-  "project_type": "Expo with generated ios/android projects",
+  "project_type": "Expo managed/CNG with generated ios/android projects",
   "expo": "~57.0.22",
   "react_native": "0.86.3",
   "react": "19.2.3",
@@ -23,10 +23,9 @@ Environment inspected with Argent on 2026-09-13. Recheck running processes befor
   },
   "metro": {
     "configured_port": null,
-    "running_port": 8081,
-    "pid": 70597,
-    "command": "node /Users/mac/work/every-second-pays/node_modules/.bin/expo run ios",
-    "project_matches": true
+    "running_port": null,
+    "pid": null,
+    "project_matches": false
   },
   "scripts": {
     "start": "expo start",
@@ -41,9 +40,9 @@ Environment inspected with Argent on 2026-09-13. Recheck running processes befor
   },
   "qa": {
     "required": ["bunx expo lint", "bunx tsc --noEmit"],
-    "existing_tests": "tests/earnings-store.test.js (bun:test and bun:sqlite)",
+    "existing_tests": "tests/earnings-store.test.js and tests/i18n.test.js (bun:test)",
     "test_command": "bun test",
-    "saved_argent_flows_found": false,
+    "saved_argent_flows_found": true,
     "ci_config": null
   },
   "build": {
