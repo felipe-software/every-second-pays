@@ -8,7 +8,7 @@
     "scheme": "everysecondpays",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/every-second-pays.icon",
       "bundleIdentifier": "software.felipe.everysecondpays"
     },
     "android": {
@@ -30,12 +30,8 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#F0F7F3",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 176,
-          "resizeMode": "contain",
           "dark": {
-            "backgroundColor": "#141816",
-            "image": "./assets/images/splash-icon-dark.png"
+            "backgroundColor": "#141816"
           }
         }
       ],
