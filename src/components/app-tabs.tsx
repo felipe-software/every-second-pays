@@ -4,6 +4,7 @@ import { DynamicColorIOS, Platform } from "react-native";
 
 import { usePaymentComposerStore } from "@/features/earnings/payment-composer-store";
 import { useEarningsTheme } from "@/features/earnings/theme";
+import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 
 export default function AppTabs() {
@@ -14,6 +15,7 @@ export default function AppTabs() {
         ? DynamicColorIOS({ light: "#3F3329", dark: "#D8CBC1" })
         : colors.muted;
     const openPaymentComposer = () => {
+        appHaptics.secondaryAction();
         requestNewSource();
         router.navigate("/");
     };

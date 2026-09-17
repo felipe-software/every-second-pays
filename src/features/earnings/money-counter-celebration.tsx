@@ -15,6 +15,8 @@ import Animated, {
     withTiming,
 } from "react-native-reanimated";
 
+import { useMoneyLandingHaptic } from "@/features/haptics/haptics";
+
 export const MONEY_IMPACT_DELAY = 480;
 
 type MoneyTransferBase = {
@@ -56,6 +58,7 @@ type MoneyBurst = {
 };
 
 const FLIGHT_DURATION = 640;
+const MONEY_HAPTIC_COOLDOWN = 2400;
 const COUNTER_IMPACT_SCALE: Record<MoneyTransfer["target"], number> = {
     cents: 1.045,
     whole: 1.1,
@@ -199,6 +202,8 @@ export function MoneyCounterCelebration({
 }>) {
     const stageRef = useRef<View>(null);
     const [burst, setBurst] = useState<MoneyBurst | null>(null);
+    const playMoneyLanding = useMoneyLandingHaptic();
+    const lastMoneyHapticAt = useRef(0);
     const counterScale = useSharedValue(1);
     const counterStyle = useAnimatedStyle(() => ({
         transform: [{ scale: counterScale.get() }],
@@ -243,10 +248,19 @@ export function MoneyCounterCelebration({
             ReduceMotion.System,
         ));
 
+        let hapticTimer: ReturnType<typeof setTimeout> | null = null;
+        if (transfer.target === "whole" && Date.now() - lastMoneyHapticAt.current >= MONEY_HAPTIC_COOLDOWN) {
+            hapticTimer = setTimeout(() => {
+                lastMoneyHapticAt.current = Date.now();
+                playMoneyLanding();
+            }, MONEY_IMPACT_DELAY);
+        }
+
         return () => {
             cancelled = true;
+            if (hapticTimer) clearTimeout(hapticTimer);
         };
-    }, [centsTargetRef, counterScale, transfer, wholeTargetRef]);
+    }, [centsTargetRef, counterScale, playMoneyLanding, transfer, wholeTargetRef]);
 
     useEffect(() => () => cancelAnimation(counterScale), [counterScale]);
 

@@ -3,6 +3,7 @@ import { useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 
 import { useI18n } from "@/features/i18n/i18n";
+import { appHaptics } from "@/features/haptics/haptics";
 
 import {
     EMPTY_DRAFT,
@@ -125,7 +126,10 @@ export function PaymentSheet({ source, now, saving = false, onDismiss, onDelete,
                             accessibilityRole="button"
                             accessibilityLabel={t("payment.deleteAccessibility")}
                             disabled={saving}
-                            onPress={() => void deleteAndDismiss()}
+                            onPress={() => {
+                                appHaptics.destructiveAction();
+                                void deleteAndDismiss();
+                            }}
                             className="h-9 justify-center rounded-[11px] bg-danger/10 px-3.5 active:opacity-65"
                         >
                             <Text className="font-sans text-[13px] font-semibold text-danger">{t("payment.delete")}</Text>
@@ -134,7 +138,10 @@ export function PaymentSheet({ source, now, saving = false, onDismiss, onDelete,
                     <Pressable
                         accessibilityLabel={t("common.close")}
                         accessibilityRole="button"
-                        onPress={dismiss}
+                        onPress={() => {
+                            appHaptics.dismiss();
+                            dismiss();
+                        }}
                         className="h-9 w-9 items-center justify-center rounded-full bg-soft/80 active:opacity-65"
                     >
                         <Text className="mt-[-2px] font-sans text-[21px] text-muted">×</Text>

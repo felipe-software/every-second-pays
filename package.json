@@ -17,10 +17,11 @@
     "@expo/ui": "~57.0.18",
     "@lodev09/react-native-true-sheet": "^3.11.14",
     "@react-native-masked-view/masked-view": "0.3.2",
-    "expo": "~57.0.22",
+    "expo": "~57.0.23",
     "expo-asset": "~57.0.17",
     "expo-blur": "~57.0.3",
     "expo-constants": "~57.0.18",
+    "expo-dev-client": "~57.0.19",
     "expo-device": "~57.0.2",
     "expo-font": "~57.0.4",
     "expo-glass-effect": "~57.0.3",
@@ -43,6 +44,7 @@
     "react-native-keyboard-controller": "1.21.9",
     "react-native-nitro-modules": "^0.37.1",
     "react-native-nitro-theme-transition": "^1.0.0",
+    "react-native-pulsar": "^1.7.0",
     "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
@@ -60,15 +62,15 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "start": "expo start",
-    "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
+    "start": "APP_VARIANT=development expo start --dev-client",
+    "start:production": "APP_VARIANT=production expo start",
+    "android": "APP_VARIANT=development expo run:android",
+    "ios": "APP_VARIANT=development expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "era": "expo run android",
-    "eri": "expo run ios",
-    "epc": "expo prebuild --clean"
+    "era": "APP_VARIANT=development expo run:android",
+    "eri": "APP_VARIANT=development expo run:ios",
+    "epc": "APP_VARIANT=development expo prebuild --clean"
   },
   "private": true,
   "patchedDependencies": {

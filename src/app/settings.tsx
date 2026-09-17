@@ -15,6 +15,7 @@ import {
 } from "@/features/appearance/theme-transition";
 import { EarningsBackground } from "@/features/earnings/earnings-background";
 import { useEarningsTheme } from "@/features/earnings/theme";
+import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 import { LanguageSelector } from "@/features/i18n/language-selector";
 
@@ -38,11 +39,13 @@ export default function SettingsScreen() {
 
     const changeMode = (mode: ThemeMode, origin: ThemeTransitionOrigin) => {
         if (mode === appearance.mode) return;
+        appHaptics.themeMode();
         runInterfaceTransition(() => { void change({ mode }); }, origin, reduceMotion);
     };
 
     const changePalette = (palette: PaletteId, origin: ThemeTransitionOrigin) => {
         if (palette === appearance.palette) return;
+        appHaptics.selection();
         runInterfaceTransition(() => { void change({ palette }); }, origin, reduceMotion, { durationMs: 1000 });
     };
 

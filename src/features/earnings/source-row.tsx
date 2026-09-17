@@ -12,6 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { useI18n } from "@/features/i18n/i18n";
+import { appHaptics } from "@/features/haptics/haptics";
 
 import { type PaymentSource, currentShift, earnedToday } from "./model";
 
@@ -81,7 +82,10 @@ export function SourceRow({
         <Pressable
             accessibilityRole="button"
             accessibilityLabel={t("home.editSource", { name: source.name })}
-            onPress={onPress}
+            onPress={() => {
+                appHaptics.secondaryAction();
+                onPress();
+            }}
             className={`flex-row items-start gap-[18px] rounded-2xl px-5 py-[18px] active:opacity-75 ${active ? "bg-active" : "bg-row"}`}
         >
             <View className="min-w-0 flex-1 gap-1.5">

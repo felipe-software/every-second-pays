@@ -1,6 +1,7 @@
 import { Platform, Pressable, Text, TextInput, View } from "react-native";
 
 import { useI18n } from "@/features/i18n/i18n";
+import { appHaptics } from "@/features/haptics/haptics";
 
 import type { Shift } from "./model";
 import { useEarningsTheme } from "./theme";
@@ -67,7 +68,10 @@ export function PrimaryButton({
             accessibilityRole="button"
             accessibilityState={{ disabled: Boolean(disabled) }}
             disabled={disabled}
-            onPress={onPress}
+            onPress={() => {
+                appHaptics.primaryAction();
+                onPress();
+            }}
             testID={testID}
             className="h-[54px] w-full items-center justify-center rounded-[17px] active:scale-[0.985] active:opacity-90"
             style={{
@@ -94,7 +98,10 @@ export function TokenButton({ active, children, onPress }: { active: boolean; ch
         <Pressable
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
-            onPress={onPress}
+            onPress={() => {
+                appHaptics.selection();
+                onPress();
+            }}
             className={`mr-[-3px] rounded-[7px] px-2 pb-px active:opacity-70 ${active ? "bg-token-active" : "bg-field"}`}
         >
             <Text className="font-sans text-[24px] leading-[27px] font-semibold text-ink">{children}</Text>
@@ -108,7 +115,10 @@ export function ChoiceChip({ selected, label, onPress, wide = false }: { selecte
         <Pressable
             accessibilityRole="button"
             accessibilityState={{ selected }}
-            onPress={onPress}
+            onPress={() => {
+                appHaptics.selection();
+                onPress();
+            }}
             className={`${wide ? "h-[50px] min-w-[30%] flex-1" : "px-[15px] py-2.5"} items-center justify-center rounded-[13px] active:opacity-75`}
             style={{ backgroundColor: selected ? colors.accent : colors.soft }}
         >
@@ -145,7 +155,10 @@ export function HoursChoice({ label, detail, shifts, selected, onPress }: { labe
         <Pressable
             accessibilityRole="button"
             accessibilityState={{ selected }}
-            onPress={onPress}
+            onPress={() => {
+                appHaptics.selection();
+                onPress();
+            }}
             className="gap-[11px] rounded-[15px] px-4 py-[15px] active:opacity-75"
             style={{ backgroundColor: selected ? colors.accent : colors.choice }}
         >
@@ -167,11 +180,25 @@ export function TimeAdjuster({ label, value, decrease, increase }: { label: stri
         <View className="min-w-0 flex-1 gap-1.5">
             <Text className="font-sans text-[10px] font-semibold tracking-[1.2px] text-muted uppercase">{label}</Text>
             <View className="h-11 flex-row items-center rounded-[13px] bg-field">
-                <Pressable accessibilityLabel={t("payment.earlier", { label })} onPress={decrease} className="h-11 w-10 items-center justify-center active:opacity-60">
+                <Pressable
+                    accessibilityLabel={t("payment.earlier", { label })}
+                    onPress={() => {
+                        appHaptics.selection();
+                        decrease();
+                    }}
+                    className="h-11 w-10 items-center justify-center active:opacity-60"
+                >
                     <Text className="font-sans text-[18px] text-muted">−</Text>
                 </Pressable>
                 <Text className="min-w-0 flex-1 text-center font-sans text-[13px] font-semibold text-ink">{formatTime(value)}</Text>
-                <Pressable accessibilityLabel={t("payment.later", { label })} onPress={increase} className="h-11 w-10 items-center justify-center active:opacity-60">
+                <Pressable
+                    accessibilityLabel={t("payment.later", { label })}
+                    onPress={() => {
+                        appHaptics.selection();
+                        increase();
+                    }}
+                    className="h-11 w-10 items-center justify-center active:opacity-60"
+                >
                     <Text className="font-sans text-[18px] text-muted">+</Text>
                 </Pressable>
             </View>
