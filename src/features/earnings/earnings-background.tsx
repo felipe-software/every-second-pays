@@ -1,6 +1,6 @@
 import { BlurTargetView, BlurView } from "expo-blur";
 import { memo, useEffect, useRef } from "react";
-import { StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import Animated, {
     cancelAnimation,
     Easing,
@@ -76,6 +76,7 @@ export const EarningsBackground = memo(function EarningsBackground({
                 blurTarget={target}
                 blurMethod="dimezisBlurView"
                 intensity={72}
+                blurReductionFactor={Platform.OS === "android" && !isDark ? 1 : undefined}
                 tint={isDark ? "dark" : "light"}
                 style={StyleSheet.absoluteFill}
             />
