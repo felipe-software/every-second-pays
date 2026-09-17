@@ -1,5 +1,5 @@
 import { Host, HStack, Image, Label, Menu, Picker, Spacer, Text } from "@expo/ui/swift-ui";
-import { buttonStyle, disabled, font, foregroundStyle, frame, menuOrder, padding, pickerStyle, resizable, tag } from "@expo/ui/swift-ui/modifiers";
+import { buttonStyle, disabled, font, foregroundStyle, frame, menuOrder, onTapGesture, padding, pickerStyle, resizable, tag } from "@expo/ui/swift-ui/modifiers";
 import { useAssets } from "expo-asset";
 
 import { useEarningsTheme } from "@/features/earnings/theme";
@@ -10,7 +10,7 @@ import type { LanguagePreference } from "./store";
 
 const FLAG_ASSETS = LANGUAGE_OPTIONS.flatMap((option) => option.flag ? [option.flag] : []);
 
-export function LanguageMenu({ preference, disabled: isDisabled, onChange }: LanguageMenuProps) {
+export function LanguageMenu({ preference, disabled: isDisabled, onOpen, onChange }: LanguageMenuProps) {
     const { t } = useI18n();
     const { colors, isDark } = useEarningsTheme();
     const [assets] = useAssets(FLAG_ASSETS);
@@ -24,7 +24,14 @@ export function LanguageMenu({ preference, disabled: isDisabled, onChange }: Lan
         <Host style={{ height: 58 }} colorScheme={isDark ? "dark" : "light"} ignoreSafeArea="all">
             <Menu
                 testID="language-menu"
-                modifiers={[buttonStyle("plain"), menuOrder("fixed"), disabled(isDisabled)]}
+                modifiers={[
+                    buttonStyle("plain"),
+                    menuOrder("fixed"),
+                    disabled(isDisabled),
+                    onTapGesture(() => {
+                        if (!isDisabled) onOpen();
+                    }),
+                ]}
                 label={
                     <HStack spacing={10} modifiers={[padding({ horizontal: 16 }), frame({ minHeight: 58, maxWidth: Infinity })]}>
                         <Text modifiers={[font({ size: 16, weight: "medium" }), foregroundStyle(colors.ink)]}>{t("settings.language")}</Text>

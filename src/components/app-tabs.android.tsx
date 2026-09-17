@@ -12,6 +12,7 @@ import Svg, { Path } from "react-native-svg";
 
 import { usePaymentComposerStore } from "@/features/earnings/payment-composer-store";
 import { useEarningsTheme } from "@/features/earnings/theme";
+import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 import {
     AndroidTabPager,
@@ -81,6 +82,7 @@ function AndroidTabBar() {
         return true;
     }, [indexTab, settingsTab]);
     const openPaymentComposer = () => {
+        appHaptics.secondaryAction();
         requestNewSource();
         router.navigate("/");
     };

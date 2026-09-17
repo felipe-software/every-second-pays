@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
-import {
-    runInterfaceTransition,
-    type ThemeTransitionOrigin,
-} from "@/features/appearance/theme-transition";
+import type { ThemeTransitionOrigin } from "@/features/appearance/theme-transition";
+import { appHaptics } from "@/features/haptics/haptics";
 
 import { useI18n } from "./i18n";
 import { LanguageMenu } from "./language-menu";
@@ -27,13 +25,19 @@ export function LanguageSelector({ reduceMotion }: { reduceMotion: boolean }) {
 
     const change = (value: LanguagePreference, origin?: ThemeTransitionOrigin) => {
         if (value === preference || saving) return;
+        appHaptics.selection();
         void persist(value);
     };
 
     return (
         <View testID="language-selector" className="mt-8">
             <View className="overflow-hidden rounded-[18px] bg-row">
-                <LanguageMenu preference={preference} disabled={disabled} onChange={change} />
+                <LanguageMenu
+                    preference={preference}
+                    disabled={disabled}
+                    onOpen={appHaptics.selection}
+                    onChange={change}
+                />
             </View>
             {loadError || saveError ? (
                 <Text accessibilityLiveRegion="polite" className="mt-3 px-1 font-sans text-[12.5px] leading-5 text-muted">
