@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
-import { memo, type PropsWithChildren, type RefObject, useEffect, useRef, useState } from "react";
+import { useIsFocused } from "expo-router";
+import { memo, type PropsWithChildren, type RefObject, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, {
     cancelAnimation,
@@ -58,7 +59,6 @@ type MoneyBurst = {
 };
 
 const FLIGHT_DURATION = 640;
-const MONEY_HAPTIC_COOLDOWN = 2400;
 const COUNTER_IMPACT_SCALE: Record<MoneyTransfer["target"], number> = {
     cents: 1.045,
     whole: 1.1,
@@ -200,14 +200,19 @@ export function MoneyCounterCelebration({
     wholeTargetRef: RefObject<View | null>;
     centsTargetRef: RefObject<View | null>;
 }>) {
+    const isFocused = useIsFocused();
+    const isFocusedRef = useRef(isFocused);
     const stageRef = useRef<View>(null);
     const [burst, setBurst] = useState<MoneyBurst | null>(null);
     const playMoneyLanding = useMoneyLandingHaptic();
-    const lastMoneyHapticAt = useRef(0);
     const counterScale = useSharedValue(1);
     const counterStyle = useAnimatedStyle(() => ({
         transform: [{ scale: counterScale.get() }],
     }));
+
+    useLayoutEffect(() => {
+        isFocusedRef.current = isFocused;
+    }, [isFocused]);
 
     useEffect(() => {
         if (!transfer) return;
@@ -217,13 +222,22 @@ export function MoneyCounterCelebration({
         if (!stageNode || !targetNode) return;
 
         let cancelled = false;
+        const hapticTimers: ReturnType<typeof setTimeout>[] = [];
         void Promise.all([
             measureInWindow(transfer.origin),
             measureInWindow(targetNode),
             measureInWindow(stageNode),
         ]).then(([origin, target, stage]) => {
             if (cancelled) return;
-            setBurst(createMoneyBurst(transfer, origin, target, stage));
+            const nextBurst = createMoneyBurst(transfer, origin, target, stage);
+            setBurst(nextBurst);
+
+            if (!isFocusedRef.current) return;
+            nextBurst.notes.forEach((note) => {
+                hapticTimers.push(setTimeout(() => {
+                    if (isFocusedRef.current) playMoneyLanding();
+                }, MONEY_IMPACT_DELAY + note.delay));
+            });
         });
 
         cancelAnimation(counterScale);
@@ -248,17 +262,9 @@ export function MoneyCounterCelebration({
             ReduceMotion.System,
         ));
 
-        let hapticTimer: ReturnType<typeof setTimeout> | null = null;
-        if (transfer.target === "whole" && Date.now() - lastMoneyHapticAt.current >= MONEY_HAPTIC_COOLDOWN) {
-            hapticTimer = setTimeout(() => {
-                lastMoneyHapticAt.current = Date.now();
-                playMoneyLanding();
-            }, MONEY_IMPACT_DELAY);
-        }
-
         return () => {
             cancelled = true;
-            if (hapticTimer) clearTimeout(hapticTimer);
+            hapticTimers.forEach(clearTimeout);
         };
     }, [centsTargetRef, counterScale, playMoneyLanding, transfer, wholeTargetRef]);
 

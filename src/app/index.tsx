@@ -1,4 +1,5 @@
 import { StatusBar } from "expo-status-bar";
+import { useIsFocused } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Platform, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -53,6 +54,7 @@ function firstChangedDigitIndex(previousValue: number, nextValue: number) {
 }
 
 export default function EarningsScreen() {
+    const isFocused = useIsFocused();
     const insets = useSafeAreaInsets();
     const { isDark } = useEarningsTheme();
     const { t } = useI18n();
@@ -114,6 +116,16 @@ export default function EarningsScreen() {
         if (!ready) return;
 
         const calculatedCents = Math.round(calculatedTotal * 100);
+        if (!isFocused) {
+            if (updateTimer.current) {
+                clearTimeout(updateTimer.current);
+                updateTimer.current = null;
+            }
+            initializedDisplay.current = true;
+            syncDisplayedTotal(calculatedCents);
+            return;
+        }
+
         if (!initializedDisplay.current) {
             initializedDisplay.current = true;
             syncDisplayedTotal(calculatedCents);
@@ -166,7 +178,7 @@ export default function EarningsScreen() {
             updateTimer.current = null;
             updateDisplayedTotal(calculatedCents);
         }, MONEY_IMPACT_DELAY);
-    }, [calculatedTotal, now, ready, sources, syncDisplayedTotal, updateDisplayedTotal]);
+    }, [calculatedTotal, isFocused, now, ready, sources, syncDisplayedTotal, updateDisplayedTotal]);
 
     useEffect(() => () => {
         if (updateTimer.current) clearTimeout(updateTimer.current);

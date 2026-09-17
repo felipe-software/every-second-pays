@@ -29,13 +29,17 @@ function UpDownChevron({ color }: { color: string }) {
     );
 }
 
-export function LanguageMenu({ preference, disabled, onChange }: LanguageMenuProps) {
+export function LanguageMenu({ preference, disabled, onOpen, onChange }: LanguageMenuProps) {
     const [open, setOpen] = useState(false);
     const { t } = useI18n();
     const { colors, isDark } = useEarningsTheme();
     const { width } = useWindowDimensions();
     const menuWidth = Math.min(width, 430) - 44;
     const selected = LANGUAGE_OPTIONS.find((option) => option.value === preference)!;
+    const openMenu = () => {
+        onOpen();
+        setOpen(true);
+    };
 
     const trigger = (
         <Pressable
@@ -44,7 +48,7 @@ export function LanguageMenu({ preference, disabled, onChange }: LanguageMenuPro
             accessibilityRole="button"
             accessibilityState={{ disabled, expanded: open }}
             disabled={disabled}
-            onPress={() => setOpen(true)}
+            onPress={openMenu}
             className="min-h-[58px] flex-row items-center gap-2.5 px-4"
             style={{ width: menuWidth }}
         >

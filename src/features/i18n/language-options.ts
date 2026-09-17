@@ -13,5 +13,6 @@ export const LANGUAGE_OPTIONS = [
 export type LanguageMenuProps = {
     preference: LanguagePreference;
     disabled: boolean;
+    onOpen: () => void;
     onChange: (value: LanguagePreference, origin?: ThemeTransitionOrigin) => void;
 };

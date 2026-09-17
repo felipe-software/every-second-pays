@@ -8,14 +8,18 @@ import { useEarningsTheme } from "@/features/earnings/theme";
 import { useI18n } from "./i18n";
 import { LANGUAGE_OPTIONS, type LanguageMenuProps } from "./language-options";
 
-export function LanguageMenu({ preference, disabled, onChange }: LanguageMenuProps) {
+export function LanguageMenu({ preference, disabled, onOpen, onChange }: LanguageMenuProps) {
     const { t } = useI18n();
     const { colors } = useEarningsTheme();
     const [open, setOpen] = useState(false);
     const selected = LANGUAGE_OPTIONS.find((option) => option.value === preference)!;
+    const openMenu = () => {
+        onOpen();
+        setOpen(true);
+    };
     return (
         <>
-            <Pressable testID="language-menu" accessibilityRole="button" accessibilityState={{ disabled, expanded: open }} disabled={disabled} onPress={() => setOpen(true)} className="min-h-[58px] flex-row items-center gap-2.5 px-4">
+            <Pressable testID="language-menu" accessibilityRole="button" accessibilityState={{ disabled, expanded: open }} disabled={disabled} onPress={openMenu} className="min-h-[58px] flex-row items-center gap-2.5 px-4">
                 <Text className="flex-1 font-sans text-[16px] font-medium text-ink">{t("settings.language")}</Text>
                 {selected.flag ? <Image source={selected.flag} style={{ width: 24, height: 24 }} /> : <SymbolView name="globe" size={22} tintColor={colors.muted} />}
                 <Text className="font-sans text-[14px] text-muted">{selected.label ?? t("settings.languageSystem")}</Text>

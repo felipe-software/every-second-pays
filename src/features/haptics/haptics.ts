@@ -12,10 +12,10 @@ const MONEY_LANDING_PATTERN: Pattern = {
     },
 };
 
-const PRELOADED_PRESETS = ["Cleave", "Push", "Snap", "Strike", "Wisp"];
+const PRELOADED_PRESETS = ["Anvil", "Buzz", "Firecracker", "Strike", "Wisp"];
 
 export const appHaptics = {
-    // Used when selecting palettes, chips, tokens, work hours, and time adjustments.
+    // Used for language menus, palettes, chips, tokens, work hours, and time adjustments.
     selection: Presets.wisp,
     // Used when switching between the system, light, and dark appearance modes.
     themeMode: Presets.anvil,
@@ -37,6 +37,6 @@ export function useHapticsWarmup() {
 }
 
 export function useMoneyLandingHaptic() {
-    // Used when a whole monetary unit lands in the animated earnings counter.
+    // Used once per animated note landing in either the whole or cents counter.
     return usePatternComposer(MONEY_LANDING_PATTERN).play;
 }
