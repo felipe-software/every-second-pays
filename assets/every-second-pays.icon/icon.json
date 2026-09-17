@@ -46,8 +46,16 @@
     {
       "layers": [
         {
+          "image-name": "money-mark.svg",
+          "name": "Currency Mark",
+          "position": {
+            "scale": 0.9,
+            "translation-in-points": [0, 0]
+          }
+        },
+        {
           "image-name": "money-band.svg",
-          "name": "Band and Mark",
+          "name": "Band",
           "position": {
             "scale": 0.9,
             "translation-in-points": [0, 0]
