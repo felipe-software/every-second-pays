@@ -6,6 +6,7 @@ import Animated, {
     ReduceMotion,
     useAnimatedStyle,
     useSharedValue,
+    withDelay,
     withSequence,
     withSpring,
     withTiming,
@@ -22,12 +23,14 @@ export function SourceRow({
     onPress,
     onValueNodeChange,
     transferId,
+    transferDelay,
 }: {
     source: PaymentSource;
     now: Date;
     onPress: () => void;
     onValueNodeChange: (sourceId: number, node: View | null) => void;
     transferId: number | null;
+    transferDelay: number;
 }) {
     const { t, formatDays, formatMoney, formatTime } = useI18n();
     const shift = currentShift(source, now);
@@ -60,23 +63,27 @@ export function SourceRow({
 
         cancelAnimation(launchPulse);
         launchPulse.set(0);
-        launchPulse.set(withSequence(
+        launchPulse.set(withDelay(
+            transferDelay,
+            withSequence(
+                ReduceMotion.System,
+                withTiming(1, {
+                    duration: 90,
+                    easing: Easing.out(Easing.quad),
+                    reduceMotion: ReduceMotion.System,
+                }),
+                withSpring(0, {
+                    damping: 12,
+                    mass: 0.5,
+                    stiffness: 230,
+                    reduceMotion: ReduceMotion.System,
+                }),
+            ),
             ReduceMotion.System,
-            withTiming(1, {
-                duration: 90,
-                easing: Easing.out(Easing.quad),
-                reduceMotion: ReduceMotion.System,
-            }),
-            withSpring(0, {
-                damping: 12,
-                mass: 0.5,
-                stiffness: 230,
-                reduceMotion: ReduceMotion.System,
-            }),
         ));
 
         return () => cancelAnimation(launchPulse);
-    }, [launchPulse, transferId]);
+    }, [launchPulse, transferDelay, transferId]);
 
     return (
         <Pressable

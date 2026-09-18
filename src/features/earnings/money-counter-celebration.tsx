@@ -22,8 +22,11 @@ export const MONEY_IMPACT_DELAY = 480;
 
 type MoneyTransferBase = {
     id: number;
-    origin: View;
-    sourceId: number;
+    origins: {
+        delay: number;
+        node: View;
+        sourceId: number;
+    }[];
 };
 
 export type MoneyTransfer = MoneyTransferBase & (
@@ -55,6 +58,7 @@ type FlyingNote = {
 
 type MoneyBurst = {
     id: number;
+    sourceId: number;
     notes: FlyingNote[];
 };
 
@@ -81,6 +85,8 @@ function noteCountFor(target: MoneyTransfer["target"]) {
 
 function createMoneyBurst(
     transfer: MoneyTransfer,
+    sourceId: number,
+    sourceDelay: number,
     origin: MeasuredRect,
     target: MeasuredRect,
     stage: MeasuredRect,
@@ -98,7 +104,7 @@ function createMoneyBurst(
 
         return {
             id: index,
-            delay: index * randomBetween(32, 52),
+            delay: sourceDelay + index * randomBetween(32, 52),
             size: randomBetween(72, 96),
             targetX: targetX - stage.x,
             targetY: targetY - stage.y,
@@ -112,7 +118,7 @@ function createMoneyBurst(
         };
     });
 
-    return { id: transfer.id, notes };
+    return { id: transfer.id, sourceId, notes };
 }
 
 const FlyingMoney = memo(function FlyingMoney({ note }: { note: FlyingNote }) {
@@ -203,7 +209,7 @@ export function MoneyCounterCelebration({
     const isFocused = useIsFocused();
     const isFocusedRef = useRef(isFocused);
     const stageRef = useRef<View>(null);
-    const [burst, setBurst] = useState<MoneyBurst | null>(null);
+    const [bursts, setBursts] = useState<MoneyBurst[]>([]);
     const playMoneyLanding = useMoneyLandingHaptic();
     const counterScale = useSharedValue(1);
     const counterStyle = useAnimatedStyle(() => ({
@@ -224,19 +230,28 @@ export function MoneyCounterCelebration({
         let cancelled = false;
         const hapticTimers: ReturnType<typeof setTimeout>[] = [];
         void Promise.all([
-            measureInWindow(transfer.origin),
+            Promise.all(transfer.origins.map(({ node }) => measureInWindow(node))),
             measureInWindow(targetNode),
             measureInWindow(stageNode),
-        ]).then(([origin, target, stage]) => {
+        ]).then(([origins, target, stage]) => {
             if (cancelled) return;
-            const nextBurst = createMoneyBurst(transfer, origin, target, stage);
-            setBurst(nextBurst);
+            const nextBursts = origins.map((origin, index) => createMoneyBurst(
+                transfer,
+                transfer.origins[index].sourceId,
+                transfer.origins[index].delay,
+                origin,
+                target,
+                stage,
+            ));
+            setBursts(nextBursts);
 
             if (!isFocusedRef.current) return;
-            nextBurst.notes.forEach((note) => {
-                hapticTimers.push(setTimeout(() => {
-                    if (isFocusedRef.current) playMoneyLanding();
-                }, MONEY_IMPACT_DELAY + note.delay));
+            nextBursts.forEach((burst) => {
+                burst.notes.forEach((note) => {
+                    hapticTimers.push(setTimeout(() => {
+                        if (isFocusedRef.current) playMoneyLanding();
+                    }, MONEY_IMPACT_DELAY + note.delay));
+                });
             });
         });
 
@@ -279,9 +294,9 @@ export function MoneyCounterCelebration({
                 style={styles.burstLayer}
                 testID="money-burst-layer"
             >
-                {burst?.notes.map((note) => (
-                    <FlyingMoney key={`${burst.id}-${note.id}`} note={note} />
-                ))}
+                {bursts.flatMap((burst) => burst.notes.map((note) => (
+                    <FlyingMoney key={`${burst.id}-${burst.sourceId}-${note.id}`} note={note} />
+                )))}
             </View>
             <Animated.View testID="earnings-counter" style={[styles.counter, counterStyle]}>
                 {children}
