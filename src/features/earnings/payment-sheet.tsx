@@ -1,6 +1,6 @@
 import { TrueSheet } from "@lodev09/react-native-true-sheet";
 import { useMemo, useRef, useState } from "react";
-import { Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { Platform, ScrollView, Text, View } from "react-native";
 
 import { useI18n } from "@/features/i18n/i18n";
 import { appHaptics } from "@/features/haptics/haptics";
@@ -18,6 +18,7 @@ import {
 import { PaymentEditor, type PaymentToken } from "./payment-editor";
 import { PrimaryButton } from "./payment-sheet-controls";
 import { PaymentSummary } from "./payment-summary";
+import { SheetHeaderButton } from "./sheet-header-button";
 import { useEarningsTheme } from "./theme";
 
 export { PrimaryButton } from "./payment-sheet-controls";
@@ -122,30 +123,27 @@ export function PaymentSheet({ source, now, saving = false, onDismiss, onDelete,
                         {t(source ? "payment.editTitle" : "payment.newTitle")}
                     </Text>
                     {source ? (
-                        <Pressable
-                            accessibilityRole="button"
+                        <SheetHeaderButton
                             accessibilityLabel={t("payment.deleteAccessibility")}
                             disabled={saving}
+                            kind="delete"
+                            label={t("payment.delete")}
                             onPress={() => {
                                 appHaptics.destructiveAction();
                                 void deleteAndDismiss();
                             }}
-                            className="h-9 justify-center rounded-[11px] bg-danger/10 px-3.5 active:opacity-65"
-                        >
-                            <Text className="font-sans text-[13px] font-semibold text-danger">{t("payment.delete")}</Text>
-                        </Pressable>
+                            testID="delete-source"
+                        />
                     ) : null}
-                    <Pressable
+                    <SheetHeaderButton
                         accessibilityLabel={t("common.close")}
-                        accessibilityRole="button"
+                        kind="close"
                         onPress={() => {
                             appHaptics.dismiss();
                             dismiss();
                         }}
-                        className="h-9 w-9 items-center justify-center rounded-full bg-soft/80 active:opacity-65"
-                    >
-                        <Text className="mt-[-2px] font-sans text-[21px] text-muted">×</Text>
-                    </Pressable>
+                        testID="close-payment-sheet"
+                    />
                 </View>
             }
             footer={
