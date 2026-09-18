@@ -13,6 +13,7 @@ import {
     type ThemeTransitionOrigin,
     useReduceMotion,
 } from "@/features/appearance/theme-transition";
+import { DevJobControls } from "@/features/earnings/dev-job-controls";
 import { EarningsBackground } from "@/features/earnings/earnings-background";
 import { useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
@@ -77,6 +78,8 @@ export default function SettingsScreen() {
                     />
 
                     <LanguageSelector reduceMotion={reduceMotion} />
+
+                    <DevJobControls />
 
                     {loadError || saveError ? (
                         <View className="mt-5 flex-row items-center gap-2 px-1">

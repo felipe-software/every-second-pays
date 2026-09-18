@@ -8,7 +8,7 @@ import { EarningsBackground } from "@/features/earnings/earnings-background";
 import { EarningsHeader } from "@/features/earnings/earnings-header";
 import { MONEY_IMPACT_DELAY, type MoneyTransfer } from "@/features/earnings/money-counter-celebration";
 import { EmptySourcesCallout, EmptySourcesMessage } from "@/features/earnings/empty-sources";
-import { type PaymentDraft, type PaymentSource, currentShift, earnedToday, ratePerSecond } from "@/features/earnings/model";
+import { type PaymentDraft, currentShift, earnedToday, ratePerSecond } from "@/features/earnings/model";
 import { usePaymentComposerStore } from "@/features/earnings/payment-composer-store";
 import { PaymentSheet, PrimaryButton } from "@/features/earnings/payment-sheet";
 import { SourceRow } from "@/features/earnings/source-row";
@@ -28,19 +28,8 @@ function useLiveClock() {
 }
 
 const MIN_TRANSFER_INTERVAL = 950;
-
-function pickSourceByRate(sources: PaymentSource[]) {
-    const rates = sources.map((source) => ratePerSecond(source));
-    const totalRate = rates.reduce((sum, rate) => sum + rate, 0);
-    let cursor = Math.random() * totalRate;
-
-    for (let index = 0; index < sources.length; index += 1) {
-        cursor -= rates[index];
-        if (cursor <= 0) return sources[index];
-    }
-
-    return sources[sources.length - 1];
-}
+const SOURCE_TRANSFER_STAGGER = 90;
+const MAX_SOURCE_TRANSFER_STAGGER = 450;
 
 function firstChangedDigitIndex(previousValue: number, nextValue: number) {
     const previous = String(previousValue);
@@ -89,7 +78,8 @@ export default function EarningsScreen() {
     const displayedCentsRef = useRef(0);
     const lastTransferAt = useRef(0);
     const nextTransferId = useRef(0);
-    const updateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const updateTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+    const pendingTargetCents = useRef<number | null>(null);
     const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const initializedDisplay = useRef(false);
     const sourceValueNodes = useRef(new Map<number, View>());
@@ -112,15 +102,18 @@ export default function EarningsScreen() {
         }, 0);
     }, [updateDisplayedTotal]);
 
+    const clearUpdateTimers = useCallback(() => {
+        updateTimers.current.forEach(clearTimeout);
+        updateTimers.current = [];
+        pendingTargetCents.current = null;
+    }, []);
+
     useEffect(() => {
         if (!ready) return;
 
         const calculatedCents = Math.round(calculatedTotal * 100);
         if (!isFocused) {
-            if (updateTimer.current) {
-                clearTimeout(updateTimer.current);
-                updateTimer.current = null;
-            }
+            clearUpdateTimers();
             initializedDisplay.current = true;
             syncDisplayedTotal(calculatedCents);
             return;
@@ -132,15 +125,21 @@ export default function EarningsScreen() {
             return;
         }
 
+        if (updateTimers.current.length
+            && pendingTargetCents.current != null
+            && calculatedCents < pendingTargetCents.current) {
+            clearUpdateTimers();
+        }
+
         const displayedCents = displayedCentsRef.current;
         if (calculatedCents <= displayedCents) {
-            if (calculatedCents < displayedCents && !updateTimer.current) {
+            if (calculatedCents < displayedCents) {
                 syncDisplayedTotal(calculatedCents);
             }
             return;
         }
 
-        if (updateTimer.current || Date.now() - lastTransferAt.current < MIN_TRANSFER_INTERVAL) return;
+        if (updateTimers.current.length || Date.now() - lastTransferAt.current < MIN_TRANSFER_INTERVAL) return;
 
         const activeSources = sources.filter((source) => currentShift(source, now));
         if (!activeSources.length) {
@@ -148,9 +147,16 @@ export default function EarningsScreen() {
             return;
         }
 
-        const source = pickSourceByRate(activeSources);
-        const origin = sourceValueNodes.current.get(source.id);
-        if (!origin) {
+        const origins = activeSources.flatMap((source, index) => {
+            const node = sourceValueNodes.current.get(source.id);
+            return node ? [{
+                delay: Math.min(index * SOURCE_TRANSFER_STAGGER, MAX_SOURCE_TRANSFER_STAGGER),
+                node,
+                rate: ratePerSecond(source),
+                sourceId: source.id,
+            }] : [];
+        });
+        if (!origins.length) {
             syncDisplayedTotal(calculatedCents);
             return;
         }
@@ -169,21 +175,32 @@ export default function EarningsScreen() {
 
         setMoneyTransfer({
             id: nextTransferId.current,
-            origin,
-            sourceId: source.id,
+            origins: origins.map(({ delay, node, sourceId }) => ({ delay, node, sourceId })),
             ...transferTarget,
         });
 
-        updateTimer.current = setTimeout(() => {
-            updateTimer.current = null;
-            updateDisplayedTotal(calculatedCents);
-        }, MONEY_IMPACT_DELAY);
-    }, [calculatedTotal, isFocused, now, ready, sources, syncDisplayedTotal, updateDisplayedTotal]);
+        const totalRate = origins.reduce((sum, origin) => sum + origin.rate, 0);
+        const centsToAdd = calculatedCents - displayedCents;
+        let cumulativeRate = 0;
+        pendingTargetCents.current = calculatedCents;
+        updateTimers.current = origins.map((origin, index) => {
+            cumulativeRate += origin.rate;
+            const nextCents = index === origins.length - 1
+                ? calculatedCents
+                : displayedCents + Math.round(centsToAdd * cumulativeRate / totalRate);
+            const timer = setTimeout(() => {
+                updateTimers.current = updateTimers.current.filter((item) => item !== timer);
+                if (!updateTimers.current.length) pendingTargetCents.current = null;
+                updateDisplayedTotal(nextCents);
+            }, MONEY_IMPACT_DELAY + origin.delay);
+            return timer;
+        });
+    }, [calculatedTotal, clearUpdateTimers, isFocused, now, ready, sources, syncDisplayedTotal, updateDisplayedTotal]);
 
     useEffect(() => () => {
-        if (updateTimer.current) clearTimeout(updateTimer.current);
+        clearUpdateTimers();
         if (syncTimer.current) clearTimeout(syncTimer.current);
-    }, []);
+    }, [clearUpdateTimers]);
 
     const openNewSource = () => {
         setEditingId(null);
@@ -263,7 +280,10 @@ export default function EarningsScreen() {
                                     setSheetOpen(true);
                                 }}
                                 onValueNodeChange={registerSourceValueNode}
-                                transferId={moneyTransfer?.sourceId === source.id ? moneyTransfer.id : null}
+                                transferId={moneyTransfer?.origins.some((origin) => origin.sourceId === source.id)
+                                    ? moneyTransfer.id
+                                    : null}
+                                transferDelay={moneyTransfer?.origins.find((origin) => origin.sourceId === source.id)?.delay ?? 0}
                             />
                         ))}
                     </ScrollView>
