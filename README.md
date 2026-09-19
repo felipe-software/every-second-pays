@@ -1,3 +1,8 @@
-# Welcome to your Expo app 👋
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/every-second-pays-ios-dark.png">
+    <img src="./assets/every-second-pays-ios-light.png" alt="Every Second Pays app icon" width="240">
+  </picture>
+</p>
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+<h1 align="center">Every Second Pays</h1>

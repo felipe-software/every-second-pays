@@ -47,7 +47,7 @@
       "layers": [
         {
           "image-name": "money-mark.svg",
-          "name": "Currency Mark",
+          "name": "Currency Mark and Circle",
           "position": {
             "scale": 0.9,
             "translation-in-points": [0, 0]
