@@ -29,6 +29,7 @@ const plugins: NonNullable<ExpoConfig["plugins"]> = [
         },
     ],
     "expo-asset",
+    "./plugins/with-native-predictive-back",
 ];
 
 if (IS_DEVELOPMENT) {
