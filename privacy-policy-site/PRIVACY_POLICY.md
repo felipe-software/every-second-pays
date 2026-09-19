@@ -1,3 +1,9 @@
+---
+layout: default
+title: Privacy Policy
+permalink: /
+---
+
 # Privacy Policy
 
 Effective date: September 19, 2026
