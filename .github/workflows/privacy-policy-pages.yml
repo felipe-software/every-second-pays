@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
     paths:
-      - PRIVACY_POLICY.md
       - privacy-policy-site/**
       - .github/workflows/privacy-policy-pages.yml
   workflow_dispatch:
@@ -30,11 +29,6 @@ jobs:
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-
-      - name: Prepare privacy policy
-        run: |
-          printf '%s\n' '---' 'layout: default' 'title: Privacy Policy' '---' '' > privacy-policy-site/index.md
-          cat PRIVACY_POLICY.md >> privacy-policy-site/index.md
 
       - name: Build with Jekyll
         uses: actions/jekyll-build-pages@v1
