@@ -29,6 +29,16 @@ const plugins: NonNullable<ExpoConfig["plugins"]> = [
         },
     ],
     "expo-asset",
+    [
+        "expo-build-properties",
+        {
+            android: {
+                enableMinifyInReleaseBuilds: true,
+                buildArchs: ["armeabi-v7a", "arm64-v8a"],
+            },
+        },
+    ],
+    "@rnrepo/expo-config-plugin",
 ];
 
 if (IS_DEVELOPMENT) {
