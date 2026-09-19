@@ -58,9 +58,9 @@
     },
   },
   "patchedDependencies": {
-    "expo-blur@57.0.3": "patches/expo-blur@57.0.3.patch",
-    "react-native-jelly-tabs@0.0.14": "patches/react-native-jelly-tabs@0.0.14.patch",
-    "@expo/ui@57.0.19": "patches/@expo%2Fui@57.0.19.patch",
+    "expo-blur@57.0.3": "src/patches/expo-blur@57.0.3.patch",
+    "react-native-jelly-tabs@0.0.14": "src/patches/react-native-jelly-tabs@0.0.14.patch",
+    "@expo/ui@57.0.19": "src/patches/@expo%2Fui@57.0.19.patch",
   },
   "packages": {
     "@babel/code-frame": ["@babel/code-frame@7.29.7", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.29.7", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw=="],

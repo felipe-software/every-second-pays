@@ -27,9 +27,9 @@ mock.module("expo-localization", () => ({
     useCalendars: () => calendars,
 }));
 
-const { I18nProvider, useI18n } = await import("../src/features/i18n/i18n");
-const { translations } = await import("../src/features/i18n/translations");
-const { useLanguageStore: languageStore } = await import("../src/features/i18n/store");
+const { I18nProvider, useI18n } = await import("../features/i18n/i18n");
+const { translations } = await import("../features/i18n/translations");
+const { useLanguageStore: languageStore } = await import("../features/i18n/store");
 const initialLanguageState = languageStore.getInitialState();
 const resetLanguage = () => languageStore.setState({ preference: "system", hydrated: false, loading: false, saving: false, loadError: false });
 

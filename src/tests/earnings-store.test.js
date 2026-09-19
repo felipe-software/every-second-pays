@@ -26,8 +26,8 @@ mock.module("expo-sqlite", () => ({
     }),
 }));
 
-const { useEarningsStore: store } = await import("../src/features/earnings/store");
-const { useAppearanceStore: appearanceStore } = await import("../src/features/appearance/store");
+const { useEarningsStore: store } = await import("../features/earnings/store");
+const { useAppearanceStore: appearanceStore } = await import("../features/appearance/store");
 const draft = {
     name: "Client's salary",
     amount: "5200",

@@ -17,8 +17,8 @@ import { useEarningsTheme } from "@/features/earnings/theme";
 import { useI18n } from "./i18n";
 import { LANGUAGE_OPTIONS, type LanguageMenuProps } from "./language-options";
 
-const GLOBE_ICON = require("../../../assets/icons/globe.xml");
-const CHECK_ICON = require("../../../assets/icons/check.xml");
+const GLOBE_ICON = require("../../assets/icons/globe.xml");
+const CHECK_ICON = require("../../assets/icons/check.xml");
 const MENU_RADIUS = 24;
 
 function UpDownChevron({ color }: { color: string }) {

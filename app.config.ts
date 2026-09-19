@@ -9,7 +9,7 @@ const plugins: NonNullable<ExpoConfig["plugins"]> = [
         "expo-splash-screen",
         {
             backgroundColor: "#F0F7F3",
-            image: "./assets/images/icon.png",
+            image: "./src/assets/images/icon.png",
             imageWidth: 200,
             resizeMode: "contain",
             dark: {
@@ -55,25 +55,25 @@ export default (): ExpoConfig => ({
     slug: "every-second-pays",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/icon.png",
+    icon: "./src/assets/images/icon.png",
     scheme: IS_DEVELOPMENT ? "everysecondpays-dev" : "everysecondpays",
     userInterfaceStyle: "automatic",
     ios: {
-        icon: "./assets/every-second-pays.icon",
+        icon: "./src/assets/every-second-pays.icon",
         bundleIdentifier: IS_DEVELOPMENT ? `${APP_IDENTIFIER}.dev` : APP_IDENTIFIER,
     },
     android: {
         adaptiveIcon: {
             backgroundColor: "#366E38",
-            foregroundImage: "./assets/images/android-icon-foreground.png",
-            backgroundImage: "./assets/images/android-icon-background.png",
+            foregroundImage: "./src/assets/images/android-icon-foreground.png",
+            backgroundImage: "./src/assets/images/android-icon-background.png",
         },
         predictiveBackGestureEnabled: true,
         package: IS_DEVELOPMENT ? `${APP_IDENTIFIER}.dev` : APP_IDENTIFIER,
     },
     web: {
         output: "static",
-        favicon: "./assets/images/favicon.png",
+        favicon: "./src/assets/images/favicon.png",
     },
     plugins,
     experiments: {
