@@ -5,7 +5,7 @@ import { useI18n } from "@/features/i18n/i18n";
 import type { TranslationKey } from "@/features/i18n/translations";
 
 import { FREQUENCIES, HOUR_PRESETS, type Frequency, type PaymentDraft, type Shift, hoursPerDay, sameShifts } from "./model";
-import { ChoiceChip, HoursChoice, NativeField, TimeAdjuster } from "./payment-sheet-controls";
+import { ChoiceChip, HoursChoice, NativeField, SystemTimeInput } from "./payment-sheet-controls";
 import { useEarningsTheme } from "./theme";
 
 export type PaymentToken = "name" | "amount" | "frequency" | "days" | "hours" | "when";
@@ -192,17 +192,18 @@ export function PaymentEditor({
                 <View className="gap-3 pt-1">
                     {draft.shifts.map((shift, index) => (
                         <View key={`${index}-${shift.start}-${shift.end}`} className="flex-row items-end gap-2">
-                            <TimeAdjuster
+                            <SystemTimeInput
                                 label={t("payment.start")}
                                 value={shift.start}
-                                decrease={() => patchShift(index, { start: Math.max(0, shift.start - 15) })}
-                                increase={() => patchShift(index, { start: Math.min(shift.end - 15, shift.start + 15) })}
+                                onChange={(start) => patchShift(index, { start: Math.min(shift.end - 15, start) })}
                             />
-                            <TimeAdjuster
+                            <SystemTimeInput
                                 label={t("payment.end")}
                                 value={shift.end}
-                                decrease={() => patchShift(index, { end: Math.max(shift.start + 15, shift.end - 15) })}
-                                increase={() => patchShift(index, { end: Math.min(1440, shift.end + 15) })}
+                                onChange={(selectedEnd) => {
+                                    const end = selectedEnd === 0 ? 1440 : selectedEnd;
+                                    patchShift(index, { end: Math.max(shift.start + 15, end) });
+                                }}
                             />
                             <Pressable
                                 accessibilityLabel={t("payment.removeTimeBlock")}

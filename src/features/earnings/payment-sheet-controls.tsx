@@ -1,3 +1,6 @@
+import { DateTimePicker } from "@expo/ui/community/datetime-picker";
+import { useCalendars } from "expo-localization";
+import { useState } from "react";
 import { Platform, Pressable, Text, TextInput, View } from "react-native";
 
 import { useI18n } from "@/features/i18n/i18n";
@@ -173,35 +176,58 @@ export function HoursChoice({ label, detail, shifts, selected, onPress }: { labe
     );
 }
 
-export function TimeAdjuster({ label, value, decrease, increase }: { label: string; value: number; decrease: () => void; increase: () => void }) {
-    const { t, formatTime } = useI18n();
+function dateFromMinutes(totalMinutes: number) {
+    const minutes = ((totalMinutes % 1440) + 1440) % 1440;
+    return new Date(2024, 0, 1, Math.floor(minutes / 60), minutes % 60);
+}
+
+export function SystemTimeInput({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+    const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
+    const { locale, formatTime } = useI18n();
+    const { colors, isDark } = useEarningsTheme();
+    const uses24HourClock = useCalendars()[0]?.uses24hourClock;
+    const picker = (
+        <DateTimePicker
+            value={dateFromMinutes(value)}
+            mode="time"
+            display="compact"
+            presentation="dialog"
+            locale={locale.replace("-", "_")}
+            is24Hour={uses24HourClock ?? undefined}
+            accentColor={colors.accentDeep}
+            themeVariant={isDark ? "dark" : "light"}
+            onDismiss={() => setAndroidPickerOpen(false)}
+            onValueChange={(_, date) => {
+                setAndroidPickerOpen(false);
+                appHaptics.selection();
+                onChange(date.getHours() * 60 + date.getMinutes());
+            }}
+            style={Platform.OS === "ios" ? { width: "100%", height: 44 } : undefined}
+        />
+    );
 
     return (
         <View className="min-w-0 flex-1 gap-1.5">
             <Text className="font-sans text-[10px] font-semibold tracking-[1.2px] text-muted uppercase">{label}</Text>
-            <View className="h-11 flex-row items-center rounded-[13px] bg-field">
+            {Platform.OS === "ios" ? (
+                <View className="h-11 overflow-hidden rounded-[13px] bg-field">
+                    {picker}
+                </View>
+            ) : (
                 <Pressable
-                    accessibilityLabel={t("payment.earlier", { label })}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${label}: ${formatTime(value)}`}
+                    accessibilityState={{ expanded: androidPickerOpen }}
                     onPress={() => {
                         appHaptics.selection();
-                        decrease();
+                        setAndroidPickerOpen(true);
                     }}
-                    className="h-11 w-10 items-center justify-center active:opacity-60"
+                    className="h-11 items-center justify-center rounded-[13px] bg-field active:opacity-60"
                 >
-                    <Text className="font-sans text-[18px] text-muted">−</Text>
+                    <Text className="font-sans text-[13px] font-semibold text-ink">{formatTime(value)}</Text>
                 </Pressable>
-                <Text className="min-w-0 flex-1 text-center font-sans text-[13px] font-semibold text-ink">{formatTime(value)}</Text>
-                <Pressable
-                    accessibilityLabel={t("payment.later", { label })}
-                    onPress={() => {
-                        appHaptics.selection();
-                        increase();
-                    }}
-                    className="h-11 w-10 items-center justify-center active:opacity-60"
-                >
-                    <Text className="font-sans text-[18px] text-muted">+</Text>
-                </Pressable>
-            </View>
+            )}
+            {Platform.OS === "android" && androidPickerOpen ? picker : null}
         </View>
     );
 }

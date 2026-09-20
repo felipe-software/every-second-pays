@@ -119,6 +119,11 @@ export default function EarningsScreen() {
             return;
         }
 
+        // Saving updates the source list before the native sheet finishes dismissing.
+        // Wait until the sheet is gone so newly mounted source values have valid window
+        // coordinates and the money flight is visible instead of playing behind it.
+        if (sheetOpen) return;
+
         if (!initializedDisplay.current) {
             initializedDisplay.current = true;
             syncDisplayedTotal(calculatedCents);
@@ -195,7 +200,7 @@ export default function EarningsScreen() {
             }, MONEY_IMPACT_DELAY + origin.delay);
             return timer;
         });
-    }, [calculatedTotal, clearUpdateTimers, isFocused, now, ready, sources, syncDisplayedTotal, updateDisplayedTotal]);
+    }, [calculatedTotal, clearUpdateTimers, isFocused, now, ready, sheetOpen, sources, syncDisplayedTotal, updateDisplayedTotal]);
 
     useEffect(() => () => {
         clearUpdateTimers();
