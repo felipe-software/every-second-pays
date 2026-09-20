@@ -13,12 +13,14 @@
     },
     "production": {
       "bun": "1.4.2",
+      "autoIncrement": true,
       "env": {
         "APP_VARIANT": "production"
       }
     },
     "screenshots": {
       "extends": "production",
+      "autoIncrement": false,
       "distribution": "internal",
       "android": {
         "buildType": "apk"
