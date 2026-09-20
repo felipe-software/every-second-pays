@@ -43,3 +43,12 @@ example
 /android
 
 /design
+
+# Goldie generated assets and local release builds
+/goldie/build/
+/goldie/out/
+/goldie/goldie.design.json
+
+# Local agent tooling
+/.agents/
+/skills-lock.json

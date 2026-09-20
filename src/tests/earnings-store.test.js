@@ -37,7 +37,7 @@ const draft = {
 };
 const resetMemory = () => store.setState({ sources: [], ready: false, loading: false, saving: false, loadError: false });
 const resetAppearance = () => appearanceStore.setState({
-    appearance: { mode: "system", palette: "orange" },
+    appearance: { mode: "system", palette: "green" },
     hydrated: false,
     loading: false,
     saving: false,
@@ -145,7 +145,7 @@ test("restores the previous appearance when persistence fails", async () => {
     await expect(appearanceStore.getState().update({ mode: "dark" })).rejects.toThrow("write failed");
 
     expect(appearanceStore.getState()).toMatchObject({
-        appearance: { mode: "system", palette: "orange" },
+        appearance: { mode: "system", palette: "green" },
         saving: false,
     });
 });
@@ -153,7 +153,7 @@ test("restores the previous appearance when persistence fails", async () => {
 test("does not persist an unchanged appearance", async () => {
     await appearanceStore.getState().load();
 
-    await appearanceStore.getState().update({ mode: "system", palette: "orange" });
+    await appearanceStore.getState().update({ mode: "system", palette: "green" });
 
     expect(sqlite.query("SELECT * FROM app_preferences").all()).toEqual([]);
     expect(appearanceStore.getState().saving).toBe(false);

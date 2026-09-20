@@ -3,42 +3,42 @@
 
 @theme {
     --font-sans: "Archivo";
-    --color-accent: #e8763a;
+    --color-accent: #58ad85;
 }
 
 @layer theme {
     :root {
         @variant light {
-            --color-canvas: #fcf3ec;
-            --color-sheet: #f5eadf;
-            --color-raised: #f1e5d8;
-            --color-row: #f1e8e1;
-            --color-active: #f9dfd0;
-            --color-field: #e5cfb9;
-            --color-soft: #e7d6c6;
-            --color-choice: #f8f2eb;
-            --color-token-active: #f3d7c7;
-            --color-track: #dccfc3;
-            --color-ink: #21180b;
-            --color-muted: #4b3c2d;
-            --color-accent-deep: #8e3c16;
+            --color-canvas: #f0f7f3;
+            --color-sheet: #e5efe9;
+            --color-raised: #dfeae4;
+            --color-row: #e5ece8;
+            --color-active: #d8eae0;
+            --color-field: #c6d9ce;
+            --color-soft: #cfddd5;
+            --color-choice: #eff5f1;
+            --color-token-active: #d0e3d8;
+            --color-track: #cad5cf;
+            --color-ink: #131c17;
+            --color-muted: #36433c;
+            --color-accent-deep: #28664a;
             --color-danger: #a33a26;
         }
 
         @variant dark {
-            --color-canvas: #1d1513;
-            --color-sheet: #2f2321;
-            --color-row: #312a28;
-            --color-active: #522e1d;
-            --color-raised: #3a2d2b;
-            --color-field: #382c2b;
-            --color-soft: #403332;
-            --color-choice: #493c3a;
-            --color-token-active: #5d3528;
-            --color-track: #695b57;
-            --color-ink: #f4ede8;
-            --color-muted: #b0a093;
-            --color-accent-deep: #ef9f75;
+            --color-canvas: #141816;
+            --color-sheet: #212824;
+            --color-row: #292d2b;
+            --color-active: #263f32;
+            --color-raised: #2b332f;
+            --color-field: #2a312d;
+            --color-soft: #313935;
+            --color-choice: #3a423d;
+            --color-token-active: #2d483a;
+            --color-track: #59615c;
+            --color-ink: #ebf0ed;
+            --color-muted: #9aa7a0;
+            --color-accent-deep: #8cc4a7;
             --color-danger: #f08a7a;
         }
     }

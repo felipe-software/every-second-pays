@@ -1,0 +1,20 @@
+steps:
+  - echo: Launch a clean release build and configure a realistic work schedule.
+  - launch: software.felipe.everysecondpays
+  - await: { idle: true }
+  - tap: { id: new-source-tab }
+  - await: { visible: { text: New payment source }, timeout: 10000 }
+  - await: { idle: true }
+  - type:
+      into: { text: Company or client }
+      text: Design Studio
+      submit: false
+  - tap: { text: $0 }
+  - type:
+      into: { role: TextField, text: "0" }
+      text: "6500"
+      submit: false
+  - tap: { text: Mon–Fri }
+  - await: { visible: { text: Weekends } }
+  - await: { idle: true }
+  - echo: The schedule editor shows individual days and useful presets.

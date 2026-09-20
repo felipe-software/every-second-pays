@@ -1,0 +1,16 @@
+steps:
+  - echo: Launch the clean release build and open personalization settings.
+  - launch: software.felipe.everysecondpays
+  - await: { idle: true }
+  - tap:
+      id: settings-tab
+  - await: { visible: { text: Accent color }, timeout: 10000 }
+  - await: { idle: true }
+  - echo: Choose a dark theme with the default forest accent.
+  - tap:
+      id: theme-dark
+  - tap:
+      id: palette-green
+  - await: { idle: true }
+  - echo: The settings screen now previews the selected appearance, accent, and
+      language.

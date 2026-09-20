@@ -16,6 +16,13 @@
       "env": {
         "APP_VARIANT": "production"
       }
+    },
+    "screenshots": {
+      "extends": "production",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
     }
   }
 }

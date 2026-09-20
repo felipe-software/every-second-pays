@@ -1,0 +1,32 @@
+steps:
+  - echo: Launch a clean release build in English and wait for the earnings
+      dashboard.
+  - launch: software.felipe.everysecondpays
+  - await: { visible: { text: No payment sources yet }, timeout: 15000 }
+  - await: { idle: true }
+  - echo: On the empty dashboard. Open the payment source composer.
+  - tap:
+      id: new-source-tab
+  - await: { visible: { text: New payment source }, timeout: 10000 }
+  - await: { idle: true }
+  - echo: In the composer. Add a completed one-time project payment.
+  - type:
+      into: { text: Company or client }
+      text: Acme
+      submit: false
+  - tap:
+      text: $0
+  - type:
+      into: { role: TextField, text: "0" }
+      text: "10000"
+      submit: false
+  - echo: Turn this into a completed one-time project payment.
+  - tap:
+      text: per month
+  - tap:
+      text: One-time
+  - tap:
+      text: Add payment
+  - await: { visible: { text: Acme }, timeout: 15000 }
+  - await: { idle: true }
+  - echo: The dashboard now shows a completed payment and today total.

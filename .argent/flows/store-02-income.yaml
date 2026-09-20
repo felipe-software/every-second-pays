@@ -1,0 +1,20 @@
+steps:
+  - echo: Launch a clean release build and compose a realistic recurring income source.
+  - launch: software.felipe.everysecondpays
+  - await: { idle: true }
+  - tap: { id: new-source-tab }
+  - await: { visible: { text: New payment source }, timeout: 10000 }
+  - await: { idle: true }
+  - type:
+      into: { text: Company or client }
+      text: Design Studio
+      submit: false
+  - tap: { text: $0 }
+  - type:
+      into: { role: TextField, text: "0" }
+      text: "6500"
+      submit: false
+  - tap: { text: per month }
+  - await: { visible: { text: One-time } }
+  - await: { idle: true }
+  - echo: The composer shows six flexible ways to model pay.

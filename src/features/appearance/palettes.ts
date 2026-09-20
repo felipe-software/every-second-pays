@@ -9,13 +9,13 @@ export const PALETTES = [
 export type PaletteId = typeof PALETTES[number]["id"];
 export type ThemeMode = "system" | "light" | "dark";
 export type Appearance = { mode: ThemeMode; palette: PaletteId };
-export const DEFAULT_APPEARANCE: Appearance = { mode: "system", palette: "orange" };
+export const DEFAULT_APPEARANCE: Appearance = { mode: "system", palette: "green" };
 
 export function parseAppearance(value: unknown): Appearance {
     const data = value && typeof value === "object" ? value as Partial<Appearance> : {};
     return {
         mode: data.mode === "light" || data.mode === "dark" ? data.mode : "system",
-        palette: PALETTES.some((palette) => palette.id === data.palette) ? data.palette! : "orange",
+        palette: PALETTES.some((palette) => palette.id === data.palette) ? data.palette! : "green",
     };
 }
 
