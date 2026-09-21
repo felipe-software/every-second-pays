@@ -1,4 +1,3 @@
-import { StatusBar } from "expo-status-bar";
 import { useIsFocused } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Platform, ScrollView, Text, View } from "react-native";
@@ -13,7 +12,6 @@ import { usePaymentComposerStore } from "@/features/earnings/payment-composer-st
 import { PaymentSheet, PrimaryButton } from "@/features/earnings/payment-sheet";
 import { SourceRow } from "@/features/earnings/source-row";
 import { useEarningsStore } from "@/features/earnings/store";
-import { useEarningsTheme } from "@/features/earnings/theme";
 import { useI18n } from "@/features/i18n/i18n";
 
 function useLiveClock() {
@@ -45,7 +43,6 @@ function firstChangedDigitIndex(previousValue: number, nextValue: number) {
 export default function EarningsScreen() {
     const isFocused = useIsFocused();
     const insets = useSafeAreaInsets();
-    const { isDark } = useEarningsTheme();
     const { t } = useI18n();
     const now = useLiveClock();
     const sources = useEarningsStore((state) => state.sources);
@@ -246,7 +243,6 @@ export default function EarningsScreen() {
 
     return (
         <View className="flex-1 items-center bg-canvas">
-            <StatusBar style={isDark ? "light" : "dark"} />
             <View className="relative w-full max-w-[430px] flex-1 overflow-hidden bg-canvas">
                 <EarningsBackground
                     celebrationId={moneyTransfer?.id}

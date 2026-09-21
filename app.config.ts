@@ -30,6 +30,12 @@ const plugins: NonNullable<ExpoConfig["plugins"]> = [
     ],
     "expo-asset",
     [
+        "expo-navigation-bar",
+        {
+            enforceContrast: false,
+        },
+    ],
+    [
         "expo-build-properties",
         {
             android: {

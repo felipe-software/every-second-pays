@@ -1,6 +1,7 @@
 import { TrueSheet } from "@lodev09/react-native-true-sheet";
 import { useMemo, useRef, useState } from "react";
 import { Platform, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useI18n } from "@/features/i18n/i18n";
 import { appHaptics } from "@/features/haptics/haptics";
@@ -41,6 +42,7 @@ function cloneEmptyDraft(): PaymentDraft {
 }
 
 export function PaymentSheet({ source, now, saving = false, onDismiss, onDelete, onSave }: PaymentSheetProps) {
+    const insets = useSafeAreaInsets();
     const { colors } = useEarningsTheme();
     const { t, formatMoney, formatTime } = useI18n();
     const sheetRef = useRef<TrueSheet>(null);
@@ -147,7 +149,10 @@ export function PaymentSheet({ source, now, saving = false, onDismiss, onDelete,
                 </View>
             }
             footer={
-                <View className="gap-3 px-6 pt-3.5 pb-3">
+                <View
+                    className="gap-3 px-6 pt-3.5"
+                    style={{ paddingBottom: 12 + (Platform.OS === "android" ? insets.bottom : 0) }}
+                >
                     <View className="flex-row items-center gap-[9px]">
                         <View
                             className="h-2 w-2 rounded-full"

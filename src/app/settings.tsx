@@ -1,5 +1,4 @@
 import { SymbolView } from "expo-symbols";
-import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,7 +21,7 @@ import { LanguageSelector } from "@/features/i18n/language-selector";
 
 export default function SettingsScreen() {
     const insets = useSafeAreaInsets();
-    const { colors, isDark } = useEarningsTheme();
+    const { colors } = useEarningsTheme();
     const { t } = useI18n();
     const { appearance, saving, loading, loadError, update, load } = useAppearanceStore();
     const reduceMotion = useReduceMotion();
@@ -52,7 +51,6 @@ export default function SettingsScreen() {
 
     return (
         <View className="flex-1 items-center bg-canvas">
-            <StatusBar style={isDark ? "light" : "dark"} />
             <View className="relative w-full max-w-[430px] flex-1 overflow-hidden bg-canvas">
                 <EarningsBackground />
                 <ScrollView
