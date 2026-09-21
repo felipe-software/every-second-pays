@@ -22,7 +22,7 @@ function nextNumericName(sources: PaymentSource[]) {
 function createJob(sources: PaymentSource[], active: boolean): PaymentDraft {
     return {
         name: nextNumericName(sources),
-        amount: "10000",
+        amount: "100000",
         frequency: "month",
         when: "today",
         days: active ? [...ALL_DAYS] : [],
