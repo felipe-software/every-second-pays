@@ -18,6 +18,13 @@
         "APP_VARIANT": "production"
       }
     },
+    "preview": {
+      "extends": "production",
+      "autoIncrement": false,
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "screenshots": {
       "extends": "production",
       "autoIncrement": false,

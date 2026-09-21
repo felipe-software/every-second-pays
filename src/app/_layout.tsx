@@ -11,10 +11,8 @@ import { NavigationBar } from "expo-navigation-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { Platform, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AppTabs from "@/components/app-tabs";
 import { useAppearanceSync } from "@/features/appearance/use-appearance-sync";
 import { useEarningsTheme } from "@/features/earnings/theme";
@@ -32,30 +30,6 @@ function SystemBars() {
             <StatusBar style={isDark ? "light" : "dark"} />
             <NavigationBar style="auto" />
         </>
-    );
-}
-
-function StatusBarTransparencyProbe() {
-    const insets = useSafeAreaInsets();
-
-    if (Platform.OS !== "android") return null;
-
-    return (
-        <View
-            pointerEvents="none"
-            style={{
-                position: "absolute",
-                top: 0,
-                right: 0,
-                left: 0,
-                zIndex: 999,
-                height: Math.max(insets.top, 32),
-                alignItems: "center",
-                justifyContent: "center",
-            }}
-        >
-            <Text style={{ color: "#FF00A8", fontSize: 12, fontWeight: "700" }}>teste</Text>
-        </View>
     );
 }
 
@@ -89,7 +63,6 @@ export default function RootLayout() {
                 <KeyboardProvider>
                     <AppTabs />
                 </KeyboardProvider>
-                <StatusBarTransparencyProbe />
             </GestureHandlerRootView>
         </I18nProvider>
     );
