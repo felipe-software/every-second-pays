@@ -29,6 +29,9 @@ export const EarningsBackground = memo(function EarningsBackground({
 }) {
     const target = useRef<View | null>(null);
     const { colors, isDark } = useEarningsTheme();
+    const isAndroidLight = Platform.OS === "android" && !isDark;
+    const blurTint = isAndroidLight ? "default" : isDark ? "dark" : "light";
+    const accentGlowOpacity = isAndroidLight ? 0.22 : isDark ? 0.25 : 0.15;
     const saturationPulse = useSharedValue(0);
     const pulseStyle = useAnimatedStyle(() => ({
         opacity: saturationPulse.get(),
@@ -65,7 +68,10 @@ export const EarningsBackground = memo(function EarningsBackground({
         <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
             <BlurTargetView ref={target} style={StyleSheet.absoluteFill}>
                 <View className="absolute inset-0 bg-canvas" />
-                <View className="absolute -top-[270px] left-1/2 h-[520px] w-[620px] -translate-x-1/2 rounded-full bg-accent/15 dark:bg-accent/25" />
+                <View
+                    className="absolute -top-[270px] left-1/2 h-[520px] w-[620px] -translate-x-1/2 rounded-full bg-accent"
+                    style={{ opacity: accentGlowOpacity }}
+                />
                 <Animated.View
                     style={[styles.saturationPulse, { backgroundColor: colors.accent }, pulseStyle]}
                 />
@@ -76,8 +82,8 @@ export const EarningsBackground = memo(function EarningsBackground({
                 blurTarget={target}
                 blurMethod="dimezisBlurView"
                 intensity={72}
-                blurReductionFactor={Platform.OS === "android" && !isDark ? 1 : undefined}
-                tint={isDark ? "dark" : "light"}
+                blurReductionFactor={isAndroidLight ? 3 : undefined}
+                tint={blurTint}
                 style={StyleSheet.absoluteFill}
             />
         </View>
