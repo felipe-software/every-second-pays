@@ -1,7 +1,14 @@
 import type { ExpoConfig } from "expo/config";
 
-const IS_DEVELOPMENT = process.env.APP_VARIANT === "development";
+const APP_VARIANT = process.env.APP_VARIANT ?? "production";
+const IS_DEVELOPMENT = APP_VARIANT === "development";
+const IS_PREVIEW = APP_VARIANT === "preview";
 const APP_IDENTIFIER = "software.felipe.everysecondpays";
+
+const PREVIEW_PROGUARD_RULES = `
+# Nitro creates this implementation from C++ by its fully qualified class name.
+-keep class com.margelo.nitro.nitrothemetransition.** { *; }
+`;
 
 const plugins: NonNullable<ExpoConfig["plugins"]> = [
     "expo-router",
@@ -41,6 +48,9 @@ const plugins: NonNullable<ExpoConfig["plugins"]> = [
             android: {
                 enableMinifyInReleaseBuilds: true,
                 buildArchs: ["armeabi-v7a", "arm64-v8a"],
+                ...(IS_PREVIEW && {
+                    extraProguardRules: PREVIEW_PROGUARD_RULES,
+                }),
             },
         },
     ],

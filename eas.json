@@ -21,6 +21,9 @@
     "preview": {
       "extends": "production",
       "autoIncrement": false,
+      "env": {
+        "APP_VARIANT": "preview"
+      },
       "android": {
         "buildType": "apk"
       }
