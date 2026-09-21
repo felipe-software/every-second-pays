@@ -88,7 +88,7 @@ function AndroidTabBar() {
     };
 
     return (
-        <View pointerEvents="box-none" style={styles.dock}>
+        <View pointerEvents="box-none" className="pb-2" style={styles.dock}>
             <View
                 pointerEvents="box-none"
                 style={[styles.dockContent, { paddingBottom: Math.max(insets.bottom, 20) }]}
