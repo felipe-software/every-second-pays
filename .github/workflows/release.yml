@@ -1,0 +1,102 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - privacy-policy-site/**
+      - .github/workflows/privacy-policy-pages.yml
+      - "**.md"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Run semantic-release without publishing
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  RELEASE_BRANCH: release
+  BOT_NAME: semantic-release-bot
+  BOT_EMAIL: semantic-release-bot@martynus.net
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.SEMANTIC_RELEASE_GH_TOKEN || github.token }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+
+      # First run only: tag the current package.json version on the commit
+      # before this push and start the release branch from it, so the new
+      # commits produce the next patch release.
+      - name: Bootstrap release branch
+        if: ${{ !inputs.dry_run }}
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+
+          if git ls-remote --exit-code --heads origin "${RELEASE_BRANCH}" >/dev/null; then
+            exit 0
+          fi
+
+          tag="v$(bun pm pkg get version | tr -d '"')"
+          if ! git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            target="HEAD"
+            if [ -n "${BEFORE_SHA}" ] && git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null; then
+              target="${BEFORE_SHA}"
+            fi
+            git tag "${tag}" "${target}"
+            git push origin "refs/tags/${tag}"
+          fi
+
+          git push origin "$(git rev-parse "${tag}^{commit}"):refs/heads/${RELEASE_BRANCH}"
+          git fetch origin "${RELEASE_BRANCH}"
+
+      - name: Merge main into release branch
+        run: |
+          set -euo pipefail
+
+          git checkout -B "${RELEASE_BRANCH}" "origin/${RELEASE_BRANCH}"
+          git -c user.name="${BOT_NAME}" -c user.email="${BOT_EMAIL}" \
+            merge --no-edit -m "Merge branch 'main' into ${RELEASE_BRANCH}" "${GITHUB_SHA}"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_GH_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+
+          args=()
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            args+=(--dry-run)
+          fi
+
+          # semantic-release reads the branch from GITHUB_REF; publish from the release branch.
+          GITHUB_REF="refs/heads/${RELEASE_BRANCH}" bunx --bun semantic-release "${args[@]}"
+
+      - name: Summarize
+        run: |
+          version=$(bun pm pkg get version | tr -d '"')
+          echo "Release branch \`${RELEASE_BRANCH}\` is at **v${version}**." >> "$GITHUB_STEP_SUMMARY"

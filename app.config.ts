@@ -1,5 +1,7 @@
 import type { ExpoConfig } from "expo/config";
 
+import { version } from "./package.json";
+
 const APP_VARIANT = process.env.APP_VARIANT ?? "production";
 const IS_DEVELOPMENT = APP_VARIANT === "development";
 const IS_PREVIEW = APP_VARIANT === "preview";
@@ -69,7 +71,7 @@ if (IS_DEVELOPMENT) {
 export default (): ExpoConfig => ({
     name: IS_DEVELOPMENT ? "Every Second Pays (Dev)" : "Every Second Pays",
     slug: "every-second-pays",
-    version: "1.0.0",
+    version,
     orientation: "portrait",
     icon: "./src/assets/images/icon.png",
     scheme: IS_DEVELOPMENT ? "everysecondpays-dev" : "everysecondpays",
