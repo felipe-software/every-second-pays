@@ -79,8 +79,22 @@ jobs:
           git -c user.name="${BOT_NAME}" -c user.email="${BOT_EMAIL}" \
             merge --no-edit -m "Merge branch 'main' into ${RELEASE_BRANCH}" "${GITHUB_SHA}"
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+      # Kept out of package.json so release tooling can't change the app's dependency tree.
+      - name: Install semantic-release
+        run: |
+          set -euo pipefail
+
+          tools="${RUNNER_TEMP}/release-tools"
+          mkdir -p "${tools}"
+          echo '{ "private": true }' > "${tools}/package.json"
+          bun add --cwd "${tools}" \
+            semantic-release@^25 \
+            @semantic-release/commit-analyzer@^13 \
+            @semantic-release/release-notes-generator@^14 \
+            @semantic-release/exec@^7 \
+            @semantic-release/git@^11 \
+            @semantic-release/github@^12
+          echo "SEMANTIC_RELEASE_BIN=${tools}/node_modules/semantic-release/bin/semantic-release.js" >> "$GITHUB_ENV"
 
       - name: Run semantic-release
         env:
@@ -94,7 +108,7 @@ jobs:
           fi
 
           # semantic-release reads the branch from GITHUB_REF; publish from the release branch.
-          GITHUB_REF="refs/heads/${RELEASE_BRANCH}" bunx --bun semantic-release "${args[@]}"
+          GITHUB_REF="refs/heads/${RELEASE_BRANCH}" bun --bun "${SEMANTIC_RELEASE_BIN}" "${args[@]}"
 
       - name: Summarize
         run: |
