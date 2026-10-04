@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { TabList, Tabs, TabTrigger, useTabTrigger } from "expo-router/ui";
 import { useCallback, useMemo } from "react";
-import { type ColorValue, Pressable, StyleSheet, View } from "react-native";
+import { type ColorValue, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
     JellyTabBarHeadless,
@@ -10,8 +10,9 @@ import {
 } from "react-native-jelly-tabs";
 import Svg, { Path } from "react-native-svg";
 
+import { ElevatedPressable } from "@/components/elevated/elevated-pressable";
 import { usePaymentComposerStore } from "@/features/earnings/payment-composer-store";
-import { useEarningsTheme } from "@/features/earnings/theme";
+import { edgeColor, useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 import {
@@ -46,7 +47,7 @@ function SettingsJellyIcon({ color, size }: TabsIconProps) {
 }
 
 function AndroidTabBar() {
-    const { colors } = useEarningsTheme();
+    const { colors, isDark } = useEarningsTheme();
     const { t } = useI18n();
     const insets = useSafeAreaInsets();
     const indexTab = useTabTrigger({ name: "index" });
@@ -116,25 +117,21 @@ function AndroidTabBar() {
                     />
                 </View>
 
-                <View
-                    style={[
-                        styles.actionShell,
-                        { backgroundColor: colors.row, borderColor: colors.track },
-                    ]}
+                <ElevatedPressable
+                    testID="new-source-tab"
+                    accessibilityRole="button"
+                    accessibilityLabel={t("tabs.addSource")}
+                    onPress={openPaymentComposer}
+                    face={colors.row}
+                    edge={edgeColor(colors.row, { isDark })}
+                    depth={4}
+                    radius={32}
+                    style={[styles.actionButton, { borderColor: colors.track }]}
                 >
-                    <Pressable
-                        testID="new-source-tab"
-                        accessibilityRole="button"
-                        accessibilityLabel={t("tabs.addSource")}
-                        onPress={openPaymentComposer}
-                        android_ripple={{ borderless: true, color: colors.active, radius: 32 }}
-                        style={({ pressed }) => [styles.actionButton, pressed && styles.actionPressed]}
-                    >
-                        <Svg width={28} height={28} viewBox="0 0 24 24">
-                            <Path d="M12 5v14M5 12h14" stroke={colors.ink} strokeWidth={1.6} strokeLinecap="round" />
-                        </Svg>
-                    </Pressable>
-                </View>
+                    <Svg width={28} height={28} viewBox="0 0 24 24">
+                        <Path d="M12 5v14M5 12h14" stroke={colors.ink} strokeWidth={1.6} strokeLinecap="round" />
+                    </Svg>
+                </ElevatedPressable>
             </View>
         </View>
     );
@@ -181,23 +178,12 @@ const styles = StyleSheet.create({
         width: 188,
         height: 64,
     },
-    actionShell: {
+    actionButton: {
         width: 64,
         height: 64,
-        borderRadius: 32,
         borderWidth: StyleSheet.hairlineWidth,
-        overflow: "hidden",
-        elevation: 1,
-    },
-    actionButton: {
-        width: "100%",
-        height: "100%",
-        borderRadius: 32,
         alignItems: "center",
         justifyContent: "center",
-    },
-    actionPressed: {
-        opacity: 0.72,
     },
     hiddenTabList: {
         display: "none",

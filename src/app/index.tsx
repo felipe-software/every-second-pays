@@ -271,10 +271,11 @@ export default function EarningsScreen() {
                         ) : ready && sources.length === 0 ? (
                             <EmptySourcesMessage />
                         ) : null}
-                        {sources.map((source) => (
+                        {sources.map((source, index) => (
                             <SourceRow
                                 key={source.id}
                                 source={source}
+                                index={index}
                                 now={now}
                                 onPress={() => {
                                     setEditingId(source.id);
@@ -297,7 +298,6 @@ export default function EarningsScreen() {
                 {sheetOpen ? (
                     <PaymentSheet
                         source={editingSource}
-                        now={now}
                         saving={saving}
                         onDismiss={closeSheet}
                         onDelete={removeSource}

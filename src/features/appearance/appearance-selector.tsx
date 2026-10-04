@@ -1,8 +1,11 @@
 import { Pressable, Text, View } from "react-native";
 
+import { ElevatedSurface, usePressSink } from "@/components/elevated/elevated-pressable";
+import { PopIn } from "@/components/elevated/pop-in";
 import { useI18n } from "@/features/i18n/i18n";
 import type { TranslationKey } from "@/features/i18n/translations";
 
+import { mixColors } from "./color";
 import { getThemeColors, type Appearance, type ThemeMode } from "./palettes";
 import type { ThemeTransitionOrigin } from "./theme-transition";
 
@@ -32,6 +35,8 @@ function AppearancePreview({
     const dark = getThemeColors(palette, true);
     const preview = mode === "dark" ? dark : light;
     const followsDevice = mode === "system";
+    const border = active ? preview.accent : preview.track;
+    const sink = usePressSink();
 
     return (
         <Pressable
@@ -41,14 +46,19 @@ function AppearancePreview({
             accessibilityState={{ checked: active, disabled }}
             disabled={disabled}
             onPress={(event) => onPress({ x: event.nativeEvent.pageX, y: event.nativeEvent.pageY })}
-            className="min-w-0 flex-1 items-center "
+            onPressIn={sink.onPressIn}
+            onPressOut={sink.onPressOut}
+            className="min-w-0 flex-1 items-stretch"
         >
-            <View
-                className="h-[116px] w-full overflow-hidden rounded-[16px] border-[3px] p-2"
-                style={{
-                    backgroundColor: preview.canvas,
-                    borderColor: active ? preview.accent : preview.soft,
-                }}
+            <ElevatedSurface
+                face={preview.canvas}
+                edge={mixColors(border, "#000000", active ? 0.24 : 0.12)}
+                depth={4}
+                radius={16}
+                selected={active}
+                pressed={sink.pressed}
+                className="h-[116px] overflow-hidden border-[3px] p-2"
+                style={{ borderColor: border }}
             >
                 {followsDevice ? (
                     <View
@@ -89,9 +99,9 @@ function AppearancePreview({
                     className="absolute bottom-2 self-center h-1.5 w-7 rounded-full"
                     style={{ backgroundColor: preview.accent }}
                 />
-            </View>
+            </ElevatedSurface>
 
-            <View className="mt-2.5 flex-row items-center gap-1.5">
+            <View className="mt-2 flex-row items-center justify-center gap-1.5">
                 <View
                     className="h-4 w-4 items-center justify-center rounded-full border"
                     style={{
@@ -99,7 +109,9 @@ function AppearancePreview({
                         borderColor: active ? preview.accent : preview.track,
                     }}
                 >
-                    {active ? <Text className="font-sans text-[10px] font-bold text-white">✓</Text> : null}
+                    <PopIn visible={active}>
+                        <Text className="font-sans text-[10px] font-bold text-white">✓</Text>
+                    </PopIn>
                 </View>
                 <Text className="font-sans text-[13px] font-semibold text-ink">{label}</Text>
             </View>

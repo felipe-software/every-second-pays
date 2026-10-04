@@ -1,4 +1,9 @@
-import { Pressable, Text } from "react-native";
+import { Text } from "react-native";
+
+import { ElevatedPressable } from "@/components/elevated/elevated-pressable";
+import { mixColors } from "@/features/appearance/color";
+
+import { edgeColor, useEarningsTheme, useSheetFill } from "./theme";
 
 type SheetHeaderButtonProps = {
     accessibilityLabel: string;
@@ -18,18 +23,24 @@ export function SheetHeaderButton({
     testID,
 }: SheetHeaderButtonProps) {
     const isClose = kind === "close";
+    const { colors, isDark } = useEarningsTheme();
+    const fill = useSheetFill();
+    const face = isClose ? fill : mixColors(colors.canvas, colors.danger, 0.1);
 
     return (
-        <Pressable
+        <ElevatedPressable
             accessibilityLabel={accessibilityLabel}
             accessibilityRole="button"
             accessibilityState={{ disabled }}
             disabled={disabled}
             onPress={onPress}
             testID={testID}
-            className={isClose
-                ? "h-9 w-9 items-center justify-center rounded-full bg-soft/80 active:opacity-65"
-                : "h-9 justify-center rounded-[11px] bg-danger/10 px-3.5 active:opacity-65"}
+            face={face}
+            edge={edgeColor(face, { isDark })}
+            depth={2}
+            radius={isClose ? 18 : 11}
+            className={isClose ? "h-9 w-9 items-center justify-center" : "h-9 justify-center px-3.5"}
+            style={{ opacity: disabled ? 0.55 : 1 }}
         >
             <Text className={isClose
                 ? "mt-[-2px] font-sans text-[21px] text-muted"
@@ -37,6 +48,6 @@ export function SheetHeaderButton({
             >
                 {isClose ? "×" : label}
             </Text>
-        </Pressable>
+        </ElevatedPressable>
     );
 }

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
+import { ElevatedSurface } from "@/components/elevated/elevated-pressable";
 import type { ThemeTransitionOrigin } from "@/features/appearance/theme-transition";
+import { edgeColor, useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
 
 import { useI18n } from "./i18n";
@@ -10,6 +12,7 @@ import { type LanguagePreference, useLanguageStore } from "./store";
 
 export function LanguageSelector({ reduceMotion }: { reduceMotion: boolean }) {
     const { t } = useI18n();
+    const { colors, isDark } = useEarningsTheme();
     const { preference, hydrated, saving, loading, loadError, update, load } = useLanguageStore();
     const [saveError, setSaveError] = useState(false);
     const disabled = !hydrated || loading || loadError;
@@ -31,14 +34,14 @@ export function LanguageSelector({ reduceMotion }: { reduceMotion: boolean }) {
 
     return (
         <View testID="language-selector" className="mt-8">
-            <View className="overflow-hidden rounded-[18px] bg-row">
+            <ElevatedSurface face={colors.row} edge={edgeColor(colors.row, { isDark })} radius={18} className="overflow-hidden">
                 <LanguageMenu
                     preference={preference}
                     disabled={disabled}
                     onOpen={appHaptics.selection}
                     onChange={change}
                 />
-            </View>
+            </ElevatedSurface>
             {loadError || saveError ? (
                 <Text accessibilityLiveRegion="polite" className="mt-3 px-1 font-sans text-[12.5px] leading-5 text-muted">
                     {t(loadError ? "settings.loadError" : "settings.saveError")}
