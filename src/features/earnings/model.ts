@@ -82,6 +82,11 @@ export function earnedToday(source: PaymentSource, now: Date) {
     return elapsedSeconds * ratePerSecond(source);
 }
 
+export function dateFromMinutes(totalMinutes: number) {
+    const minutes = ((totalMinutes % 1440) + 1440) % 1440;
+    return new Date(2024, 0, 1, Math.floor(minutes / 60), minutes % 60);
+}
+
 export function sameShifts(a: readonly Shift[], b: readonly Shift[]) {
     return JSON.stringify(a) === JSON.stringify(b);
 }

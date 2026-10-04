@@ -1,0 +1,193 @@
+diff --git a/android/src/main/java/com/lodev09/truesheet/TrueSheetView.kt b/android/src/main/java/com/lodev09/truesheet/TrueSheetView.kt
+index 16412b06f2df620ec62aede70bf62daace88ad59..63dc8acc2bd5e9ae1789267569e104521aa4dc9a 100644
+--- a/android/src/main/java/com/lodev09/truesheet/TrueSheetView.kt
++++ b/android/src/main/java/com/lodev09/truesheet/TrueSheetView.kt
+@@ -243,6 +243,11 @@ class TrueSheetView(private val reactContext: ThemedReactContext) :
+     viewController.sheetCornerRadius = radius
+   }
+ 
++  fun setDimmedColor(color: Int?) {
++    if (viewController.dimmedColor == color) return
++    viewController.dimmedColor = color
++  }
++
+   fun setSheetBackgroundColor(color: Int?) {
+     if (viewController.sheetBackgroundColor == color) return
+     viewController.sheetBackgroundColor = color
+diff --git a/android/src/main/java/com/lodev09/truesheet/TrueSheetViewController.kt b/android/src/main/java/com/lodev09/truesheet/TrueSheetViewController.kt
+index 044b82b525dcd906cbf31a486c797146ec5ace10..5d7fa9406170afa4ba8bbe4e72ed1c878f41fdf4 100644
+--- a/android/src/main/java/com/lodev09/truesheet/TrueSheetViewController.kt
++++ b/android/src/main/java/com/lodev09/truesheet/TrueSheetViewController.kt
+@@ -214,6 +214,12 @@ class TrueSheetViewController(private val reactContext: ThemedReactContext) :
+ 
+   // Appearance Configuration
+   var dimmed = true
++
++  var dimmedColor: Int? = null
++    set(value) {
++      field = value
++      dimViews.forEach { it.setDimColor(value) }
++    }
+   var dimmedDetentIndex = 0
+   override var grabber: Boolean = true
+   override var grabberOptions: GrabberOptions? = null
+@@ -950,6 +956,7 @@ class TrueSheetViewController(private val reactContext: ThemedReactContext) :
+       if (dimView == null) {
+         dimView = TrueSheetDimView(reactContext).apply {
+           delegate = this@TrueSheetViewController
++          setDimColor(dimmedColor)
+         }
+       }
+       if (!parentDimVisible) {
+@@ -963,6 +970,7 @@ class TrueSheetViewController(private val reactContext: ThemedReactContext) :
+         if (parentDimView == null) {
+           parentDimView = TrueSheetDimView(reactContext).apply {
+             delegate = this@TrueSheetViewController
++            setDimColor(dimmedColor)
+           }
+         }
+         parentDimView?.attach(parentBottomSheet, parentController.sheetCornerRadius)
+diff --git a/android/src/main/java/com/lodev09/truesheet/TrueSheetViewManager.kt b/android/src/main/java/com/lodev09/truesheet/TrueSheetViewManager.kt
+index e224fbf774c1d164a862e48932051a05bf2e7796..2065a8ebe558aee0af0c303811eec640d9fb87e3 100644
+--- a/android/src/main/java/com/lodev09/truesheet/TrueSheetViewManager.kt
++++ b/android/src/main/java/com/lodev09/truesheet/TrueSheetViewManager.kt
+@@ -118,6 +118,11 @@ class TrueSheetViewManager :
+     view.setSheetBackgroundColor(color)
+   }
+ 
++  @ReactProp(name = "dimmedColor", customType = "Color")
++  override fun setDimmedColor(view: TrueSheetView, color: Int?) {
++    view.setDimmedColor(color)
++  }
++
+   @ReactProp(name = "cornerRadius", defaultDouble = -1.0)
+   override fun setCornerRadius(view: TrueSheetView, radius: Double) {
+     view.setCornerRadius(radius.dpToPx())
+diff --git a/android/src/main/java/com/lodev09/truesheet/core/TrueSheetDimView.kt b/android/src/main/java/com/lodev09/truesheet/core/TrueSheetDimView.kt
+index 14ebb91cbbb63c704bce58160dfefe4a855b5509..1244710f0fce4d8a992152f7f65fa63fcbf94ca4 100644
+--- a/android/src/main/java/com/lodev09/truesheet/core/TrueSheetDimView.kt
++++ b/android/src/main/java/com/lodev09/truesheet/core/TrueSheetDimView.kt
+@@ -64,6 +64,10 @@ class TrueSheetDimView(private val reactContext: ThemedReactContext) :
+     importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+   }
+ 
++  fun setDimColor(color: Int?) {
++    setBackgroundColor(color ?: Color.BLACK)
++  }
++
+   // =============================================================================
+   // MARK: - Attachment
+   // =============================================================================
+diff --git a/lib/module/TrueSheet.js b/lib/module/TrueSheet.js
+index 30c24077b9219d3f62d0f0906c9c64bfae171146..278718b94055e2f69db831d5e7cda03ada58f528 100644
+--- a/lib/module/TrueSheet.js
++++ b/lib/module/TrueSheet.js
+@@ -367,6 +367,7 @@ export class TrueSheet extends PureComponent {
+       initialDetentIndex = -1,
+       initialDetentAnimated = true,
+       dimmedDetentIndex,
++      dimmedColor,
+       backgroundBlur,
+       blurOptions,
+       cornerRadius,
+@@ -422,6 +423,7 @@ export class TrueSheet extends PureComponent {
+       accessibilityOptions: accessibilityOptions,
+       dimmed: dimmed,
+       dimmedDetentIndex: dimmedDetentIndex,
++      dimmedColor: dimmedColor,
+       initialDetentIndex: initialDetentIndex,
+       initialDetentAnimated: initialDetentAnimated,
+       dismissible: dismissible,
+diff --git a/lib/module/fabric/TrueSheetViewNativeComponent.ts b/lib/module/fabric/TrueSheetViewNativeComponent.ts
+index cf7ff4f8013fcbef317835957ad314d4ed2bbf29..e61e07b4a15c3e0d879712d125f3069c7f0c216d 100644
+--- a/lib/module/fabric/TrueSheetViewNativeComponent.ts
++++ b/lib/module/fabric/TrueSheetViewNativeComponent.ts
+@@ -70,6 +70,7 @@ export interface NativeProps extends ViewProps {
+ 
+   // Color properties
+   backgroundColor?: ColorValue;
++  dimmedColor?: ColorValue;
+   initialDetentIndex?: WithDefault<Int32, -1>;
+   dimmedDetentIndex?: WithDefault<Int32, 0>;
+ 
+diff --git a/lib/typescript/src/TrueSheet.types.d.ts b/lib/typescript/src/TrueSheet.types.d.ts
+index 6f77a239b2290994750b08af85c7056894961605..d66d6397ab9072e5c4ca516cfc5e2196e22abf7a 100644
+--- a/lib/typescript/src/TrueSheet.types.d.ts
++++ b/lib/typescript/src/TrueSheet.types.d.ts
+@@ -323,6 +323,13 @@ export interface TrueSheetProps extends ViewProps {
+      * @default 0
+      */
+     dimmedDetentIndex?: number;
++    /**
++     * Color of the dimmed background. Its alpha is multiplied by the dim opacity.
++     *
++     * @platform android
++     * @default black
++     */
++    dimmedColor?: ColorValue;
+     /**
+      * Prevents interactive dismissal of the Sheet.
+      *
+diff --git a/lib/typescript/src/fabric/TrueSheetViewNativeComponent.d.ts b/lib/typescript/src/fabric/TrueSheetViewNativeComponent.d.ts
+index c4a42d5341d904eaf72cee53b048e2b14942bbcd..d40d3cd0ffc6616d2e7f4b43f51c3bd887f1dc3a 100644
+--- a/lib/typescript/src/fabric/TrueSheetViewNativeComponent.d.ts
++++ b/lib/typescript/src/fabric/TrueSheetViewNativeComponent.d.ts
+@@ -50,6 +50,7 @@ export interface NativeProps extends ViewProps {
+     cornerRadius?: WithDefault<Double, -1>;
+     elevation?: WithDefault<Double, -1>;
+     backgroundColor?: ColorValue;
++    dimmedColor?: ColorValue;
+     initialDetentIndex?: WithDefault<Int32, -1>;
+     dimmedDetentIndex?: WithDefault<Int32, 0>;
+     backgroundBlur?: WithDefault<'none' | 'light' | 'dark' | 'default' | 'extra-light' | 'regular' | 'prominent' | 'system-ultra-thin-material' | 'system-thin-material' | 'system-material' | 'system-thick-material' | 'system-chrome-material' | 'system-ultra-thin-material-light' | 'system-thin-material-light' | 'system-material-light' | 'system-thick-material-light' | 'system-chrome-material-light' | 'system-ultra-thin-material-dark' | 'system-thin-material-dark' | 'system-material-dark' | 'system-thick-material-dark' | 'system-chrome-material-dark', 'none'>;
+diff --git a/src/TrueSheet.tsx b/src/TrueSheet.tsx
+index 30bb7de231726e841d207d5df540e239d199733a..bc74334afe751d6614595cdb168b942de76b6769 100644
+--- a/src/TrueSheet.tsx
++++ b/src/TrueSheet.tsx
+@@ -474,6 +474,7 @@ export class TrueSheet
+       initialDetentIndex = -1,
+       initialDetentAnimated = true,
+       dimmedDetentIndex,
++      dimmedColor,
+       backgroundBlur,
+       blurOptions,
+       cornerRadius,
+@@ -531,6 +532,7 @@ export class TrueSheet
+         accessibilityOptions={accessibilityOptions}
+         dimmed={dimmed}
+         dimmedDetentIndex={dimmedDetentIndex}
++        dimmedColor={dimmedColor}
+         initialDetentIndex={initialDetentIndex}
+         initialDetentAnimated={initialDetentAnimated}
+         dismissible={dismissible}
+diff --git a/src/TrueSheet.types.ts b/src/TrueSheet.types.ts
+index 6c8d08e5c55ee3775411d719d3aa51bb73e9294e..5bf300aae0df4a11306690898c048cba3de2f051 100644
+--- a/src/TrueSheet.types.ts
++++ b/src/TrueSheet.types.ts
+@@ -373,6 +373,14 @@ export interface TrueSheetProps extends ViewProps {
+    */
+   dimmedDetentIndex?: number;
+ 
++  /**
++   * Color of the dimmed background. Its alpha is multiplied by the dim opacity.
++   *
++   * @platform android
++   * @default black
++   */
++  dimmedColor?: ColorValue;
++
+   /**
+    * Prevents interactive dismissal of the Sheet.
+    *
+diff --git a/src/fabric/TrueSheetViewNativeComponent.ts b/src/fabric/TrueSheetViewNativeComponent.ts
+index cf7ff4f8013fcbef317835957ad314d4ed2bbf29..e61e07b4a15c3e0d879712d125f3069c7f0c216d 100644
+--- a/src/fabric/TrueSheetViewNativeComponent.ts
++++ b/src/fabric/TrueSheetViewNativeComponent.ts
+@@ -70,6 +70,7 @@ export interface NativeProps extends ViewProps {
+ 
+   // Color properties
+   backgroundColor?: ColorValue;
++  dimmedColor?: ColorValue;
+   initialDetentIndex?: WithDefault<Int32, -1>;
+   dimmedDetentIndex?: WithDefault<Int32, 0>;
+ 

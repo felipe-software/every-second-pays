@@ -10,14 +10,8 @@
     :root {
         @variant light {
             --color-canvas: #f0f7f3;
-            --color-sheet: #e5efe9;
-            --color-raised: #dfeae4;
             --color-row: #e5ece8;
             --color-active: #d8eae0;
-            --color-field: #c6d9ce;
-            --color-soft: #cfddd5;
-            --color-choice: #eff5f1;
-            --color-token-active: #d0e3d8;
             --color-track: #cad5cf;
             --color-ink: #131c17;
             --color-muted: #36433c;
@@ -27,14 +21,8 @@
 
         @variant dark {
             --color-canvas: #141816;
-            --color-sheet: #212824;
             --color-row: #292d2b;
             --color-active: #263f32;
-            --color-raised: #2b332f;
-            --color-field: #2a312d;
-            --color-soft: #313935;
-            --color-choice: #3a423d;
-            --color-token-active: #2d483a;
             --color-track: #59615c;
             --color-ink: #ebf0ed;
             --color-muted: #9aa7a0;

@@ -75,7 +75,7 @@ export const EarningsBackground = memo(function EarningsBackground({
                 <Animated.View
                     style={[styles.saturationPulse, { backgroundColor: colors.accent }, pulseStyle]}
                 />
-                <View className="absolute -top-[205px] left-1/2 h-[360px] w-[420px] -translate-x-1/2 rounded-full bg-sheet/40" />
+                <View className="absolute -top-[205px] left-1/2 h-[360px] w-[420px] -translate-x-1/2 rounded-full bg-row/40" />
             </BlurTargetView>
             <BlurView
                 testID="earnings-background-blur"

@@ -59,9 +59,10 @@
     },
   },
   "patchedDependencies": {
-    "expo-blur@57.0.3": "src/patches/expo-blur@57.0.3.patch",
     "react-native-nitro-theme-transition@1.0.0": "src/patches/react-native-nitro-theme-transition@1.0.0.patch",
+    "expo-blur@57.0.3": "src/patches/expo-blur@57.0.3.patch",
     "react-native-jelly-tabs@0.0.14": "src/patches/react-native-jelly-tabs@0.0.14.patch",
+    "@lodev09/react-native-true-sheet@3.11.14": "src/patches/@lodev09%2Freact-native-true-sheet@3.11.14.patch",
     "@expo/ui@57.0.19": "src/patches/@expo%2Fui@57.0.19.patch",
   },
   "packages": {
