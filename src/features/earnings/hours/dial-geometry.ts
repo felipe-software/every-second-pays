@@ -11,6 +11,8 @@ export const DIAL_RADIUS = RADIUS;
 export const DIAL_STROKE = 22;
 export const DIAL_STEP = 15;
 export const MIN_SHIFT = 15;
+/** Horizontal padding inside the raised time pills drawn in the middle of the dial (Android). */
+export const INLINE_TIME_PADDING = 5;
 const DAY = 1440;
 
 export function pointAt(minutes: number, radius?: number) {

@@ -1,13 +1,12 @@
 import { Text, View } from "react-native";
 
-import { ElevatedPressable } from "@/components/elevated/elevated-pressable";
-import { mixColors } from "@/features/appearance/color";
+import { RaisedPressable } from "@/components/elevated/raised";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 import type { TranslationKey } from "@/features/i18n/translations";
 
 import { HOUR_PRESETS, type Shift, sameShifts } from "../model";
-import { edgeColor, useEarningsTheme, useSheetCard, useSheetFill } from "../theme";
+import { useEarningsTheme } from "../theme";
 
 type HourPreset = (typeof HOUR_PRESETS)[number];
 
@@ -20,16 +19,12 @@ const PRESET_KEYS: Record<HourPreset["id"], TranslationKey> = {
 
 /** A titled, segmented row of common schedules; the matching one is raised. */
 export function HourPresets({ shifts, onPick }: { shifts: readonly Shift[]; onPick: (shifts: Shift[]) => void }) {
-    const { colors, isDark } = useEarningsTheme();
+    const { colors } = useEarningsTheme();
     const { t } = useI18n();
-    const fill = useSheetFill();
-    const card = useSheetCard();
-    // The raised segment is the bright card color in light mode and a lifted fill in dark mode.
-    const raised = isDark ? mixColors(fill, colors.ink, 0.12) : card;
     const matching = HOUR_PRESETS.find((preset) => sameShifts(shifts, preset.shifts));
 
     return (
-        <View className="gap-1.5 rounded-[18px] px-1 pt-2.5 pb-1" style={{ backgroundColor: fill }}>
+        <View className="gap-1.5 rounded-[18px] px-1 pt-2.5 pb-1" style={{ backgroundColor: colors.fill }}>
             <Text accessibilityRole="header" className="px-2.5 font-sans text-[13px] font-semibold text-muted">
                 {t("payment.presets")}
             </Text>
@@ -37,7 +32,7 @@ export function HourPresets({ shifts, onPick }: { shifts: readonly Shift[]; onPi
                 {HOUR_PRESETS.map((preset) => {
                     const selected = matching?.id === preset.id;
                     return (
-                        <ElevatedPressable
+                        <RaisedPressable
                             key={preset.id}
                             accessibilityRole="radio"
                             accessibilityState={{ checked: selected }}
@@ -46,8 +41,9 @@ export function HourPresets({ shifts, onPick }: { shifts: readonly Shift[]; onPi
                                 onPick(preset.shifts.map((shift) => ({ ...shift })));
                             }}
                             containerClassName="min-w-0 flex-1"
-                            face={selected ? raised : fill}
-                            edge={selected ? edgeColor(raised, { isDark }) : fill}
+                            // Only the matching preset is raised; the rest sit flat on the track.
+                            surface={selected ? "raised" : "fill"}
+                            flat={!selected}
                             depth={2}
                             radius={13}
                             selected={selected}
@@ -61,7 +57,7 @@ export function HourPresets({ shifts, onPick }: { shifts: readonly Shift[]; onPi
                             >
                                 {t(PRESET_KEYS[preset.id])}
                             </Text>
-                        </ElevatedPressable>
+                        </RaisedPressable>
                     );
                 })}
             </View>

@@ -1,9 +1,9 @@
 import { Text, TextInput } from "react-native";
 
-import { ElevatedPressable } from "@/components/elevated/elevated-pressable";
+import { RaisedPressable } from "@/components/elevated/raised";
 import { appHaptics } from "@/features/haptics/haptics";
 
-import { edgeColor, useEarningsTheme, useSheetFill } from "./theme";
+import { useEarningsTheme } from "./theme";
 
 export function NativeField({
     value,
@@ -19,7 +19,6 @@ export function NativeField({
     large?: boolean;
 }) {
     const { colors } = useEarningsTheme();
-    const fill = useSheetFill();
 
     return (
         <TextInput
@@ -34,7 +33,7 @@ export function NativeField({
                 height: large ? 76 : 58,
                 paddingHorizontal: large ? 4 : 18,
                 paddingVertical: large ? 8 : 15,
-                backgroundColor: large ? "transparent" : fill,
+                backgroundColor: large ? "transparent" : colors.fill,
                 borderRadius: 16,
                 color: colors.ink,
                 fontFamily: large ? "Archivo-Bold" : "Archivo-Medium",
@@ -58,10 +57,9 @@ export function PrimaryButton({
     testID?: string;
 }) {
     const { colors } = useEarningsTheme();
-    const fill = useSheetFill();
 
     return (
-        <ElevatedPressable
+        <RaisedPressable
             accessibilityRole="button"
             accessibilityState={{ disabled: Boolean(disabled) }}
             disabled={disabled}
@@ -71,8 +69,8 @@ export function PrimaryButton({
             }}
             testID={testID}
             containerClassName="w-full"
-            face={disabled ? fill : colors.accent}
-            edge={disabled ? "transparent" : edgeColor(colors.accent, { accent: true })}
+            surface={disabled ? "fill" : "accent"}
+            flat={disabled}
             depth={4}
             radius={17}
             className="h-[54px] items-center justify-center"
@@ -83,7 +81,7 @@ export function PrimaryButton({
             >
                 {label}
             </Text>
-        </ElevatedPressable>
+        </RaisedPressable>
     );
 }
 
@@ -102,12 +100,8 @@ export function TokenButton({
     reserve?: readonly string[];
     onPress: () => void;
 }) {
-    const { colors, isDark } = useEarningsTheme();
-    const fill = useSheetFill();
-    const face = active ? colors.active : fill;
-
     return (
-        <ElevatedPressable
+        <RaisedPressable
             accessibilityRole="button"
             accessibilityLabel={children}
             accessibilityState={{ selected: active }}
@@ -116,8 +110,7 @@ export function TokenButton({
                 onPress();
             }}
             containerClassName="mr-[-3px]"
-            face={face}
-            edge={active ? colors.accent : edgeColor(face, { isDark })}
+            surface={active ? "active" : "fill"}
             depth={2}
             radius={7}
             selected={active}
@@ -134,17 +127,15 @@ export function TokenButton({
                 </Text>
             ))}
             <Text numberOfLines={1} className="font-sans text-[24px] leading-[27px] font-semibold text-ink">{children}</Text>
-        </ElevatedPressable>
+        </RaisedPressable>
     );
 }
 
 export function ChoiceChip({ selected, label, onPress, wide = false }: { selected: boolean; label: string; onPress: () => void; wide?: boolean }) {
-    const { colors, isDark } = useEarningsTheme();
-    const fill = useSheetFill();
-    const face = selected ? colors.accent : fill;
+    const { colors } = useEarningsTheme();
 
     return (
-        <ElevatedPressable
+        <RaisedPressable
             accessibilityRole="button"
             accessibilityState={{ selected }}
             onPress={() => {
@@ -152,8 +143,8 @@ export function ChoiceChip({ selected, label, onPress, wide = false }: { selecte
                 onPress();
             }}
             containerClassName={wide ? "min-w-[30%] flex-1" : undefined}
-            face={face}
-            edge={edgeColor(face, { accent: selected, isDark })}
+            surface={selected ? "accent" : "fill"}
+            depth={3}
             radius={13}
             selected={selected}
             className={`${wide ? "h-[50px]" : "px-[15px] py-2.5"} items-center justify-center`}
@@ -161,6 +152,6 @@ export function ChoiceChip({ selected, label, onPress, wide = false }: { selecte
             <Text className="font-sans text-[13.5px] font-semibold" style={{ color: selected ? colors.ink : colors.muted }}>
                 {label}
             </Text>
-        </ElevatedPressable>
+        </RaisedPressable>
     );
 }

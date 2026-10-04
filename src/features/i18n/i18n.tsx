@@ -1,6 +1,7 @@
 import { useCalendars, useLocales } from "expo-localization";
 import { createContext, type ReactNode, useCallback, useContext, useMemo } from "react";
 
+import { firstDayOfWeek as resolveFirstDayOfWeek } from "./first-day-of-week";
 import { translations, type Language, type TranslationKey } from "./translations";
 import { useLanguageStore } from "./store";
 
@@ -10,6 +11,8 @@ type I18nContextValue = {
     language: Language;
     locale: string;
     decimalSeparator: string;
+    /** The weekday weeks start on: 0 = Sunday … 6 = Saturday. */
+    firstDayOfWeek: number;
     t: (key: TranslationKey, replacements?: Replacements) => string;
     formatMoney: (value: number, digits?: number) => string;
     formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string;
@@ -50,6 +53,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     const language = preference === "system" ? resolveLanguage(preferredLocale?.languageCode) : preference;
     const locale = preferredLocale?.languageTag ?? DEFAULT_LOCALES[language];
     const uses24HourClock = calendars[0]?.uses24hourClock;
+    const firstDayOfWeek = resolveFirstDayOfWeek(
+        language,
+        calendars[0]?.firstWeekday,
+        preferredLocale?.regionCode ?? locale.split("-").at(-1),
+    );
     const decimalSeparator = preferredLocale?.decimalSeparator
         ?? (1.1).toLocaleString(locale, { useGrouping: false }).replace(/[0-9]/g, "");
 
@@ -135,6 +143,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         language,
         locale,
         decimalSeparator,
+        firstDayOfWeek,
         t,
         formatMoney,
         formatNumber,
@@ -143,7 +152,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         formatTimeRangeParts,
         formatDays,
         weekdayName,
-    }), [decimalSeparator, formatDays, formatMoney, formatNumber, formatTime, formatTimeRange, formatTimeRangeParts, language, locale, t, weekdayName]);
+    }), [decimalSeparator, firstDayOfWeek, formatDays, formatMoney, formatNumber, formatTime, formatTimeRange, formatTimeRangeParts, language, locale, t, weekdayName]);
 
     return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

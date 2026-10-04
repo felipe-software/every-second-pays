@@ -9,18 +9,20 @@ import Animated, {
 } from "react-native-reanimated";
 import Svg, { Circle, Path } from "react-native-svg";
 
+import { RAISED_OUTLINE } from "@/components/elevated/raised";
 import { mixColors } from "@/features/appearance/color";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 
 import { hoursPerDay, type Shift } from "../model";
 import { SystemTimeInput } from "../system-time-input";
-import { useEarningsTheme, useSheetCard } from "../theme";
+import { useEarningsTheme } from "../theme";
 import {
     DIAL_CENTER,
     DIAL_RADIUS,
     DIAL_SIZE,
     DIAL_STROKE,
+    INLINE_TIME_PADDING,
     MIN_SHIFT,
     arcPath,
     distanceFromCenter,
@@ -38,7 +40,12 @@ const LABEL_RADIUS = DIAL_RADIUS + DIAL_STROKE / 2 + 18;
 const LABEL_MARKS = [0, 360, 720, 1080];
 // Room for the times inside the ring, and the size range they shrink through to fit it.
 const CENTER_WIDTH = (DIAL_RADIUS - DIAL_STROKE / 2) * 2 - 18;
-const CENTER_FONT = { max: 20, min: 12 };
+const CENTER_FONT = { max: 20, min: 11 };
+// On Android both times are raised pills: their padding and outline take room from the text,
+// and the row may use a little more of the ring's inside than the plain text would.
+const TIME_PILLS = Platform.OS === "android";
+const PILL_CHROME = TIME_PILLS ? 2 * 2 * (INLINE_TIME_PADDING + RAISED_OUTLINE) : 0;
+const TIMES_WIDTH = TIME_PILLS ? (DIAL_RADIUS - DIAL_STROKE / 2) * 2 - 8 : CENTER_WIDTH;
 // Archivo Bold averages a little over half an em per character.
 const CHARACTER_WIDTH = 0.56;
 const MORPH = { duration: 280, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System };
@@ -149,7 +156,6 @@ export function DayDial({
     onShiftChange: (index: number, shift: Shift) => void;
 }) {
     const { colors, isDark } = useEarningsTheme();
-    const card = useSheetCard();
     const { t, formatNumber, formatTime, formatTimeRange, formatTimeRangeParts } = useI18n();
     const [dragging, setDragging] = useState(false);
     // A drag spans many renders, so its state lives in a ref.
@@ -164,7 +170,7 @@ export function DayDial({
     const rangeLength = `${startText} – ${endText}`.length;
     const centerFont = Math.max(
         CENTER_FONT.min,
-        Math.min(CENTER_FONT.max, Math.floor(CENTER_WIDTH / (rangeLength * CHARACTER_WIDTH))),
+        Math.min(CENTER_FONT.max, Math.floor((TIMES_WIDTH - PILL_CHROME) / (rangeLength * CHARACTER_WIDTH))),
     );
 
     const finishTouch = () => {
@@ -227,7 +233,7 @@ export function DayDial({
                         cx={DIAL_CENTER}
                         cy={DIAL_CENTER}
                         r={DIAL_RADIUS}
-                        stroke={isDark ? mixColors(card, colors.ink, 0.1) : colors.row}
+                        stroke={isDark ? mixColors(colors.card, colors.ink, 0.1) : colors.row}
                         strokeWidth={DIAL_STROKE}
                         fill="none"
                     />
@@ -264,7 +270,7 @@ export function DayDial({
             <View pointerEvents="box-none" className="absolute inset-0 items-center justify-center gap-1">
                 <View
                     className={Platform.OS === "ios" ? "items-center gap-1" : "flex-row items-center"}
-                    style={{ maxWidth: CENTER_WIDTH }}
+                    style={{ maxWidth: TIMES_WIDTH }}
                 >
                     <SystemTimeInput
                         variant="inline"
@@ -275,7 +281,8 @@ export function DayDial({
                         onChange={(start) => onShiftChange(selectedIndex, { ...selected, start: Math.min(selected.end - MIN_SHIFT, start) })}
                     />
                     {Platform.OS === "ios" ? null : (
-                        <Text className="font-sans font-bold text-ink" style={{ fontSize: centerFont }}> – </Text>
+                        // Lifted by the pills' edge so the dash lines up with their faces.
+                        <Text className="font-sans font-bold text-ink" style={{ fontSize: centerFont, paddingBottom: 2 + RAISED_OUTLINE }}> – </Text>
                     )}
                     <SystemTimeInput
                         variant="inline"

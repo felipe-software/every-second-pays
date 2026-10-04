@@ -10,9 +10,9 @@ import {
 } from "react-native-jelly-tabs";
 import Svg, { Path } from "react-native-svg";
 
-import { ElevatedPressable } from "@/components/elevated/elevated-pressable";
+import { RaisedPressable } from "@/components/elevated/raised";
 import { usePaymentComposerStore } from "@/features/earnings/payment-composer-store";
-import { edgeColor, useEarningsTheme } from "@/features/earnings/theme";
+import { useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 import {
@@ -47,7 +47,7 @@ function SettingsJellyIcon({ color, size }: TabsIconProps) {
 }
 
 function AndroidTabBar() {
-    const { colors, isDark } = useEarningsTheme();
+    const { colors } = useEarningsTheme();
     const { t } = useI18n();
     const insets = useSafeAreaInsets();
     const indexTab = useTabTrigger({ name: "index" });
@@ -56,11 +56,11 @@ function AndroidTabBar() {
     const requestNewSource = usePaymentComposerStore((state) => state.requestNewSource);
     const items = useMemo<TabsItem[]>(() => [
         {
-            accessibilityLabel: t("tabs.today"),
+            accessibilityLabel: t("tabs.earnings"),
             activeIcon: PaidJellyIcon,
             inactiveIcon: PaidJellyIcon,
             key: "index",
-            label: t("tabs.today"),
+            label: t("tabs.earnings"),
             testID: "today-tab",
         },
         {
@@ -117,21 +117,20 @@ function AndroidTabBar() {
                     />
                 </View>
 
-                <ElevatedPressable
+                <RaisedPressable
                     testID="new-source-tab"
                     accessibilityRole="button"
                     accessibilityLabel={t("tabs.addSource")}
                     onPress={openPaymentComposer}
-                    face={colors.row}
-                    edge={edgeColor(colors.row, { isDark })}
+                    surface="row"
                     depth={4}
                     radius={32}
-                    style={[styles.actionButton, { borderColor: colors.track }]}
+                    style={styles.actionButton}
                 >
                     <Svg width={28} height={28} viewBox="0 0 24 24">
                         <Path d="M12 5v14M5 12h14" stroke={colors.ink} strokeWidth={1.6} strokeLinecap="round" />
                     </Svg>
-                </ElevatedPressable>
+                </RaisedPressable>
             </View>
         </View>
     );
@@ -181,7 +180,6 @@ const styles = StyleSheet.create({
     actionButton: {
         width: 64,
         height: 64,
-        borderWidth: StyleSheet.hairlineWidth,
         alignItems: "center",
         justifyContent: "center",
     },

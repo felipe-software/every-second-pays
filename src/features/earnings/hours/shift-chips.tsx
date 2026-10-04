@@ -1,13 +1,12 @@
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
-import { mixColors } from "@/features/appearance/color";
-import { ElevatedPressable } from "@/components/elevated/elevated-pressable";
+import { RaisedPressable } from "@/components/elevated/raised";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 
 import type { Shift } from "../model";
-import { edgeColor, useEarningsTheme, useSheetCard, useSheetFill } from "../theme";
+import { useEarningsTheme } from "../theme";
 
 function ShiftChip({
     shift,
@@ -22,34 +21,29 @@ function ShiftChip({
     onPress: () => void;
     onRemove: () => void;
 }) {
-    const { colors, isDark } = useEarningsTheme();
+    const { colors } = useEarningsTheme();
     const { t, formatTimeRange } = useI18n();
-    const fill = useSheetFill();
-    const card = useSheetCard();
-    const face = selected ? mixColors(card, colors.accent, 0.28) : fill;
 
     return (
-        <ElevatedPressable
+        <RaisedPressable
             accessibilityRole="button"
             accessibilityState={{ selected }}
             onPress={() => {
                 appHaptics.selection();
                 onPress();
             }}
-            face={face}
-            edge={edgeColor(face, { isDark })}
+            surface={selected ? "chip" : "fill"}
             depth={2}
             radius={22}
             selected={selected}
-            className="h-11 flex-row items-center gap-2 border pr-3.5 pl-4"
-            style={{ borderColor: selected ? mixColors(card, colors.accent, 0.6) : face }}
+            className="h-11 flex-row items-center gap-2 pr-3 pl-4"
         >
             <View className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: colors.accent, opacity: selected ? 1 : 0.5 }} />
             <Text className="font-sans text-[14px] font-semibold" style={{ color: selected ? colors.ink : colors.muted }}>
                 {formatTimeRange(shift.start, shift.end)}
             </Text>
             {selected && removable ? (
-                <Pressable
+                <RaisedPressable
                     accessibilityRole="button"
                     accessibilityLabel={t("payment.removeTimeBlock")}
                     hitSlop={10}
@@ -57,13 +51,16 @@ function ShiftChip({
                         appHaptics.selection();
                         onRemove();
                     }}
-                    className="ml-0.5 h-5 w-5 items-center justify-center rounded-full active:opacity-60"
-                    style={{ backgroundColor: `${colors.ink}1A` }}
+                    containerClassName="ml-0.5"
+                    surface="raised"
+                    depth={2}
+                    radius={10}
+                    className="h-5 w-5 items-center justify-center"
                 >
                     <Text className="mt-[-1px] font-sans text-[13px] text-muted">×</Text>
-                </Pressable>
+                </RaisedPressable>
             ) : null}
-        </ElevatedPressable>
+        </RaisedPressable>
     );
 }
 
@@ -80,9 +77,8 @@ export function ShiftChips({
     onAdd: () => void;
     onRemove: (index: number) => void;
 }) {
-    const { colors, isDark } = useEarningsTheme();
+    const { colors } = useEarningsTheme();
     const { t } = useI18n();
-    const fill = useSheetFill();
 
     return (
         <View className="flex-row flex-wrap items-center gap-2">
@@ -97,15 +93,14 @@ export function ShiftChips({
                     onRemove={() => onRemove(index)}
                 />
             ))}
-            <ElevatedPressable
+            <RaisedPressable
                 accessibilityRole="button"
                 accessibilityLabel={t("payment.addTimeBlock")}
                 onPress={() => {
                     appHaptics.selection();
                     onAdd();
                 }}
-                face={fill}
-                edge={edgeColor(fill, { isDark })}
+                surface="fill"
                 depth={2}
                 radius={22}
                 className="h-11 w-11 items-center justify-center"
@@ -113,7 +108,7 @@ export function ShiftChips({
                 <Svg width={18} height={18} viewBox="0 0 24 24">
                     <Path d="M12 5v14M5 12h14" stroke={colors.ink} strokeWidth={2} strokeLinecap="round" />
                 </Svg>
-            </ElevatedPressable>
+            </RaisedPressable>
         </View>
     );
 }

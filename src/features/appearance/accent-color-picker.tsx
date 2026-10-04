@@ -1,11 +1,11 @@
 import { Pressable, Text, View } from "react-native";
 
-import { ElevatedSurface, usePressSink } from "@/components/elevated/elevated-pressable";
+import { Raised, usePressSink } from "@/components/elevated/raised";
+import { edgeColor } from "@/features/earnings/theme";
 import { PopIn } from "@/components/elevated/pop-in";
 import { useI18n } from "@/features/i18n/i18n";
 import type { TranslationKey } from "@/features/i18n/translations";
 
-import { mixColors } from "./color";
 import { PALETTES, type Appearance, type PaletteId } from "./palettes";
 import type { ThemeTransitionOrigin } from "./theme-transition";
 
@@ -45,9 +45,10 @@ function Swatch({
             className="h-12 w-12 items-center justify-center rounded-full"
             style={{ borderColor: selected ? palette.accent : "transparent", borderWidth: 2 }}
         >
-            <ElevatedSurface
-                face={palette.accent}
-                edge={mixColors(palette.accent, "#000000", 0.24)}
+            <Raised
+                // Each swatch shows its own palette's accent, not the current one.
+                surface={{ face: palette.accent, edge: edgeColor(palette.accent, { accent: true }) }}
+                depth={3}
                 radius={18}
                 selected={selected}
                 pressed={sink.pressed}
@@ -56,7 +57,7 @@ function Swatch({
                 <PopIn visible={selected}>
                     <Text className="font-sans text-[17px] font-bold text-white">✓</Text>
                 </PopIn>
-            </ElevatedSurface>
+            </Raised>
         </Pressable>
     );
 }

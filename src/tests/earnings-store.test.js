@@ -81,6 +81,32 @@ test("create, edit and delete survive store rehydration", async () => {
     expect(store.getState().sources).toEqual([]);
 });
 
+test("one-time payments remember when they landed", async () => {
+    await store.getState().load();
+    const bonus = { ...draft, name: "Bonus", amount: "500", frequency: "once", when: "today" };
+    const before = Date.now();
+    await store.getState().save(bonus);
+    const saved = store.getState().sources[0];
+    expect(saved.paidAt).toBeGreaterThanOrEqual(before);
+    expect(saved.paidAt).toBeLessThanOrEqual(Date.now());
+
+    // Editing it keeps the original landing date, even if the draft says otherwise.
+    await store.getState().save({ ...bonus, amount: "600", paidAt: 1 }, saved.id);
+    resetMemory();
+    await store.getState().load();
+    expect(store.getState().sources[0]).toMatchObject({ amount: 600, paidAt: saved.paidAt });
+
+    // Rescheduling or making it recurring drops the date.
+    await store.getState().save({ ...bonus, when: "later" }, saved.id);
+    expect(store.getState().sources[0].paidAt).toBeUndefined();
+    await store.getState().save({ ...bonus, frequency: "month" }, saved.id);
+    expect(store.getState().sources[0].paidAt).toBeUndefined();
+
+    // Landing again stamps a new date.
+    await store.getState().save(bonus, saved.id);
+    expect(store.getState().sources[0].paidAt).toBeGreaterThanOrEqual(saved.paidAt);
+});
+
 test("read failure is retryable and blocks writes", async () => {
     failRead = true;
     await store.getState().load();

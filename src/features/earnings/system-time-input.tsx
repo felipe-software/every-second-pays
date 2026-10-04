@@ -6,7 +6,7 @@ import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 
 import { dateFromMinutes } from "./model";
-import { useEarningsTheme, useSheetFill } from "./theme";
+import { useEarningsTheme } from "./theme";
 
 export type SystemTimeInputProps = {
     label: string;
@@ -23,7 +23,6 @@ export type SystemTimeInputProps = {
 export function SystemTimeInput({ label, value, onChange, variant = "field" }: SystemTimeInputProps) {
     const { locale } = useI18n();
     const { colors, isDark } = useEarningsTheme();
-    const fill = useSheetFill();
     const uses24HourClock = useCalendars()[0]?.uses24hourClock;
 
     const picker = (
@@ -49,7 +48,7 @@ export function SystemTimeInput({ label, value, onChange, variant = "field" }: S
     return (
         <View className="min-w-0 flex-1 gap-1.5">
             <Text className="font-sans text-[10px] font-semibold tracking-[1.2px] text-muted uppercase">{label}</Text>
-            <View className="h-11 overflow-hidden rounded-[13px]" style={{ backgroundColor: fill }}>
+            <View className="h-11 overflow-hidden rounded-[13px]" style={{ backgroundColor: colors.fill }}>
                 {picker}
             </View>
         </View>

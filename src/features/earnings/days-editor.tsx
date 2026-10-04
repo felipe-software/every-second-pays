@@ -1,13 +1,13 @@
 import { Pressable, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 
-import { ElevatedSurface } from "@/components/elevated/elevated-pressable";
+import { Raised, RaisedPressable, usePressSink } from "@/components/elevated/raised";
 import { useSquash } from "@/components/elevated/use-squash";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 import type { TranslationKey } from "@/features/i18n/translations";
 
-import { edgeColor, useEarningsTheme, useSheetFill } from "./theme";
+import { useEarningsTheme } from "./theme";
 
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const DAY_SETS = [
@@ -20,7 +20,19 @@ function sameDays(a: readonly number[], b: readonly number[]) {
     return [...a].sort().join() === [...b].sort().join();
 }
 
-function DayToggle({ day, selected, onPress }: { day: number; selected: boolean; onPress: () => void }) {
+function DayToggle({
+    day,
+    selected,
+    onPress,
+    onPressIn,
+    onPressOut,
+}: {
+    day: number;
+    selected: boolean;
+    onPress: () => void;
+    onPressIn: () => void;
+    onPressOut: () => void;
+}) {
     const { colors } = useEarningsTheme();
     const { locale, weekdayName } = useI18n();
     const squashStyle = useSquash(selected);
@@ -33,7 +45,9 @@ function DayToggle({ day, selected, onPress }: { day: number; selected: boolean;
                 appHaptics.selection();
                 onPress();
             }}
-            className="flex-1 active:opacity-75"
+            onPressIn={onPressIn}
+            onPressOut={onPressOut}
+            className="flex-1"
         >
             <Animated.View
                 className="flex-1 items-center justify-center"
@@ -48,13 +62,14 @@ function DayToggle({ day, selected, onPress }: { day: number; selected: boolean;
 }
 
 export function DaysEditor({ days, onChange }: { days: number[]; onChange: (days: number[]) => void }) {
-    const { colors, isDark } = useEarningsTheme();
+    const { colors } = useEarningsTheme();
     const { t } = useI18n();
-    const fill = useSheetFill();
+    // The strip is one raised control: pressing any day sinks all of it.
+    const sink = usePressSink();
 
     return (
         <View className="gap-4">
-            <ElevatedSurface face={fill} edge={edgeColor(fill, { isDark })} radius={14} className="h-14 flex-row overflow-hidden">
+            <Raised surface="fill" depth={3} radius={14} pressed={sink.pressed} className="h-14 flex-row overflow-hidden">
                 {DAY_ORDER.map((day) => {
                     const selected = days.includes(day);
                     return (
@@ -63,19 +78,34 @@ export function DaysEditor({ days, onChange }: { days: number[]; onChange: (days
                             day={day}
                             selected={selected}
                             onPress={() => onChange(selected ? days.filter((value) => value !== day) : [...days, day].sort())}
+                            onPressIn={sink.onPressIn}
+                            onPressOut={sink.onPressOut}
                         />
                     );
                 })}
-            </ElevatedSurface>
-            <View className="flex-row items-baseline gap-4 px-0.5">
+            </Raised>
+            <View className="flex-row flex-wrap gap-2">
                 {DAY_SETS.map((option) => {
                     const selected = sameDays(option.days, days);
                     return (
-                        <Pressable key={option.id} onPress={() => onChange([...option.days])} className="active:opacity-60">
-                            <Text className="font-sans text-[12.5px] font-semibold underline" style={{ color: selected ? colors.accentDeep : colors.muted }}>
+                        <RaisedPressable
+                            key={option.id}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected }}
+                            onPress={() => {
+                                appHaptics.selection();
+                                onChange([...option.days]);
+                            }}
+                            surface={selected ? "active" : "fill"}
+                            depth={2}
+                            radius={8}
+                            selected={selected}
+                            className="h-8 justify-center px-3"
+                        >
+                            <Text className="font-sans text-[12.5px] font-semibold" style={{ color: selected ? colors.accentDeep : colors.muted }}>
                                 {t(`payment.daySet.${option.id}` as TranslationKey)}
                             </Text>
-                        </Pressable>
+                        </RaisedPressable>
                     );
                 })}
             </View>
