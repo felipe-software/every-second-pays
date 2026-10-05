@@ -6,6 +6,7 @@ const APP_VARIANT = process.env.APP_VARIANT ?? "production";
 const IS_DEVELOPMENT = APP_VARIANT === "development";
 const IS_PREVIEW = APP_VARIANT === "preview";
 const APP_IDENTIFIER = "software.felipe.everysecondpays";
+const EAS_PROJECT_ID = "84e9933c-067a-489e-b356-1526a665dbdc";
 
 const PREVIEW_PROGUARD_RULES = `
 # Nitro creates this implementation from C++ by its fully qualified class name.
@@ -94,6 +95,12 @@ export default (): ExpoConfig => ({
         favicon: "./src/assets/images/favicon.png",
     },
     plugins,
+    // Fingerprint runtime versions change with any native change, so an update only reaches
+    // binaries it can run on. See fingerprint.config.js for the patches it also tracks.
+    runtimeVersion: { policy: "fingerprint" },
+    updates: {
+        url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
+    },
     experiments: {
         typedRoutes: true,
         reactCompiler: true,
@@ -101,7 +108,7 @@ export default (): ExpoConfig => ({
     extra: {
         router: {},
         eas: {
-            projectId: "84e9933c-067a-489e-b356-1526a665dbdc",
+            projectId: EAS_PROJECT_ID,
         },
     },
     owner: "felipesoftware",

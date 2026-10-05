@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
+import { Raised, usePressSink } from "@/components/elevated/raised";
+import { TryAgainButton } from "@/components/try-again-button";
 import type { ThemeTransitionOrigin } from "@/features/appearance/theme-transition";
 import { appHaptics } from "@/features/haptics/haptics";
 
@@ -10,6 +12,7 @@ import { type LanguagePreference, useLanguageStore } from "./store";
 
 export function LanguageSelector({ reduceMotion }: { reduceMotion: boolean }) {
     const { t } = useI18n();
+    const sink = usePressSink();
     const { preference, hydrated, saving, loading, loadError, update, load } = useLanguageStore();
     const [saveError, setSaveError] = useState(false);
     const disabled = !hydrated || loading || loadError;
@@ -31,23 +34,23 @@ export function LanguageSelector({ reduceMotion }: { reduceMotion: boolean }) {
 
     return (
         <View testID="language-selector" className="mt-8">
-            <View className="overflow-hidden rounded-[18px] bg-row">
+            <Raised surface="row" depth={3} radius={18} pressed={sink.pressed} className="overflow-hidden">
                 <LanguageMenu
                     preference={preference}
                     disabled={disabled}
                     onOpen={appHaptics.selection}
+                    onPressIn={sink.onPressIn}
+                    onPressOut={sink.onPressOut}
                     onChange={change}
                 />
-            </View>
+            </Raised>
             {loadError || saveError ? (
                 <Text accessibilityLiveRegion="polite" className="mt-3 px-1 font-sans text-[12.5px] leading-5 text-muted">
                     {t(loadError ? "settings.loadError" : "settings.saveError")}
                 </Text>
             ) : null}
             {loadError ? (
-                <Pressable accessibilityRole="button" onPress={() => void load()} className="min-h-11 justify-center px-1 active:opacity-65">
-                    <Text className="font-sans font-semibold text-accent-deep">{t("common.tryAgain")}</Text>
-                </Pressable>
+                <TryAgainButton onPress={() => void load()} className="mt-3" />
             ) : null}
         </View>
     );

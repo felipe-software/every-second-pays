@@ -13,6 +13,7 @@
     },
     "production": {
       "bun": "1.4.2",
+      "channel": "production",
       "autoIncrement": true,
       "env": {
         "APP_VARIANT": "production"
@@ -20,6 +21,7 @@
     },
     "preview": {
       "extends": "production",
+      "channel": "preview",
       "autoIncrement": false,
       "env": {
         "APP_VARIANT": "preview"

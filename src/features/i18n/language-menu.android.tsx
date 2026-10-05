@@ -12,6 +12,7 @@ import { useState } from "react";
 import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
+import { RAISED_OUTLINE } from "@/components/elevated/raised";
 import { useEarningsTheme } from "@/features/earnings/theme";
 
 import { useI18n } from "./i18n";
@@ -29,12 +30,13 @@ function UpDownChevron({ color }: { color: string }) {
     );
 }
 
-export function LanguageMenu({ preference, disabled, onOpen, onChange }: LanguageMenuProps) {
+export function LanguageMenu({ preference, disabled, onOpen, onPressIn, onPressOut, onChange }: LanguageMenuProps) {
     const [open, setOpen] = useState(false);
     const { t } = useI18n();
     const { colors, isDark } = useEarningsTheme();
     const { width } = useWindowDimensions();
-    const menuWidth = Math.min(width, 430) - 44;
+    // Screen padding on both sides, then the raised row's outline.
+    const menuWidth = Math.min(width, 430) - 44 - 2 * RAISED_OUTLINE;
     const selected = LANGUAGE_OPTIONS.find((option) => option.value === preference)!;
     const openMenu = () => {
         onOpen();
@@ -49,6 +51,8 @@ export function LanguageMenu({ preference, disabled, onOpen, onChange }: Languag
             accessibilityState={{ disabled, expanded: open }}
             disabled={disabled}
             onPress={openMenu}
+            onPressIn={onPressIn}
+            onPressOut={onPressOut}
             className="min-h-[58px] flex-row items-center gap-2.5 px-4"
             style={{ width: menuWidth }}
         >

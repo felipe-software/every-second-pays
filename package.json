@@ -37,6 +37,7 @@
     "expo-status-bar": "~57.0.1",
     "expo-symbols": "~57.0.3",
     "expo-system-ui": "~57.0.4",
+    "expo-updates": "~57.0.24",
     "expo-web-browser": "~57.0.3",
     "number-flow-react-native": "^0.5.1",
     "react": "19.2.3",
@@ -83,6 +84,7 @@
     "expo-blur@57.0.3": "src/patches/expo-blur@57.0.3.patch",
     "react-native-nitro-theme-transition@1.0.0": "src/patches/react-native-nitro-theme-transition@1.0.0.patch",
     "react-native-jelly-tabs@0.0.14": "src/patches/react-native-jelly-tabs@0.0.14.patch",
-    "@expo/ui@57.0.19": "src/patches/@expo%2Fui@57.0.19.patch"
+    "@expo/ui@57.0.19": "src/patches/@expo%2Fui@57.0.19.patch",
+    "@lodev09/react-native-true-sheet@3.11.14": "src/patches/@lodev09%2Freact-native-true-sheet@3.11.14.patch"
   }
 }

@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
+import { RaisedPressable } from "@/components/elevated/raised";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 
 import type { PaymentDraft, PaymentSource } from "./model";
 import { useEarningsStore } from "./store";
-import { useEarningsTheme } from "./theme";
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 const FULL_DAY = [{ start: 0, end: 1440 }];
@@ -31,7 +31,6 @@ function createJob(sources: PaymentSource[], active: boolean): PaymentDraft {
 }
 
 export function DevJobControls() {
-    const { colors } = useEarningsTheme();
     const { t } = useI18n();
     const earningsSaving = useEarningsStore((state) => state.saving);
     const [adding, setAdding] = useState(false);
@@ -65,32 +64,38 @@ export function DevJobControls() {
                 {t("settings.developer")}
             </Text>
             <View className="gap-2 rounded-[20px] bg-row p-3">
-                <Pressable
+                <RaisedPressable
                     testID="add-always-active-job"
                     accessibilityRole="button"
                     accessibilityState={{ disabled }}
                     disabled={disabled}
                     onPress={() => void addJob(true)}
-                    className="min-h-[52px] items-center justify-center rounded-[15px] px-4 active:opacity-75"
-                    style={{ backgroundColor: disabled ? colors.soft : colors.accent }}
+                    surface={disabled ? "canvas" : "accent"}
+                    flat={disabled}
+                    depth={4}
+                    radius={15}
+                    className="min-h-[52px] items-center justify-center px-4"
                 >
-                    <Text className="text-center font-sans text-[14px] font-semibold text-ink">
+                    <Text className={`text-center font-sans text-[14px] font-semibold ${disabled ? "text-muted" : "text-ink"}`}>
                         {t("settings.addAlwaysActiveJob")}
                     </Text>
-                </Pressable>
-                <Pressable
+                </RaisedPressable>
+                <RaisedPressable
                     testID="add-never-active-job"
                     accessibilityRole="button"
                     accessibilityState={{ disabled }}
                     disabled={disabled}
                     onPress={() => void addJob(false)}
-                    className="min-h-[52px] items-center justify-center rounded-[15px] px-4 active:opacity-75"
-                    style={{ backgroundColor: colors.soft, opacity: disabled ? 0.55 : 1 }}
+                    surface="canvas"
+                    flat={disabled}
+                    depth={4}
+                    radius={15}
+                    className="min-h-[52px] items-center justify-center px-4"
                 >
-                    <Text className="text-center font-sans text-[14px] font-semibold text-ink">
+                    <Text className={`text-center font-sans text-[14px] font-semibold ${disabled ? "text-muted" : "text-ink"}`}>
                         {t("settings.addNeverActiveJob")}
                     </Text>
-                </Pressable>
+                </RaisedPressable>
             </View>
             {addError ? (
                 <Text accessibilityLiveRegion="polite" className="mt-3 px-1 font-sans text-[12.5px] leading-5 text-muted">

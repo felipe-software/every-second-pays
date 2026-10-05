@@ -1,4 +1,6 @@
-import { Pressable, Text } from "react-native";
+import { Text } from "react-native";
+
+import { RaisedPressable } from "@/components/elevated/raised";
 
 type SheetHeaderButtonProps = {
     accessibilityLabel: string;
@@ -20,16 +22,19 @@ export function SheetHeaderButton({
     const isClose = kind === "close";
 
     return (
-        <Pressable
+        <RaisedPressable
             accessibilityLabel={accessibilityLabel}
             accessibilityRole="button"
             accessibilityState={{ disabled }}
             disabled={disabled}
             onPress={onPress}
             testID={testID}
-            className={isClose
-                ? "h-9 w-9 items-center justify-center rounded-full bg-soft/80 active:opacity-65"
-                : "h-9 justify-center rounded-[11px] bg-danger/10 px-3.5 active:opacity-65"}
+            // Dim the whole control: a translucent face would let its edge show through.
+            containerStyle={{ opacity: disabled ? 0.55 : 1 }}
+            surface={isClose ? "fill" : "danger"}
+            depth={2}
+            radius={isClose ? 18 : 11}
+            className={isClose ? "h-9 w-9 items-center justify-center" : "h-9 justify-center px-3.5"}
         >
             <Text className={isClose
                 ? "mt-[-2px] font-sans text-[21px] text-muted"
@@ -37,6 +42,6 @@ export function SheetHeaderButton({
             >
                 {isClose ? "×" : label}
             </Text>
-        </Pressable>
+        </RaisedPressable>
     );
 }
