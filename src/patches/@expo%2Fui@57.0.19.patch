@@ -1,3 +1,26 @@
+diff --git a/node_modules/@expo/ui/.bun-tag-7c7731a76340ebce b/.bun-tag-7c7731a76340ebce
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/android/src/main/java/expo/modules/ui/DatePickerView.kt b/android/src/main/java/expo/modules/ui/DatePickerView.kt
+index 339b4df78056aa3c79008c477ee37cd92d740c71..ecf567bd7884ecfbb2eeaa2b07ab332e3469d147 100644
+--- a/android/src/main/java/expo/modules/ui/DatePickerView.kt
++++ b/android/src/main/java/expo/modules/ui/DatePickerView.kt
+@@ -1,6 +1,7 @@
+ package expo.modules.ui
+ 
+ import androidx.compose.material3.AlertDialog
++import androidx.compose.material3.AlertDialogDefaults
+ import androidx.compose.ui.res.stringResource
+ import androidx.compose.material3.ButtonDefaults
+ import androidx.compose.material3.DatePicker
+@@ -425,6 +426,7 @@ fun ExpoTimePickerDialogContent(props: TimePickerDialogProps, onDateSelected: (D
+ 
+   AlertDialog(
+     onDismissRequest = { onDismissRequest() },
++    containerColor = props.elementColors.containerColor.composeOrNull ?: AlertDialogDefaults.containerColor,
+     confirmButton = {
+       TextButton(onClick = {
+         val cal = Calendar.getInstance()
 diff --git a/android/src/main/java/expo/modules/ui/menu/DropdownMenu.kt b/android/src/main/java/expo/modules/ui/menu/DropdownMenu.kt
 index 13ca95ed0a9f0a20afdd828fd18331a00067e2d2..79335cd2d56ffda6e2e3776459cebd10f207ee72 100644
 --- a/android/src/main/java/expo/modules/ui/menu/DropdownMenu.kt
@@ -31,7 +54,7 @@ index 63640f80c09ee4a25716c4cf9602b1a5ef2c9620..6e892d994859d36377ca07fc40840e90
 +  val cornerRadius: Float? = null
  ) : ComposeProps
 diff --git a/build/jetpack-compose/DropdownMenu/index.d.ts b/build/jetpack-compose/DropdownMenu/index.d.ts
-index 652fd5ebed3efa231c87399689852f016818d445..22e4bf91c2d1697ba93e123a97e7a12c103bfaa2 100644
+index 652fd5ebed3efa231c87399689852f016818d445..1888603c81724be7b329988717a8474315b8b474 100644
 --- a/build/jetpack-compose/DropdownMenu/index.d.ts
 +++ b/build/jetpack-compose/DropdownMenu/index.d.ts
 @@ -30,6 +30,13 @@ export interface DropdownMenuProps {

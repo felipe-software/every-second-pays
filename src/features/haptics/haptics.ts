@@ -15,6 +15,8 @@ const MONEY_LANDING_PATTERN: Pattern = {
 const PRELOADED_PRESETS = ["Anvil", "Buzz", "Firecracker", "Strike", "Wisp"];
 
 export const appHaptics = {
+    // Used when a raised control sinks under the finger, before any action haptic on release.
+    press: Presets.System.impactLight,
     // Used for language menus, palettes, chips, tokens, work hours, and time adjustments.
     selection: Presets.wisp,
     // Used when switching between the system, light, and dark appearance modes.

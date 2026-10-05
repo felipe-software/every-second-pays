@@ -1,8 +1,9 @@
 import { TrueSheet } from "@lodev09/react-native-true-sheet";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Platform, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { RiseIn } from "@/components/elevated/rise-in";
 import { useI18n } from "@/features/i18n/i18n";
 import { appHaptics } from "@/features/haptics/haptics";
 
@@ -10,10 +11,8 @@ import {
     EMPTY_DRAFT,
     type PaymentDraft,
     type PaymentSource,
-    currentShift,
     hoursPerDay,
     parseAmount,
-    ratePerSecond,
     sourceToDraft,
 } from "./model";
 import { PaymentEditor, type PaymentToken } from "./payment-editor";
@@ -26,7 +25,6 @@ export { PrimaryButton } from "./payment-sheet-controls";
 
 type PaymentSheetProps = {
     source?: PaymentSource;
-    now: Date;
     saving?: boolean;
     onDismiss: () => void;
     onDelete: (id: number) => Promise<void>;
@@ -41,21 +39,17 @@ function cloneEmptyDraft(): PaymentDraft {
     };
 }
 
-export function PaymentSheet({ source, now, saving = false, onDismiss, onDelete, onSave }: PaymentSheetProps) {
+export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSave }: PaymentSheetProps) {
     const insets = useSafeAreaInsets();
-    const { colors } = useEarningsTheme();
-    const { t, formatMoney, formatTime } = useI18n();
+    const { colors, isDark } = useEarningsTheme();
+    const { t } = useI18n();
     const sheetRef = useRef<TrueSheet>(null);
     const [draft, setDraft] = useState<PaymentDraft>(() => source ? sourceToDraft(source) : cloneEmptyDraft());
     const [token, setToken] = useState<PaymentToken>("name");
+    // The footer floats over the editor, so the editor scrolls clear of it.
+    const [footerHeight, setFooterHeight] = useState(0);
 
     const amount = parseAmount(draft.amount);
-    const calculationSource = useMemo<PaymentSource>(
-        () => ({ ...draft, id: source?.id ?? -1, amount }),
-        [amount, draft, source?.id],
-    );
-    const rate = ratePerSecond(calculationSource);
-    const shift = currentShift(calculationSource, now);
     const recurring = draft.frequency !== "once";
     const valid = draft.name.trim().length > 0
         && amount > 0
@@ -86,16 +80,6 @@ export function PaymentSheet({ source, now, saving = false, onDismiss, onDelete,
         }
     };
 
-    const nowLine = recurring
-        ? shift
-            ? t("payment.workingNow", { time: formatTime(shift.end) })
-            : draft.days.length && hoursPerDay(draft) > 0
-                ? t("payment.notWorkingNow")
-                : t("payment.pickSchedule")
-        : draft.when === "later"
-            ? t("payment.heldUntilDate")
-            : t("payment.landsToday");
-
     const submitLabel = saving
         ? t("payment.saving")
         : source
@@ -107,10 +91,12 @@ export function PaymentSheet({ source, now, saving = false, onDismiss, onDelete,
     return (
         <TrueSheet
             ref={sheetRef}
-            backgroundColor={Platform.OS === "ios" ? undefined : colors.sheet}
+            backgroundColor={Platform.OS === "ios" ? undefined : colors.canvas}
             detents={[0.82, 1]}
             initialDetentIndex={0}
             dimmed
+            // A black dim hides the canvas-colored sheet in dark mode, so lift the backdrop instead.
+            dimmedColor={isDark ? colors.track : undefined}
             dismissible={!saving}
             draggable={!saving}
             grabber
@@ -150,28 +136,10 @@ export function PaymentSheet({ source, now, saving = false, onDismiss, onDelete,
             }
             footer={
                 <View
-                    className="gap-3 px-6 pt-3.5"
+                    onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+                    className="px-6 pt-3.5"
                     style={{ paddingBottom: 12 + (Platform.OS === "android" ? insets.bottom : 0) }}
                 >
-                    <View className="flex-row items-center gap-[9px]">
-                        <View
-                            className="h-2 w-2 rounded-full"
-                            style={{
-                                backgroundColor: shift ? colors.accent : colors.field,
-                                shadowColor: colors.accent,
-                                shadowOpacity: shift ? 0.45 : 0,
-                                shadowRadius: 5,
-                            }}
-                        />
-                        <Text className="min-w-0 flex-1 font-sans text-[12.5px] font-medium text-ink">{nowLine}</Text>
-                        <Text className="font-sans text-[12.5px] font-semibold text-muted">
-                            {recurring && rate > 0
-                                ? t("payment.ratePerSecond", { amount: formatMoney(rate, 4) })
-                                : !recurring && amount > 0
-                                    ? `$${formatMoney(amount)}`
-                                    : ""}
-                        </Text>
-                    </View>
                     <PrimaryButton
                         label={submitLabel}
                         disabled={!valid || saving}
@@ -184,17 +152,20 @@ export function PaymentSheet({ source, now, saving = false, onDismiss, onDelete,
             <PaymentSummary draft={draft} amount={amount} token={token} onTokenChange={setToken} />
             <ScrollView
                 className="flex-1"
-                style={{ backgroundColor: colors.sheetContent }}
-                contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 20 }}
+                style={{ backgroundColor: "transparent" }}
+                contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 20 + footerHeight }}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >
-                <PaymentEditor
-                    draft={draft}
-                    token={token}
-                    onTokenChange={setToken}
-                    onPatch={(patch) => setDraft((current) => ({ ...current, ...patch }))}
-                />
+                {/* Each word opens its own editor, which springs in as the selection moves. */}
+                <RiseIn key={token}>
+                    <PaymentEditor
+                        draft={draft}
+                        token={token}
+                        onTokenChange={setToken}
+                        onPatch={(patch) => setDraft((current) => ({ ...current, ...patch }))}
+                    />
+                </RiseIn>
             </ScrollView>
         </TrueSheet>
     );

@@ -1,4 +1,5 @@
 export const appHaptics = {
+    press: () => {},
     selection: () => {},
     themeMode: () => {},
     primaryAction: () => {},

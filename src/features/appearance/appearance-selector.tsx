@@ -1,8 +1,12 @@
 import { Pressable, Text, View } from "react-native";
 
+import { CheckIcon } from "@/components/check-icon";
+import { PopIn } from "@/components/elevated/pop-in";
+import { Raised, usePressSink } from "@/components/elevated/raised";
 import { useI18n } from "@/features/i18n/i18n";
 import type { TranslationKey } from "@/features/i18n/translations";
 
+import { mixColors } from "./color";
 import { getThemeColors, type Appearance, type ThemeMode } from "./palettes";
 import type { ThemeTransitionOrigin } from "./theme-transition";
 
@@ -32,6 +36,8 @@ function AppearancePreview({
     const dark = getThemeColors(palette, true);
     const preview = mode === "dark" ? dark : light;
     const followsDevice = mode === "system";
+    const border = active ? preview.accent : preview.track;
+    const sink = usePressSink();
 
     return (
         <Pressable
@@ -41,57 +47,64 @@ function AppearancePreview({
             accessibilityState={{ checked: active, disabled }}
             disabled={disabled}
             onPress={(event) => onPress({ x: event.nativeEvent.pageX, y: event.nativeEvent.pageY })}
-            className="min-w-0 flex-1 items-center "
+            onPressIn={sink.onPressIn}
+            onPressOut={sink.onPressOut}
+            className="min-w-0 flex-1 items-stretch"
         >
-            <View
-                className="h-[116px] w-full overflow-hidden rounded-[16px] border-[3px] p-2"
-                style={{
-                    backgroundColor: preview.canvas,
-                    borderColor: active ? preview.accent : preview.soft,
-                }}
+            <Raised
+                // Painted in the previewed palette, so the colors can't come from the app's tokens.
+                surface={{ face: preview.canvas, edge: mixColors(border, "#000000", active ? 0.24 : 0.12) }}
+                depth={4}
+                radius={16}
+                selected={active}
+                pressed={sink.pressed}
+                className="h-[116px]"
             >
-                {followsDevice ? (
+                {/* The 3 pt selection border sits inside the 1 px raised outline. */}
+                <View className="flex-1 overflow-hidden rounded-[15px] border-[3px] p-2" style={{ borderColor: border }}>
+                    {followsDevice ? (
+                        <View
+                            pointerEvents="none"
+                            className="absolute -right-5 -top-8 h-[180px] w-[72%] rotate-[16deg]"
+                            style={{ backgroundColor: dark.canvas }}
+                        />
+                    ) : null}
                     <View
-                        pointerEvents="none"
-                        className="absolute -right-5 -top-8 h-[180px] w-[72%] rotate-[16deg]"
-                        style={{ backgroundColor: dark.canvas }}
+                        className="mb-2.5 h-1 w-6 self-center rounded-full"
+                        style={{ backgroundColor: followsDevice ? preview.accent : preview.track }}
                     />
-                ) : null}
-                <View
-                    className="mb-2.5 h-1 w-6 self-center rounded-full"
-                    style={{ backgroundColor: followsDevice ? preview.accent : preview.track }}
-                />
-                <View className="items-center">
-                    <Text
-                        className="font-sans text-[6px] font-medium"
-                        style={{ color: followsDevice ? preview.accent : preview.muted }}
-                    >
-                        {t("settings.previewToday")}
-                    </Text>
-                    <Text
-                        className="mt-0.5 font-sans text-[15px] font-bold tracking-[-0.8px]"
-                        style={{ color: followsDevice ? preview.accent : preview.ink }}
-                    >
-                        ${formatMoney(124.8)}
-                    </Text>
+                    <View className="items-center">
+                        <Text
+                            className="font-sans text-[6px] font-medium"
+                            style={{ color: followsDevice ? preview.accent : preview.muted }}
+                        >
+                            {t("settings.previewToday")}
+                        </Text>
+                        <Text
+                            className="mt-0.5 font-sans text-[15px] font-bold tracking-[-0.8px]"
+                            style={{ color: followsDevice ? preview.accent : preview.ink }}
+                        >
+                            ${formatMoney(124.8)}
+                        </Text>
+                    </View>
+                    <View className="mt-2.5 gap-1">
+                        <View
+                            className="h-[17px] rounded-[6px]"
+                            style={{ backgroundColor: followsDevice ? preview.accent : preview.row, opacity: followsDevice ? 0.28 : 1 }}
+                        />
+                        <View
+                            className="h-[17px] rounded-[6px]"
+                            style={{ backgroundColor: followsDevice ? preview.accent : preview.active, opacity: followsDevice ? 0.5 : 1 }}
+                        />
+                    </View>
+                    <View
+                        className="absolute bottom-2 self-center h-1.5 w-7 rounded-full"
+                        style={{ backgroundColor: preview.accent }}
+                    />
                 </View>
-                <View className="mt-2.5 gap-1">
-                    <View
-                        className="h-[17px] rounded-[6px]"
-                        style={{ backgroundColor: followsDevice ? preview.accent : preview.row, opacity: followsDevice ? 0.28 : 1 }}
-                    />
-                    <View
-                        className="h-[17px] rounded-[6px]"
-                        style={{ backgroundColor: followsDevice ? preview.accent : preview.active, opacity: followsDevice ? 0.5 : 1 }}
-                    />
-                </View>
-                <View
-                    className="absolute bottom-2 self-center h-1.5 w-7 rounded-full"
-                    style={{ backgroundColor: preview.accent }}
-                />
-            </View>
+            </Raised>
 
-            <View className="mt-2.5 flex-row items-center gap-1.5">
+            <View className="mt-2 flex-row items-center justify-center gap-1.5">
                 <View
                     className="h-4 w-4 items-center justify-center rounded-full border"
                     style={{
@@ -99,7 +112,9 @@ function AppearancePreview({
                         borderColor: active ? preview.accent : preview.track,
                     }}
                 >
-                    {active ? <Text className="font-sans text-[10px] font-bold text-white">✓</Text> : null}
+                    <PopIn visible={active}>
+                        <CheckIcon size={12} color="#FFFFFF" />
+                    </PopIn>
                 </View>
                 <Text className="font-sans text-[13px] font-semibold text-ink">{label}</Text>
             </View>

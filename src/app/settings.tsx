@@ -1,8 +1,9 @@
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { TryAgainButton } from "@/components/try-again-button";
 import { AccentColorPicker } from "@/features/appearance/accent-color-picker";
 import { AppearanceSelector } from "@/features/appearance/appearance-selector";
 import type { Appearance, PaletteId, ThemeMode } from "@/features/appearance/palettes";
@@ -88,9 +89,7 @@ export default function SettingsScreen() {
                         </View>
                     ) : null}
                     {loadError ? (
-                        <Pressable accessibilityRole="button" onPress={() => void load()} className="mt-2 min-h-11 justify-center px-1 active:opacity-65">
-                            <Text className="font-sans font-semibold text-accent-deep">{t("common.tryAgain")}</Text>
-                        </Pressable>
+                        <TryAgainButton onPress={() => void load()} className="mt-3" />
                     ) : null}
                 </ScrollView>
             </View>

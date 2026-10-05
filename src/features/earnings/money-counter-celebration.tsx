@@ -201,10 +201,13 @@ export function MoneyCounterCelebration({
     transfer,
     wholeTargetRef,
     centsTargetRef,
+    size,
 }: PropsWithChildren<{
     transfer: MoneyTransfer | null;
     wholeTargetRef: RefObject<View | null>;
     centsTargetRef: RefObject<View | null>;
+    /** Font size of the whole number; a change resizes the counter with a bump instead of a jump. */
+    size: number;
 }>) {
     const isFocused = useIsFocused();
     const isFocusedRef = useRef(isFocused);
@@ -216,9 +219,35 @@ export function MoneyCounterCelebration({
         transform: [{ scale: counterScale.get() }],
     }));
 
+    const previousSize = useRef(size);
+
     useLayoutEffect(() => {
         isFocusedRef.current = isFocused;
     }, [isFocused]);
+
+    // Start the resized counter at its old size, then bump it into place.
+    useLayoutEffect(() => {
+        const from = previousSize.current;
+        previousSize.current = size;
+        if (from === size) return;
+
+        cancelAnimation(counterScale);
+        counterScale.set(from / size);
+        counterScale.set(withSequence(
+            ReduceMotion.System,
+            withTiming(COUNTER_IMPACT_SCALE.whole, {
+                duration: 105,
+                easing: Easing.out(Easing.quad),
+                reduceMotion: ReduceMotion.System,
+            }),
+            withSpring(1, {
+                damping: 11,
+                mass: 0.55,
+                stiffness: 220,
+                reduceMotion: ReduceMotion.System,
+            }),
+        ));
+    }, [counterScale, size]);
 
     useEffect(() => {
         if (!transfer) return;
@@ -307,7 +336,8 @@ export function MoneyCounterCelebration({
 
 const styles = StyleSheet.create({
     stage: {
-        minHeight: 92,
+        // The height of the 88 pt total: smaller sizes center inside it, so the list never moves.
+        height: 96,
         alignItems: "center",
         justifyContent: "center",
         overflow: "visible",

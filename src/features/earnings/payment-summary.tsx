@@ -1,5 +1,5 @@
-import { Fragment } from "react";
-import { Text, View } from "react-native";
+import { Fragment, useState } from "react";
+import { type LayoutChangeEvent, Text, View } from "react-native";
 
 import { useI18n } from "@/features/i18n/i18n";
 import type { TranslationKey } from "@/features/i18n/translations";
@@ -34,9 +34,29 @@ export function PaymentSummary({
 }) {
     const { t, locale, formatDays, formatMoney, formatTime } = useI18n();
     const recurring = draft.frequency !== "once";
+    // While the hours are being edited, an hour word keeps the width of its hour's longest
+    // form ("9:45 AM"), so dragging the minutes never rewraps the sentence.
+    const hourReserve = (minutes: number) => token === "hours"
+        ? [formatTime(Math.floor(minutes / 60) * 60 + 45)]
+        : undefined;
+
+    // While one word is being edited the sentence may grow but never shrinks back, so the
+    // editor below can't bounce up and down as a time crosses a line break.
+    const layoutKey = `${token}:${draft.frequency}:${draft.shifts.length}`;
+    const [settled, setSettled] = useState({ key: layoutKey, height: 0 });
+    const minHeight = settled.key === layoutKey ? settled.height : 0;
+    const onLayout = (event: LayoutChangeEvent) => {
+        const { height } = event.nativeEvent.layout;
+        if (settled.key !== layoutKey || height > settled.height) setSettled({ key: layoutKey, height });
+    };
 
     return (
-        <View testID="payment-sheet" className="flex-row flex-wrap items-center px-6 pt-1 pb-5">
+        <View
+            testID="payment-sheet"
+            onLayout={onLayout}
+            className="flex-row flex-wrap items-center gap-y-1 px-6 pt-1 pb-5"
+            style={{ minHeight }}
+        >
             <TokenButton active={token === "name"} onPress={() => onTokenChange("name")}>
                 {draft.name.trim() || t("payment.someone")}
             </TokenButton>
@@ -57,11 +77,11 @@ export function PaymentSummary({
                     {draft.shifts.map((shift, index) => (
                         <Fragment key={`${shift.start}-${shift.end}-${index}`}>
                             <Connector>{t(index === 0 ? "payment.summary.from" : "payment.summary.andFrom")}</Connector>
-                            <TokenButton active={token === "hours"} onPress={() => onTokenChange("hours")}>
+                            <TokenButton active={token === "hours"} reserve={hourReserve(shift.start)} onPress={() => onTokenChange("hours")}>
                                 {formatTime(shift.start)}
                             </TokenButton>
                             <Connector>{t("payment.summary.to")}</Connector>
-                            <TokenButton active={token === "hours"} onPress={() => onTokenChange("hours")}>
+                            <TokenButton active={token === "hours"} reserve={hourReserve(shift.end)} onPress={() => onTokenChange("hours")}>
                                 {formatTime(shift.end)}
                             </TokenButton>
                         </Fragment>
