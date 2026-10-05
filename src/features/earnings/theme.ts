@@ -6,9 +6,11 @@ import { useAppearanceStore } from "../appearance/store";
 /**
  * The solid edge under a raised control: a darker shade of the control's own face.
  * Accent faces take a deeper shade so the edge still reads against the saturated color.
+ * Dark faces use the same light touch: any deeper and the edge sinks below the canvas,
+ * reading as a black shadow instead of the control's side.
  */
-export function edgeColor(face: string, { accent = false, isDark = false } = {}) {
-    return mixColors(face, "#000000", accent ? 0.24 : isDark ? 0.3 : 0.14);
+export function edgeColor(face: string, { accent = false } = {}) {
+    return mixColors(face, "#000000", accent ? 0.24 : 0.14);
 }
 
 function deriveColors(base: ThemeColors, isDark: boolean) {
@@ -22,7 +24,6 @@ function deriveColors(base: ThemeColors, isDark: boolean) {
     const raised = isDark ? mixColors(fill, base.ink, 0.12) : card;
     const chipSelected = mixColors(card, base.accent, 0.28);
     const dangerFace = mixColors(base.canvas, base.danger, 0.1);
-    const edge = (face: string) => edgeColor(face, { isDark });
 
     return {
         ...base,
@@ -31,13 +32,13 @@ function deriveColors(base: ThemeColors, isDark: boolean) {
         raised,
         chipSelected,
         dangerFace,
-        edgeRow: edge(base.row),
-        edgeActive: edge(base.active),
-        edgeFill: edge(fill),
-        edgeCanvas: edge(base.canvas),
-        edgeRaised: edge(raised),
-        edgeChip: edge(chipSelected),
-        edgeDanger: edge(dangerFace),
+        edgeRow: edgeColor(base.row),
+        edgeActive: edgeColor(base.active),
+        edgeFill: edgeColor(fill),
+        edgeCanvas: edgeColor(base.canvas),
+        edgeRaised: edgeColor(raised),
+        edgeChip: edgeColor(chipSelected),
+        edgeDanger: edgeColor(dangerFace),
         edgeAccent: edgeColor(base.accent, { accent: true }),
     };
 }
