@@ -1,0 +1,99 @@
+name: EAS Update
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Update channel (the build profile it reaches)
+        required: true
+        default: production
+        type: choice
+        options:
+          - production
+          - preview
+      ref:
+        description: Branch or tag to publish (release has the bumped version)
+        required: true
+        default: release
+        type: string
+      message:
+        description: Update message (defaults to the version and commit)
+        required: false
+        type: string
+      dry_run:
+        description: Only check that a build can run this update, without publishing
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eas-update-${{ inputs.channel }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      CHANNEL: ${{ inputs.channel }}
+      # Resolve the same config as the build profile, or the fingerprint won't match its builds.
+      APP_VARIANT: ${{ inputs.channel }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # An update only reaches binaries with the same runtime version. Publishing one that no
+      # build can run would just sit on the channel, so stop and ask for a store build instead.
+      - name: Find a build that can run this update
+        run: |
+          set -euo pipefail
+
+          runtime=$(bunx expo-updates runtimeversion:resolve --platform android | jq -r .runtimeVersion)
+          build=$(bunx eas-cli@latest build:list \
+            --platform android \
+            --channel "${CHANNEL}" \
+            --runtime-version "${runtime}" \
+            --status finished \
+            --limit 1 \
+            --json \
+            --non-interactive | jq '.[0] // empty')
+
+          if [ -z "${build}" ]; then
+            echo "::error::No finished Android build on '${CHANNEL}' has runtime ${runtime}. The native code changed since the last store build, so run the EAS Build workflow instead."
+            exit 1
+          fi
+
+          echo "Runtime \`${runtime}\` matches build v$(echo "${build}" | jq -r .appVersion) ($(echo "${build}" | jq -r .appBuildVersion)) on \`${CHANNEL}\`." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish update
+        if: ${{ !inputs.dry_run }}
+        env:
+          MESSAGE: ${{ inputs.message }}
+        run: |
+          set -euo pipefail
+
+          version=$(bun pm pkg get version | tr -d '"')
+          message="${MESSAGE:-v${version} ($(git rev-parse --short HEAD))}"
+
+          bunx eas-cli@latest update \
+            --channel "${CHANNEL}" \
+            --environment "${CHANNEL}" \
+            --platform android \
+            --message "${message}" \
+            --non-interactive
+
+          echo "Published **${message}** to \`${CHANNEL}\`." >> "$GITHUB_STEP_SUMMARY"
