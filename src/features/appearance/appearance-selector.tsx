@@ -1,7 +1,8 @@
 import { Pressable, Text, View } from "react-native";
 
-import { Raised, usePressSink } from "@/components/elevated/raised";
+import { CheckIcon } from "@/components/check-icon";
 import { PopIn } from "@/components/elevated/pop-in";
+import { Raised, usePressSink } from "@/components/elevated/raised";
 import { useI18n } from "@/features/i18n/i18n";
 import type { TranslationKey } from "@/features/i18n/translations";
 
@@ -112,7 +113,7 @@ function AppearancePreview({
                     }}
                 >
                     <PopIn visible={active}>
-                        <Text className="font-sans text-[10px] font-bold text-white">✓</Text>
+                        <CheckIcon size={12} color="#FFFFFF" />
                     </PopIn>
                 </View>
                 <Text className="font-sans text-[13px] font-semibold text-ink">{label}</Text>

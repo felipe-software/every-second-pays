@@ -1,8 +1,9 @@
 import { Pressable, Text, View } from "react-native";
 
+import { CheckIcon } from "@/components/check-icon";
+import { PopIn } from "@/components/elevated/pop-in";
 import { Raised, usePressSink } from "@/components/elevated/raised";
 import { edgeColor } from "@/features/earnings/theme";
-import { PopIn } from "@/components/elevated/pop-in";
 import { useI18n } from "@/features/i18n/i18n";
 import type { TranslationKey } from "@/features/i18n/translations";
 
@@ -55,7 +56,7 @@ function Swatch({
                 className="h-9 w-9 items-center justify-center"
             >
                 <PopIn visible={selected}>
-                    <Text className="font-sans text-[17px] font-bold text-white">✓</Text>
+                    <CheckIcon size={18} color="#FFFFFF" />
                 </PopIn>
             </Raised>
         </Pressable>
