@@ -10,6 +10,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { useEarningsTheme } from "@/features/earnings/theme";
+import { appHaptics } from "@/features/haptics/haptics";
 
 import { useSquash } from "./use-squash";
 
@@ -131,9 +132,10 @@ export function Raised({
 }
 
 /**
- * Press tracking for a raised surface whose pressable is bigger than the surface, e.g. a
- * preview card with a caption underneath, or a strip of toggles that sink together: spread
- * the handlers on the pressable(s) and hand `pressed` to the `Raised` surface.
+ * Press tracking for a raised surface: sinks the face and plays a light haptic as the finger
+ * lands. Use it directly when the pressable is bigger than the surface, e.g. a preview card
+ * with a caption underneath, or a strip of toggles that sink together: spread the handlers on
+ * the pressable(s) and hand `pressed` to the `Raised` surface.
  */
 export function usePressSink() {
     const pressed = useSharedValue(0);
@@ -142,7 +144,11 @@ export function usePressSink() {
         easing: Easing.out(Easing.quad),
         reduceMotion: ReduceMotion.System,
     }));
-    return { pressed, onPressIn: () => sink(1), onPressOut: () => sink(0) };
+    const onPressIn = () => {
+        appHaptics.press();
+        sink(1);
+    };
+    return { pressed, onPressIn, onPressOut: () => sink(0) };
 }
 
 /** A raised button that sinks into its edge while pressed. */
