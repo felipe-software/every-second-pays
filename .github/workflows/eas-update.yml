@@ -20,6 +20,10 @@ on:
         description: Update message (defaults to the version and commit)
         required: false
         type: string
+      local_build_runtime:
+        description: Runtime version of a store build made with `eas build --local`, which EAS has no record of
+        required: false
+        type: string
       dry_run:
         description: Only check that a build can run this update, without publishing
         required: false
@@ -59,10 +63,22 @@ jobs:
       # An update only reaches binaries with the same runtime version. Publishing one that no
       # build can run would just sit on the channel, so stop and ask for a store build instead.
       - name: Find a build that can run this update
+        env:
+          LOCAL_BUILD_RUNTIME: ${{ inputs.local_build_runtime }}
         run: |
           set -euo pipefail
 
           runtime=$(bunx expo-updates runtimeversion:resolve --platform android | jq -r .runtimeVersion)
+
+          if [ -n "${LOCAL_BUILD_RUNTIME}" ]; then
+            if [ "${LOCAL_BUILD_RUNTIME}" != "${runtime}" ]; then
+              echo "::error::This commit has runtime ${runtime}, but the local build runs ${LOCAL_BUILD_RUNTIME}. The native code changed since that build, so run the EAS Build workflow instead."
+              exit 1
+            fi
+            echo "Runtime \`${runtime}\` matches the local build." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
           build=$(bunx eas-cli@latest build:list \
             --platform android \
             --channel "${CHANNEL}" \
