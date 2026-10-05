@@ -15,6 +15,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import AppTabs from "@/components/app-tabs";
 import { useAppearanceSync } from "@/features/appearance/use-appearance-sync";
+import { usePeriodStore } from "@/features/earnings/period-store";
 import { useEarningsTheme } from "@/features/earnings/theme";
 import { useHapticsWarmup } from "@/features/haptics/haptics";
 import { I18nProvider } from "@/features/i18n/i18n";
@@ -39,6 +40,9 @@ export default function RootLayout() {
     const { colors } = useEarningsTheme();
     const languageReady = useLanguageStore((state) => state.hydrated);
     const loadLanguage = useLanguageStore((state) => state.load);
+    // Wait for the saved period so the Earnings screen never flashes "Today" first.
+    const periodReady = usePeriodStore((state) => state.hydrated);
+    const loadPeriod = usePeriodStore((state) => state.load);
     const [fontsLoaded] = useFonts({
         Archivo: Archivo_400Regular,
         "Archivo-Medium": Archivo_500Medium,
@@ -47,14 +51,15 @@ export default function RootLayout() {
     });
 
     useEffect(() => { void loadLanguage(); }, [loadLanguage]);
+    useEffect(() => { void loadPeriod(); }, [loadPeriod]);
 
     useEffect(() => {
-        if (fontsLoaded && appearanceReady && languageReady) {
+        if (fontsLoaded && appearanceReady && languageReady && periodReady) {
             SplashScreen.hideAsync();
         }
-    }, [fontsLoaded, appearanceReady, languageReady]);
+    }, [fontsLoaded, appearanceReady, languageReady, periodReady]);
 
-    if (!fontsLoaded || !appearanceReady || !languageReady) return null;
+    if (!fontsLoaded || !appearanceReady || !languageReady || !periodReady) return null;
 
     return (
         <I18nProvider>

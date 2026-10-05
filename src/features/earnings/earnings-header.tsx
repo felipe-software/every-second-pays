@@ -1,11 +1,23 @@
 import { NumberFlow } from "number-flow-react-native";
 import { useRef } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
+import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 
 import { type MoneyTransfer, MoneyCounterCelebration } from "./money-counter-celebration";
+import { PeriodButton } from "./period-button";
+import { usePeriodStore } from "./period-store";
 import { useEarningsTheme } from "./theme";
+
+// A horizontal swipe on the total steps through the periods once it travels this far.
+const SWIPE_DISTANCE = 30;
+
+/** Whole-number size: long totals shrink so they still fit on one line. */
+function wholeFontSize(characters: number) {
+    return characters <= 5 ? 88 : characters === 6 ? 74 : 62;
+}
 
 function splitChangedWhole(formattedValue: string, changedDigitIndex: number) {
     let digitIndex = 0;
@@ -24,19 +36,20 @@ function splitChangedWhole(formattedValue: string, changedDigitIndex: number) {
 
 export function EarningsHeader({
     total,
-    liveRate,
     ready,
     loadError,
     moneyTransfer,
 }: {
     total: number;
-    liveRate: number;
     ready: boolean;
     loadError: boolean;
     moneyTransfer: MoneyTransfer | null;
 }) {
     const { colors } = useEarningsTheme();
-    const { t, locale, decimalSeparator, formatMoney, formatNumber } = useI18n();
+    const { locale, decimalSeparator, formatNumber } = useI18n();
+    const period = usePeriodStore((state) => state.period);
+    const cyclePeriod = usePeriodStore((state) => state.cycle);
+    const stepPeriod = usePeriodStore((state) => state.step);
     const displayTotal = Math.round(total * 100) / 100;
     const whole = Math.floor(displayTotal);
     const cents = Math.round((displayTotal - whole) * 100) % 100;
@@ -48,72 +61,92 @@ export function EarningsHeader({
             moneyTransfer.changedDigitIndex,
         )
         : null;
+    const wholeSize = wholeFontSize(formatNumber(whole, { maximumFractionDigits: 0 }).length);
+    const centsSize = Math.round(wholeSize * 0.41);
+    const centsTracking = -centsSize / 36;
     const wholeNumberStyle = {
         color: colors.ink,
         fontFamily: "Archivo-Bold",
-        fontSize: 88,
+        fontSize: wholeSize,
         fontWeight: "700" as const,
-        letterSpacing: -4.4,
+        letterSpacing: -wholeSize * 0.05,
     };
 
-    const status = loadError
-        ? t("home.sourcesUnavailable")
-        : !ready
-            ? t("home.loadingSources")
-            : liveRate > 0
-                ? t("home.everySecond", { amount: formatMoney(liveRate, 4) })
-                : t("home.offTheClock");
+    // Claims horizontal drags sooner (±12) than the Android tab pager (±16), and gives up on
+    // vertical ones so the list below still scrolls.
+    const swipe = Gesture.Pan()
+        .activeOffsetX([-12, 12])
+        .failOffsetY([-14, 14])
+        .runOnJS(true)
+        .onEnd((event) => {
+            if (Math.abs(event.translationX) < SWIPE_DISTANCE) return;
+            if (stepPeriod(event.translationX < 0 ? 1 : -1)) appHaptics.selection();
+        });
 
     return (
         <View className="items-center pt-[54px]" style={{ zIndex: 10 }}>
-            <MoneyCounterCelebration
-                transfer={ready && !loadError ? moneyTransfer : null}
-                wholeTargetRef={wholeTargetRef}
-                centsTargetRef={centsTargetRef}
-            >
-                <Text className="mr-1 font-sans text-[32px] font-medium text-muted">$</Text>
-                <View collapsable={false}>
-                    <NumberFlow
-                        value={whole}
-                        mask
-                        locales={locale}
-                        format={{ maximumFractionDigits: 0 }}
-                        trend={1}
-                        style={wholeNumberStyle}
-                    />
-                    {changedWhole ? (
-                        <View
-                            pointerEvents="none"
-                            accessibilityElementsHidden
-                            importantForAccessibility="no-hide-descendants"
-                            style={styles.wholeMeasurement}
-                        >
-                            <Text style={wholeNumberStyle}>{changedWhole[0]}</Text>
-                            <View ref={wholeTargetRef} collapsable={false}>
-                                <Text style={wholeNumberStyle}>{changedWhole[1]}</Text>
-                            </View>
+            <GestureDetector gesture={swipe}>
+                {/* box-only: NumberFlow draws with native Compose views on Android. A swipe that
+                    starts on one of them leaves Android cancelling the next tap anywhere. */}
+                <View collapsable={false} pointerEvents="box-only" className="self-stretch">
+                    <MoneyCounterCelebration
+                        transfer={ready && !loadError ? moneyTransfer : null}
+                        wholeTargetRef={wholeTargetRef}
+                        centsTargetRef={centsTargetRef}
+                        size={wholeSize}
+                    >
+                        <Text className="mr-1 font-sans text-[32px] font-medium text-muted">$</Text>
+                        <View collapsable={false}>
+                            <NumberFlow
+                                value={whole}
+                                mask
+                                locales={locale}
+                                format={{ maximumFractionDigits: 0 }}
+                                trend={1}
+                                style={wholeNumberStyle}
+                            />
+                            {changedWhole ? (
+                                <View
+                                    pointerEvents="none"
+                                    accessibilityElementsHidden
+                                    importantForAccessibility="no-hide-descendants"
+                                    style={styles.wholeMeasurement}
+                                >
+                                    <Text style={wholeNumberStyle}>{changedWhole[0]}</Text>
+                                    <View ref={wholeTargetRef} collapsable={false}>
+                                        <Text style={wholeNumberStyle}>{changedWhole[1]}</Text>
+                                    </View>
+                                </View>
+                            ) : null}
                         </View>
-                    ) : null}
+                        <Text
+                            className="font-sans font-semibold text-muted"
+                            style={{ fontSize: centsSize, letterSpacing: centsTracking }}
+                        >
+                            {decimalSeparator}
+                        </Text>
+                        <View ref={centsTargetRef} collapsable={false}>
+                            <NumberFlow
+                                value={cents}
+                                mask
+                                locales={locale}
+                                format={{ minimumIntegerDigits: 2, maximumFractionDigits: 0, useGrouping: false }}
+                                trend={1}
+                                style={{
+                                    color: colors.muted,
+                                    fontFamily: "Archivo-SemiBold",
+                                    fontSize: centsSize,
+                                    fontWeight: "600",
+                                    letterSpacing: centsTracking,
+                                }}
+                            />
+                        </View>
+                    </MoneyCounterCelebration>
                 </View>
-                <Text className="font-sans text-[36px] font-semibold tracking-[-1px] text-muted">{decimalSeparator}</Text>
-                <View ref={centsTargetRef} collapsable={false}>
-                    <NumberFlow
-                        value={cents}
-                        mask
-                        locales={locale}
-                        format={{ minimumIntegerDigits: 2, maximumFractionDigits: 0, useGrouping: false }}
-                        trend={1}
-                        style={{
-                            color: colors.muted,
-                            fontFamily: "Archivo-SemiBold",
-                            fontSize: 36,
-                            fontWeight: "600",
-                            letterSpacing: -1,
-                        }}
-                    />
-                </View>
-            </MoneyCounterCelebration>
-            <Text className="mt-4 font-sans text-[12.5px] font-semibold text-accent-deep">{status}</Text>
+            </GestureDetector>
+            <View className="mt-3">
+                <PeriodButton period={period} onPress={cyclePeriod} />
+            </View>
         </View>
     );
 }

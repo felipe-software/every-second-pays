@@ -28,7 +28,7 @@ export default function AppTabs() {
             minimizeBehavior="onScrollDown"
         >
             <NativeTabs.Trigger name="index">
-                <NativeTabs.Trigger.Label>{t("tabs.today")}</NativeTabs.Trigger.Label>
+                <NativeTabs.Trigger.Label>{t("tabs.earnings")}</NativeTabs.Trigger.Label>
                 <NativeTabs.Trigger.Icon sf={{ default: "dollarsign.circle", selected: "dollarsign.circle.fill" }} md="paid" />
             </NativeTabs.Trigger>
 

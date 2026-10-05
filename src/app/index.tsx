@@ -7,9 +7,10 @@ import { EarningsBackground } from "@/features/earnings/earnings-background";
 import { EarningsHeader } from "@/features/earnings/earnings-header";
 import { MONEY_IMPACT_DELAY, type MoneyTransfer } from "@/features/earnings/money-counter-celebration";
 import { EmptySourcesCallout, EmptySourcesMessage } from "@/features/earnings/empty-sources";
-import { type PaymentDraft, currentShift, earnedToday, ratePerSecond } from "@/features/earnings/model";
+import { type PaymentDraft, currentShift, earnedInPeriod, ratePerSecond } from "@/features/earnings/model";
 import { usePaymentComposerStore } from "@/features/earnings/payment-composer-store";
 import { PaymentSheet, PrimaryButton } from "@/features/earnings/payment-sheet";
+import { usePeriodStore } from "@/features/earnings/period-store";
 import { SourceRow } from "@/features/earnings/source-row";
 import { useEarningsStore } from "@/features/earnings/store";
 import { useI18n } from "@/features/i18n/i18n";
@@ -43,8 +44,9 @@ function firstChangedDigitIndex(previousValue: number, nextValue: number) {
 export default function EarningsScreen() {
     const isFocused = useIsFocused();
     const insets = useSafeAreaInsets();
-    const { t } = useI18n();
+    const { t, firstDayOfWeek } = useI18n();
     const now = useLiveClock();
+    const period = usePeriodStore((state) => state.period);
     const sources = useEarningsStore((state) => state.sources);
     const ready = useEarningsStore((state) => state.ready);
     const saving = useEarningsStore((state) => state.saving);
@@ -62,13 +64,13 @@ export default function EarningsScreen() {
     }, [load]);
 
     const editingSource = sources.find((source) => source.id === editingId);
-    const calculatedTotal = useMemo(
-        () => sources.reduce((sum, source) => sum + earnedToday(source, now), 0),
-        [now, sources],
+    const earnedBySource = useMemo(
+        () => new Map(sources.map((source) => [source.id, earnedInPeriod(source, period, now, firstDayOfWeek)])),
+        [firstDayOfWeek, now, period, sources],
     );
-    const liveRate = useMemo(
-        () => sources.reduce((sum, source) => sum + (currentShift(source, now) ? ratePerSecond(source) : 0), 0),
-        [now, sources],
+    const calculatedTotal = useMemo(
+        () => [...earnedBySource.values()].reduce((sum, earned) => sum + earned, 0),
+        [earnedBySource],
     );
     const [displayedTotal, setDisplayedTotal] = useState(0);
     const [moneyTransfer, setMoneyTransfer] = useState<MoneyTransfer | null>(null);
@@ -79,6 +81,7 @@ export default function EarningsScreen() {
     const pendingTargetCents = useRef<number | null>(null);
     const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const initializedDisplay = useRef(false);
+    const displayedPeriod = useRef(period);
     const sourceValueNodes = useRef(new Map<number, View>());
 
     const registerSourceValueNode = useCallback((sourceId: number, node: View | null) => {
@@ -109,6 +112,14 @@ export default function EarningsScreen() {
         if (!ready) return;
 
         const calculatedCents = Math.round(calculatedTotal * 100);
+        // Switching periods swaps in another total; it isn't money arriving, so nothing flies.
+        if (displayedPeriod.current !== period) {
+            displayedPeriod.current = period;
+            clearUpdateTimers();
+            syncDisplayedTotal(calculatedCents);
+            return;
+        }
+
         if (!isFocused) {
             clearUpdateTimers();
             initializedDisplay.current = true;
@@ -197,7 +208,7 @@ export default function EarningsScreen() {
             }, MONEY_IMPACT_DELAY + origin.delay);
             return timer;
         });
-    }, [calculatedTotal, clearUpdateTimers, isFocused, now, ready, sheetOpen, sources, syncDisplayedTotal, updateDisplayedTotal]);
+    }, [calculatedTotal, clearUpdateTimers, isFocused, now, period, ready, sheetOpen, sources, syncDisplayedTotal, updateDisplayedTotal]);
 
     useEffect(() => () => {
         clearUpdateTimers();
@@ -252,14 +263,15 @@ export default function EarningsScreen() {
                 <View className="flex-1" style={{ paddingTop: insets.top }}>
                     <EarningsHeader
                         total={displayedTotal}
-                        liveRate={liveRate}
                         ready={ready}
                         loadError={loadError}
                         moneyTransfer={moneyTransfer}
                     />
 
                     <ScrollView
-                        className="mt-14 flex-1 px-[22px]"
+                        // Keeps the list where it was with the old rate line: 16 + its 13.6 pt line + 56,
+                        // minus the period button's 12 pt gap and 35 pt footprint.
+                        className="mt-[38.6px] flex-1 px-[22px]"
                         contentContainerStyle={{ gap: 10, paddingBottom: Platform.OS === "android" ? 124 : 32 }}
                         showsVerticalScrollIndicator={false}
                     >
@@ -277,6 +289,7 @@ export default function EarningsScreen() {
                                 source={source}
                                 index={index}
                                 now={now}
+                                earned={earnedBySource.get(source.id) ?? 0}
                                 onPress={() => {
                                     setEditingId(source.id);
                                     setSheetOpen(true);

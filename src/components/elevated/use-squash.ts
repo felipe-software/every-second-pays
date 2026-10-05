@@ -10,14 +10,17 @@ import {
 
 /**
  * Squashes an element and springs it back past its resting size whenever `selected`
- * turns on, so picking a chip, day, color or token feels like it snaps into place.
+ * turns on, or whenever `key` changes, so picking a chip, day, color or token (or cycling
+ * a value in place) feels like it snaps into place.
  */
-export function useSquash(selected: boolean | undefined) {
+export function useSquash(selected: boolean | undefined, key?: unknown) {
     const scale = useSharedValue(1);
     const wasSelected = useRef(selected);
+    const previousKey = useRef(key);
 
     useEffect(() => {
-        if (selected && !wasSelected.current) {
+        const keyChanged = key !== previousKey.current;
+        if ((selected && !wasSelected.current) || keyChanged) {
             scale.set(withSequence(
                 ReduceMotion.System,
                 withTiming(0.93, { duration: 110, reduceMotion: ReduceMotion.System }),
@@ -25,7 +28,8 @@ export function useSquash(selected: boolean | undefined) {
             ));
         }
         wasSelected.current = selected;
-    }, [scale, selected]);
+        previousKey.current = key;
+    }, [key, scale, selected]);
 
     return useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
 }

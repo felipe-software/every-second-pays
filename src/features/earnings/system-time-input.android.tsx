@@ -1,20 +1,21 @@
 import { Host, TimePickerDialog } from "@expo/ui/jetpack-compose";
 import { useCalendars } from "expo-localization";
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
+import { RaisedPressable } from "@/components/elevated/raised";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 
 import { dateFromMinutes } from "./model";
 import type { SystemTimeInputProps } from "./system-time-input";
-import { useEarningsTheme, useSheetFill } from "./theme";
+import { INLINE_TIME_PADDING } from "./hours/dial-geometry";
+import { useEarningsTheme } from "./theme";
 
 export function SystemTimeInput({ label, value, onChange, variant = "field", text, fontSize = 20 }: SystemTimeInputProps) {
     const [open, setOpen] = useState(false);
     const { t, formatTime } = useI18n();
     const { colors, isDark } = useEarningsTheme();
-    const fill = useSheetFill();
     const uses24HourClock = useCalendars()[0]?.uses24hourClock;
 
     const inline = variant === "inline";
@@ -24,7 +25,7 @@ export function SystemTimeInput({ label, value, onChange, variant = "field", tex
             {inline ? null : (
                 <Text className="font-sans text-[10px] font-semibold tracking-[1.2px] text-muted uppercase">{label}</Text>
             )}
-            <Pressable
+            <RaisedPressable
                 accessibilityRole="button"
                 accessibilityLabel={`${label}: ${formatTime(value)}`}
                 accessibilityState={{ expanded: open }}
@@ -33,8 +34,12 @@ export function SystemTimeInput({ label, value, onChange, variant = "field", tex
                     setOpen(true);
                 }}
                 hitSlop={inline ? 8 : undefined}
-                className={inline ? "active:opacity-60" : "h-11 items-center justify-center rounded-[13px] active:opacity-60"}
-                style={inline ? undefined : { backgroundColor: fill }}
+                containerClassName={inline ? "min-w-0 shrink" : undefined}
+                surface="fill"
+                depth={2}
+                radius={inline ? 7 : 13}
+                className={inline ? "items-center justify-center py-0.5" : "h-11 items-center justify-center"}
+                style={inline ? { paddingHorizontal: INLINE_TIME_PADDING } : undefined}
             >
                 <Text
                     numberOfLines={1}
@@ -43,7 +48,7 @@ export function SystemTimeInput({ label, value, onChange, variant = "field", tex
                 >
                     {text ?? formatTime(value)}
                 </Text>
-            </Pressable>
+            </RaisedPressable>
             {open ? (
                 // The Compose dialog follows the device appearance and Material You colors by
                 // default, so pin it to the app's appearance and paint it with the app palette:

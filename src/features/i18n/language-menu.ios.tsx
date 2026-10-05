@@ -10,7 +10,10 @@ import type { LanguagePreference } from "./store";
 
 const FLAG_ASSETS = LANGUAGE_OPTIONS.flatMap((option) => option.flag ? [option.flag] : []);
 
-export function LanguageMenu({ preference, disabled: isDisabled, onOpen, onChange }: LanguageMenuProps) {
+// SwiftUI's Menu only reports the tap, not press-in and press-out, so the row sinks in a short pulse.
+const SINK_PULSE = 120;
+
+export function LanguageMenu({ preference, disabled: isDisabled, onOpen, onPressIn, onPressOut, onChange }: LanguageMenuProps) {
     const { t } = useI18n();
     const { colors, isDark } = useEarningsTheme();
     const [assets] = useAssets(FLAG_ASSETS);
@@ -29,7 +32,10 @@ export function LanguageMenu({ preference, disabled: isDisabled, onOpen, onChang
                     menuOrder("fixed"),
                     disabled(isDisabled),
                     onTapGesture(() => {
-                        if (!isDisabled) onOpen();
+                        if (isDisabled) return;
+                        onPressIn?.();
+                        setTimeout(() => onPressOut?.(), SINK_PULSE);
+                        onOpen();
                     }),
                 ]}
                 label={

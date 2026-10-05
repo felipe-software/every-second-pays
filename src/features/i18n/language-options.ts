@@ -14,5 +14,8 @@ export type LanguageMenuProps = {
     preference: LanguagePreference;
     disabled: boolean;
     onOpen: () => void;
+    /** Sink the raised row the menu sits on while its trigger is pressed. */
+    onPressIn?: () => void;
+    onPressOut?: () => void;
     onChange: (value: LanguagePreference, origin?: ThemeTransitionOrigin) => void;
 };
