@@ -1,0 +1,16 @@
+steps:
+  - echo: Goldie installs once per capture, so this runs after store-01-today seeded
+      the sources. Relaunch on the live dashboard.
+  - launch: software.felipe.everysecondpays
+  - await: { visible: { text: Design Studio }, timeout: 15000 }
+
+  - echo: Open the widget editor from Settings.
+  - tap: { id: settings-tab }
+  - await: { visible: { id: settings-widgets }, timeout: 15000 }
+  - tap: { id: settings-widgets }
+  - wait: 2500
+  - echo: The live preview never stops animating, so the tree reader times out here.
+      This coordinate is the "Wide" segment under the preview on the 1080x2400
+      Pixel 8 capture AVD.
+  - tap: { x: 0.5, y: 0.373 }
+  - wait: 2500

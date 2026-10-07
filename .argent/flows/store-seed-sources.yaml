@@ -1,0 +1,60 @@
+executionPrerequisite: A fresh install on the empty earnings dashboard.
+steps:
+  - echo: Add a monthly salary on the default Mon–Fri, 9 AM–5 PM schedule.
+  - tap: { id: new-source-tab }
+  - await: { visible: { text: New payment source }, timeout: 10000 }
+  - await: { idle: true }
+  - type:
+      into: { text: Company or client }
+      text: Design Studio
+      submit: false
+  - tap: { text: $0 }
+  - type:
+      into: { role: TextField, text: "0" }
+      text: "6500"
+      submit: false
+  - tap: { id: save-source }
+  - await: { hidden: { text: New payment source }, timeout: 10000 }
+  - await: { visible: { text: Design Studio } }
+
+  - echo: Add a morning hourly gig with the Mornings preset on the day dial.
+  - tap: { id: new-source-tab }
+  - await: { visible: { text: New payment source }, timeout: 10000 }
+  - await: { idle: true }
+  - type:
+      into: { text: Company or client }
+      text: Tutoring
+      submit: false
+  - tap: { text: $0 }
+  - type:
+      into: { role: TextField, text: "0" }
+      text: "45"
+      submit: false
+  - tap: { text: per month }
+  - tap: { text: Hour }
+  - echo: The time label uses a narrow no-break space, so match any space.
+  - tap: { text: { matches: '^9\sAM$' } }
+  - await: { visible: { text: Mornings } }
+  - tap: { text: Mornings }
+  - tap: { id: save-source }
+  - await: { hidden: { text: New payment source }, timeout: 10000 }
+  - await: { visible: { text: Tutoring } }
+
+  - echo: Add a one-time project payment that landed today.
+  - tap: { id: new-source-tab }
+  - await: { visible: { text: New payment source }, timeout: 10000 }
+  - await: { idle: true }
+  - type:
+      into: { text: Company or client }
+      text: Acme
+      submit: false
+  - tap: { text: $0 }
+  - type:
+      into: { role: TextField, text: "0" }
+      text: "1200"
+      submit: false
+  - tap: { text: per month }
+  - tap: { text: One-time }
+  - tap: { id: save-source }
+  - await: { hidden: { text: New payment source }, timeout: 10000 }
+  - await: { visible: { text: Acme } }
