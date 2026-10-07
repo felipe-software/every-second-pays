@@ -13,11 +13,13 @@
     }
   },
   "dependencies": {
+    "@codeherence/react-native-header": "^1.0.1",
     "@expo-google-fonts/archivo": "^0.4.2",
     "@expo/ui": "~57.0.19",
     "@lodev09/react-native-true-sheet": "^3.11.14",
     "@react-native-masked-view/masked-view": "0.3.2",
     "@rnrepo/expo-config-plugin": "^0.3.6",
+    "@shopify/flash-list": "2.0.2",
     "expo": "~57.0.24",
     "expo-asset": "~57.0.18",
     "expo-blur": "~57.0.3",
