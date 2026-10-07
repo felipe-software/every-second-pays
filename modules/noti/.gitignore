@@ -1,0 +1,6 @@
+# Gradle output, including the resources and MoneyEffects.kt generated from scripts/
+android/build/
+android/.gradle/
+android/.cxx/
+android/local.properties
+*.iml

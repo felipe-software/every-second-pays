@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <bool name="nmw_widgets_enabled">false</bool>
-    <string name="nmw_widget_description">Your earnings, counting up live</string>
-    <string name="nmw_widget_label">Live earnings</string>
-</resources>
