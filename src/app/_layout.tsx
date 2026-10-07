@@ -20,6 +20,8 @@ import { useEarningsTheme } from "@/features/earnings/theme";
 import { useHapticsWarmup } from "@/features/haptics/haptics";
 import { I18nProvider } from "@/features/i18n/i18n";
 import { useLanguageStore } from "@/features/i18n/store";
+import { Onboarding } from "@/features/onboarding/onboarding";
+import { useOnboardingStore } from "@/features/onboarding/store";
 import { MoneyWidgetSync } from "@/features/widgets/money-widget-sync";
 
 SplashScreen.preventAutoHideAsync();
@@ -44,6 +46,10 @@ export default function RootLayout() {
     // Wait for the saved period so the Earnings screen never flashes "Today" first.
     const periodReady = usePeriodStore((state) => state.hydrated);
     const loadPeriod = usePeriodStore((state) => state.load);
+    // Known before the first frame, so a returning user never glimpses the walkthrough.
+    const onboardingReady = useOnboardingStore((state) => state.hydrated);
+    const onboardingComplete = useOnboardingStore((state) => state.complete);
+    const loadOnboarding = useOnboardingStore((state) => state.load);
     const [fontsLoaded] = useFonts({
         Archivo: Archivo_400Regular,
         "Archivo-Medium": Archivo_500Medium,
@@ -53,14 +59,15 @@ export default function RootLayout() {
 
     useEffect(() => { void loadLanguage(); }, [loadLanguage]);
     useEffect(() => { void loadPeriod(); }, [loadPeriod]);
+    useEffect(() => { void loadOnboarding(); }, [loadOnboarding]);
 
     useEffect(() => {
-        if (fontsLoaded && appearanceReady && languageReady && periodReady) {
+        if (fontsLoaded && appearanceReady && languageReady && periodReady && onboardingReady) {
             SplashScreen.hideAsync();
         }
-    }, [fontsLoaded, appearanceReady, languageReady, periodReady]);
+    }, [fontsLoaded, appearanceReady, languageReady, periodReady, onboardingReady]);
 
-    if (!fontsLoaded || !appearanceReady || !languageReady || !periodReady) return null;
+    if (!fontsLoaded || !appearanceReady || !languageReady || !periodReady || !onboardingReady) return null;
 
     return (
         <I18nProvider>
@@ -70,6 +77,7 @@ export default function RootLayout() {
                 <KeyboardProvider>
                     <AppTabs />
                 </KeyboardProvider>
+                {onboardingComplete ? null : <Onboarding />}
             </GestureHandlerRootView>
         </I18nProvider>
     );
