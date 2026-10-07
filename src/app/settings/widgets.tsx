@@ -4,7 +4,7 @@ import { Platform, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { RaisedPressable } from "@/components/elevated/raised";
-import { LargeTitleScrollView } from "@/components/large-title-scroll-view";
+import { LargeTitleScrollView, PAGE_GUTTER } from "@/components/large-title-scroll-view";
 import { PALETTES } from "@/features/appearance/palettes";
 import { EarningsBackground } from "@/features/earnings/earnings-background";
 import { useEarningsTheme } from "@/features/earnings/theme";
@@ -53,7 +53,7 @@ export default function WidgetsScreen() {
     const pin = useWidgetStore((state) => state.pin);
     const [previewSize, setPreviewSize] = useState<PreviewSize>("wide");
     const [pinFailed, setPinFailed] = useState(false);
-    const contentWidth = Math.min(windowWidth, 430) - 44;
+    const contentWidth = Math.min(windowWidth, 430) - PAGE_GUTTER * 2;
     const available = Platform.OS === "android" && supported !== false;
 
     useEffect(() => {
@@ -84,23 +84,9 @@ export default function WidgetsScreen() {
                     background={<EarningsBackground />}
                     testID="widgets-screen"
                     title={t("widgets.title")}
-                    headerLeft={(
-                        <RaisedPressable
-                            testID="widgets-back"
-                            accessibilityRole="button"
-                            accessibilityLabel={t("widgets.back")}
-                            onPress={() => router.back()}
-                            hitSlop={8}
-                            surface="row"
-                            depth={3}
-                            radius={20}
-                            className="h-10 w-10 items-center justify-center"
-                        >
-                            <BackChevron color={colors.ink} />
-                        </RaisedPressable>
-                    )}
+                    headerLeft={<BackButton label={t("widgets.back")} color={colors.ink} />}
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: insets.bottom + 120, paddingHorizontal: 22 }}
+                    contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
                 >
                     {available ? (
                         <>
@@ -214,5 +200,23 @@ export default function WidgetsScreen() {
                 </LargeTitleScrollView>
             </View>
         </View>
+    );
+}
+
+function BackButton({ label, color }: { label: string; color: string }) {
+    return (
+        <RaisedPressable
+            testID="widgets-back"
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            onPress={() => router.back()}
+            hitSlop={8}
+            surface="row"
+            depth={3}
+            radius={20}
+            className="h-10 w-10 items-center justify-center"
+        >
+            <BackChevron color={color} />
+        </RaisedPressable>
     );
 }

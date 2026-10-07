@@ -8,32 +8,38 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useEarningsTheme } from "@/features/earnings/theme";
 
-/** Height of the compact bar under the status bar. Fits a 40pt raised back button. */
+const IS_IOS = Platform.OS === "ios";
+export const PAGE_GUTTER = 22;
+// Fits the 40pt raised back button.
 const BAR_HEIGHT = 52;
-/** How far the backdrop keeps fading out below the bar. */
-const FADE_HEIGHT = 32;
+const BACKDROP_FADE_HEIGHT = 32;
+const BACKDROP_SOLID_BAR_FRACTION = 0.7;
+const BACKDROP_FADE_IN_SCROLL = 20;
+const COMPACT_TITLE_RISE = 8;
+const BLUR_INTENSITY = 30;
+// On iOS the blur outlasts the background below the bar, so the fade reads as a progressive blur.
+// Android has no blur behind it, so the background stays denser to keep content legible.
+const BLUR_MASK_STOPS = "rgba(0, 0, 0, 0.85) 75%, transparent 100%";
+const BACKGROUND_MASK_STOPS = `rgba(0, 0, 0, ${IS_IOS ? 0.35 : 0.6}) 70%, transparent 100%`;
 
 type LargeTitleScrollViewProps = Omit<
     ComponentProps<typeof ScrollViewWithHeaders>,
     "HeaderComponent" | "LargeHeaderComponent" | "absoluteHeader" | "initialAbsoluteHeaderHeight"
 > & {
     title: string;
-    /** Pinned to the left of the compact bar, e.g. a back button. */
     headerLeft?: ReactNode;
-    /**
-     * The page's fixed background, drawn behind the page and again in the compact bar, so content
-     * fades into the same colors it scrolls over. Plain canvas when omitted.
-     */
+    // Drawn again inside the bar, so content fades into the same colors it scrolls over.
     background?: ReactNode;
 };
 
-/**
- * A page that scrolls under an iOS-style large title. Once content scrolls under the status bar,
- * a sticky bar fades in over it: the page background fading out below the bar (with a matching
- * progressive blur on iOS), and a compact title once the large one has scrolled away. Use it for
- * every titled page.
- */
-export function LargeTitleScrollView({ title, headerLeft, background, children, ...rest }: LargeTitleScrollViewProps) {
+export function LargeTitleScrollView({
+    title,
+    headerLeft,
+    background,
+    contentContainerStyle,
+    children,
+    ...rest
+}: LargeTitleScrollViewProps) {
     const insets = useSafeAreaInsets();
 
     return (
@@ -43,6 +49,7 @@ export function LargeTitleScrollView({ title, headerLeft, background, children, 
                 {...rest}
                 absoluteHeader
                 initialAbsoluteHeaderHeight={insets.top + BAR_HEIGHT}
+                contentContainerStyle={[{ paddingHorizontal: PAGE_GUTTER }, contentContainerStyle]}
                 HeaderComponent={({ showNavBar, scrollY }) => (
                     <TitleBar title={title} headerLeft={headerLeft} background={background} showNavBar={showNavBar} scrollY={scrollY} />
                 )}
@@ -66,23 +73,21 @@ function TitleBar({
     scrollY,
 }: ScrollHeaderProps & Pick<LargeTitleScrollViewProps, "title" | "headerLeft" | "background">) {
     const insets = useSafeAreaInsets();
-    const height = insets.top + BAR_HEIGHT + FADE_HEIGHT;
-    // The backdrop shows as soon as content slides under the status bar, like iOS.
+    // Like iOS, the backdrop appears as soon as content slides under the status bar,
+    // well before the compact title does.
     const backdropStyle = useAnimatedStyle(() => ({
-        opacity: interpolate(scrollY.get(), [0, 20], [0, 1], Extrapolation.CLAMP),
+        opacity: interpolate(scrollY.get(), [0, BACKDROP_FADE_IN_SCROLL], [0, 1], Extrapolation.CLAMP),
     }));
-    const titleStyle = useAnimatedStyle(() => ({
+    const compactTitleStyle = useAnimatedStyle(() => ({
         opacity: showNavBar.get(),
-        transform: [{ translateY: (1 - showNavBar.get()) * 8 }],
+        transform: [{ translateY: (1 - showNavBar.get()) * COMPACT_TITLE_RISE }],
     }));
 
     return (
         <View style={{ paddingTop: insets.top }}>
-            <Animated.View pointerEvents="none" style={[styles.backdrop, { height }, backdropStyle]}>
-                <Backdrop background={background} solidUntil={(insets.top + BAR_HEIGHT * 0.7) / height} />
-            </Animated.View>
-            <View style={{ height: BAR_HEIGHT }} className="flex-row items-center justify-center px-[22px]">
-                <Animated.View pointerEvents="none" style={[styles.title, titleStyle]}>
+            <Backdrop background={background} style={backdropStyle} />
+            <View style={styles.bar}>
+                <Animated.View pointerEvents="none" style={[styles.compactTitle, compactTitleStyle]}>
                     <Text
                         numberOfLines={1}
                         importantForAccessibility="no"
@@ -92,52 +97,49 @@ function TitleBar({
                         {title}
                     </Text>
                 </Animated.View>
-                {headerLeft ? <View className="absolute left-[22px]">{headerLeft}</View> : null}
+                {headerLeft ? <View style={styles.headerLeft}>{headerLeft}</View> : null}
             </View>
         </View>
     );
 }
 
-/** A vertical alpha mask: opaque down to `solidUntil` (0–1), then fading through `stops`. */
+function Backdrop({
+    background,
+    style,
+}: Pick<LargeTitleScrollViewProps, "background"> & { style: ComponentProps<typeof Animated.View>["style"] }) {
+    const insets = useSafeAreaInsets();
+    const { height: screenHeight } = useWindowDimensions();
+    const { isDark } = useEarningsTheme();
+    const height = insets.top + BAR_HEIGHT + BACKDROP_FADE_HEIGHT;
+    const solidUntil = (insets.top + BAR_HEIGHT * BACKDROP_SOLID_BAR_FRACTION) / height;
+
+    return (
+        <Animated.View pointerEvents="none" style={[styles.backdrop, { height }, style]}>
+            {IS_IOS ? (
+                <MaskedView style={StyleSheet.absoluteFill} maskElement={<FadeMask solidUntil={solidUntil} stops={BLUR_MASK_STOPS} />}>
+                    <BlurView intensity={BLUR_INTENSITY} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
+                </MaskedView>
+            ) : null}
+            <MaskedView style={StyleSheet.absoluteFill} maskElement={<FadeMask solidUntil={solidUntil} stops={BACKGROUND_MASK_STOPS} />}>
+                {/* Screen-tall, so a background laid out from the top lines up with the page's own. */}
+                <View style={{ height: screenHeight }}>
+                    {background ?? <View className="absolute inset-0 bg-canvas" />}
+                </View>
+            </MaskedView>
+        </Animated.View>
+    );
+}
+
 function FadeMask({ solidUntil, stops }: { solidUntil: number; stops: string }) {
+    const solidPercent = `${Math.round(solidUntil * 100)}%`;
+
     return (
         <View
             style={[
                 StyleSheet.absoluteFill,
-                { experimental_backgroundImage: `linear-gradient(180deg, #000 0%, #000 ${Math.round(solidUntil * 100)}%, ${stops})` },
+                { experimental_backgroundImage: `linear-gradient(180deg, #000 0%, #000 ${solidPercent}, ${stops})` },
             ]}
         />
-    );
-}
-
-/**
- * The page background faded out below the bar. iOS also blurs the content under it, with the
- * blur outlasting the background a little so the fade reads as a progressive blur.
- */
-function Backdrop({ background, solidUntil }: Pick<LargeTitleScrollViewProps, "background"> & { solidUntil: number }) {
-    const { height } = useWindowDimensions();
-    const { isDark } = useEarningsTheme();
-
-    return (
-        <>
-            {Platform.OS === "ios" ? (
-                <MaskedView
-                    style={StyleSheet.absoluteFill}
-                    maskElement={<FadeMask solidUntil={solidUntil} stops="rgba(0, 0, 0, 0.85) 75%, transparent 100%" />}
-                >
-                    <BlurView intensity={30} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
-                </MaskedView>
-            ) : null}
-            <MaskedView
-                style={StyleSheet.absoluteFill}
-                maskElement={<FadeMask solidUntil={solidUntil} stops={`rgba(0, 0, 0, ${Platform.OS === "ios" ? 0.35 : 0.6}) 70%, transparent 100%`} />}
-            >
-                {/* Screen-tall, so a background laid out from the top lines up with the real one. */}
-                <View style={{ height }}>
-                    {background ?? <View className="absolute inset-0 bg-canvas" />}
-                </View>
-            </MaskedView>
-        </>
     );
 }
 
@@ -149,7 +151,18 @@ const styles = StyleSheet.create({
         right: 0,
         overflow: "hidden",
     },
-    title: {
+    bar: {
+        height: BAR_HEIGHT,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: PAGE_GUTTER,
+    },
+    compactTitle: {
         maxWidth: "60%",
+    },
+    headerLeft: {
+        position: "absolute",
+        left: PAGE_GUTTER,
     },
 });

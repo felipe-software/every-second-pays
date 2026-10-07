@@ -59,7 +59,7 @@ export default function SettingsScreen() {
                     background={<EarningsBackground />}
                     title={t("settings.title")}
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: insets.bottom + 112, paddingHorizontal: 22 }}
+                    contentContainerStyle={{ paddingBottom: insets.bottom + 112 }}
                 >
                     <Text className="mt-8 mb-3 ml-1 font-sans text-[13px] font-semibold text-muted">{t("settings.appearance")}</Text>
                     <AppearanceSelector
