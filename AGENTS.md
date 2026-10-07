@@ -34,8 +34,21 @@ Run lint and typecheck before declaring any task done.
 Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates (`eas update`) — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
 Docs: https://docs.expo.dev/eas/index.md
 
+## Comments
+
+Write code that explains itself: clear names, small functions, and named constants say what it does. Don't add comments that repeat what the code already says.
+
+Add a comment only when it records something the code can't show:
+
+- **Why** a choice was made, when the obvious alternative is wrong (a workaround, a platform quirk, a value that looks wrong but is deliberate).
+- **Constraints** the reader would otherwise break (ordering, timing, threading, "keep in sync with X").
+- **Links** to the issue, doc, or upstream bug behind a workaround.
+
+Don't comment what a line does, restate a name in a docstring, narrate the change ("added X", "now uses Y"), or leave commented-out code. When you edit code, delete comments it has made stale.
+
 ## Rules
 
 - If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
 - Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
 - Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+- Titled pages scroll inside `LargeTitleScrollView` (`src/components/large-title-scroll-view.tsx`): an iOS-style large title that collapses into a sticky compact bar. Pass the page background (e.g. `<EarningsBackground />`) as `background` so the bar fades into it, and a back button as `headerLeft` on sub pages.

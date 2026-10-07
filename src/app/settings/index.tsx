@@ -1,8 +1,9 @@
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { LargeTitleScrollView } from "@/components/large-title-scroll-view";
 import { TryAgainButton } from "@/components/try-again-button";
 import { AccentColorPicker } from "@/features/appearance/accent-color-picker";
 import { AppearanceSelector } from "@/features/appearance/appearance-selector";
@@ -54,16 +55,13 @@ export default function SettingsScreen() {
     return (
         <View className="flex-1 items-center bg-canvas">
             <View className="relative w-full max-w-[430px] flex-1 overflow-hidden bg-canvas">
-                <EarningsBackground />
-                <ScrollView
+                <LargeTitleScrollView
+                    background={<EarningsBackground />}
+                    title={t("settings.title")}
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingTop: insets.top + 34, paddingBottom: insets.bottom + 112, paddingHorizontal: 22 }}
+                    contentContainerStyle={{ paddingBottom: insets.bottom + 112 }}
                 >
-                    <Text accessibilityRole="header" className="font-sans text-[38px] font-bold tracking-[-1.4px] text-ink">
-                        {t("settings.title")}
-                    </Text>
-
-                    <Text className="mt-9 mb-3 ml-1 font-sans text-[13px] font-semibold text-muted">{t("settings.appearance")}</Text>
+                    <Text className="mt-8 mb-3 ml-1 font-sans text-[13px] font-semibold text-muted">{t("settings.appearance")}</Text>
                     <AppearanceSelector
                         appearance={appearance}
                         disabled={disabled}
@@ -94,7 +92,7 @@ export default function SettingsScreen() {
                     {loadError ? (
                         <TryAgainButton onPress={() => void load()} className="mt-3" />
                     ) : null}
-                </ScrollView>
+                </LargeTitleScrollView>
             </View>
         </View>
     );
