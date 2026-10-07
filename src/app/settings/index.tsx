@@ -19,6 +19,7 @@ import { useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 import { LanguageSelector } from "@/features/i18n/language-selector";
+import { WidgetsSettingsRow } from "@/features/widgets/widgets-settings-row";
 
 export default function SettingsScreen() {
     const insets = useSafeAreaInsets();
@@ -75,6 +76,8 @@ export default function SettingsScreen() {
                         disabled={disabled}
                         onChange={changePalette}
                     />
+
+                    <WidgetsSettingsRow />
 
                     <LanguageSelector reduceMotion={reduceMotion} />
 

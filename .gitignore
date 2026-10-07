@@ -52,3 +52,5 @@ example
 # Local agent tooling
 /.agents/
 /skills-lock.json
+# Argent screen recordings
+/.argent/recordings/

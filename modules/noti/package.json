@@ -1,0 +1,35 @@
+{
+    "name": "react-native-noti",
+    "version": "0.1.0",
+    "description": "Noti (forked for Every Second Pays): declarative Android RemoteViews notifications and widgets, plus a live money widget.",
+    "main": "src/index.ts",
+    "types": "src/index.ts",
+    "scripts": {
+        "typecheck": "tsc --noEmit"
+    },
+    "peerDependencies": {
+        "expo": ">=54",
+        "react": ">=19",
+        "react-native": ">=0.81"
+    },
+    "devDependencies": {
+        "@types/react": "~19.2.2",
+        "expo": "~57.0.15",
+        "react": "19.2.3",
+        "react-native": "0.86.3",
+        "typescript": "~6.0.3"
+    },
+    "exports": {
+        ".": {
+            "types": "./src/index.ts",
+            "default": "./src/index.ts"
+        },
+        "./plugin": {
+            "types": "./plugin/index.d.ts",
+            "default": "./plugin/index.js"
+        },
+        "./app.plugin.js": "./app.plugin.js",
+        "./package.json": "./package.json"
+    },
+    "private": true
+}

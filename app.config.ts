@@ -58,6 +58,8 @@ const plugins: NonNullable<ExpoConfig["plugins"]> = [
         },
     ],
     "@rnrepo/expo-config-plugin",
+    // Live money widget (forked react-native-noti in modules/noti).
+    "./modules/noti/app.plugin.js",
 ];
 
 if (IS_DEVELOPMENT) {
