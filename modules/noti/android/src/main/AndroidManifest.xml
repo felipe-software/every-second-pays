@@ -1,0 +1,45 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <receiver android:name=".MotionActionReceiver" android:exported="false" />
+
+    <!-- Live money widget. Disabled below Android 12 (values-v31 turns it on): it is built on
+         RemoteViews APIs added in API 31. -->
+    <receiver
+      android:name=".money.MoneyWidgetProvider"
+      android:enabled="@bool/nmw_widgets_enabled"
+      android:exported="false"
+      android:label="@string/nmw_widget_label">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/nmw_money_widget_info" />
+    </receiver>
+
+    <!-- Re-syncs the widget timeline after the clock or time zone changes. Boot and app updates
+         already reach the provider as APPWIDGET_UPDATE. -->
+    <receiver
+      android:name=".money.MoneyWidgetSyncReceiver"
+      android:enabled="@bool/nmw_widgets_enabled"
+      android:exported="false">
+      <intent-filter>
+        <action android:name="android.intent.action.TIME_SET" />
+        <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+      </intent-filter>
+    </receiver>
+
+    <!-- Opened by the launcher's "Customize widget" action; forwards to the app's widget editor. -->
+    <activity
+      android:name=".money.MoneyWidgetConfigureActivity"
+      android:enabled="@bool/nmw_widgets_enabled"
+      android:excludeFromRecents="true"
+      android:exported="true"
+      android:noHistory="true"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+      </intent-filter>
+    </activity>
+  </application>
+</manifest>

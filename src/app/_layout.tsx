@@ -20,6 +20,7 @@ import { useEarningsTheme } from "@/features/earnings/theme";
 import { useHapticsWarmup } from "@/features/haptics/haptics";
 import { I18nProvider } from "@/features/i18n/i18n";
 import { useLanguageStore } from "@/features/i18n/store";
+import { MoneyWidgetSync } from "@/features/widgets/money-widget-sync";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -63,6 +64,7 @@ export default function RootLayout() {
 
     return (
         <I18nProvider>
+            <MoneyWidgetSync />
             <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.canvas }}>
                 <SystemBars />
                 <KeyboardProvider>
