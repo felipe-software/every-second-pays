@@ -20,6 +20,8 @@ import { useEarningsTheme } from "@/features/earnings/theme";
 import { useHapticsWarmup } from "@/features/haptics/haptics";
 import { I18nProvider } from "@/features/i18n/i18n";
 import { useLanguageStore } from "@/features/i18n/store";
+import { Onboarding } from "@/features/onboarding/onboarding";
+import { useOnboardingStore } from "@/features/onboarding/store";
 import { MoneyWidgetSync } from "@/features/widgets/money-widget-sync";
 
 SplashScreen.preventAutoHideAsync();
@@ -44,6 +46,9 @@ export default function RootLayout() {
     // Wait for the saved period so the Earnings screen never flashes "Today" first.
     const periodReady = usePeriodStore((state) => state.hydrated);
     const loadPeriod = usePeriodStore((state) => state.load);
+    const onboarding = useOnboardingStore((state) => state.status);
+    const appRevealed = useOnboardingStore((state) => state.revealed);
+    const loadOnboarding = useOnboardingStore((state) => state.load);
     const [fontsLoaded] = useFonts({
         Archivo: Archivo_400Regular,
         "Archivo-Medium": Archivo_500Medium,
@@ -53,14 +58,15 @@ export default function RootLayout() {
 
     useEffect(() => { void loadLanguage(); }, [loadLanguage]);
     useEffect(() => { void loadPeriod(); }, [loadPeriod]);
+    useEffect(() => { void loadOnboarding(); }, [loadOnboarding]);
+
+    const ready = fontsLoaded && appearanceReady && languageReady && periodReady && onboarding !== "unknown";
 
     useEffect(() => {
-        if (fontsLoaded && appearanceReady && languageReady && periodReady) {
-            SplashScreen.hideAsync();
-        }
-    }, [fontsLoaded, appearanceReady, languageReady, periodReady]);
+        if (ready) SplashScreen.hideAsync();
+    }, [ready]);
 
-    if (!fontsLoaded || !appearanceReady || !languageReady || !periodReady) return null;
+    if (!ready) return null;
 
     return (
         <I18nProvider>
@@ -68,8 +74,9 @@ export default function RootLayout() {
             <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.canvas }}>
                 <SystemBars />
                 <KeyboardProvider>
-                    <AppTabs />
+                    {appRevealed ? <AppTabs /> : null}
                 </KeyboardProvider>
+                {onboarding === "pending" ? <Onboarding /> : null}
             </GestureHandlerRootView>
         </I18nProvider>
     );

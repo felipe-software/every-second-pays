@@ -20,6 +20,7 @@
     "@react-native-masked-view/masked-view": "0.3.2",
     "@rnrepo/expo-config-plugin": "^0.3.6",
     "@shopify/flash-list": "2.0.2",
+    "@shopify/react-native-skia": "2.6.2",
     "expo": "~57.0.24",
     "expo-asset": "~57.0.18",
     "expo-blur": "~57.0.3",
@@ -90,5 +91,8 @@
     "react-native-jelly-tabs@0.0.14": "src/patches/react-native-jelly-tabs@0.0.14.patch",
     "@expo/ui@57.0.19": "src/patches/@expo%2Fui@57.0.19.patch",
     "@lodev09/react-native-true-sheet@3.11.14": "src/patches/@lodev09%2Freact-native-true-sheet@3.11.14.patch"
-  }
+  },
+  "trustedDependencies": [
+    "@shopify/react-native-skia"
+  ]
 }
