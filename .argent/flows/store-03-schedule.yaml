@@ -1,6 +1,7 @@
 steps:
-  - echo: Launch a clean release build and configure a realistic work schedule.
+  - echo: Relaunch (state carries over from earlier scenes) and start a salary in the payment composer.
   - launch: software.felipe.everysecondpays
+  - await: { visible: { id: period-button }, timeout: 15000 }
   - await: { idle: true }
   - tap: { id: new-source-tab }
   - await: { visible: { text: New payment source }, timeout: 10000 }
@@ -14,7 +15,8 @@ steps:
       into: { role: TextField, text: "0" }
       text: "6500"
       submit: false
-  - tap: { text: Mon–Fri }
-  - await: { visible: { text: Weekends } }
+  - echo: Open the 24-hour day dial from the start time.
+  - echo: The time label uses a narrow no-break space, so match any space.
+  - tap: { text: { matches: '^9\sAM$' } }
+  - await: { visible: { text: Presets }, timeout: 10000 }
   - await: { idle: true }
-  - echo: The schedule editor shows individual days and useful presets.

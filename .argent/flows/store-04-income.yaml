@@ -1,6 +1,7 @@
 steps:
-  - echo: Launch a clean release build and compose a realistic recurring income source.
+  - echo: Relaunch (state carries over from earlier scenes) and start a salary in the payment composer.
   - launch: software.felipe.everysecondpays
+  - await: { visible: { id: period-button }, timeout: 15000 }
   - await: { idle: true }
   - tap: { id: new-source-tab }
   - await: { visible: { text: New payment source }, timeout: 10000 }
@@ -14,7 +15,7 @@ steps:
       into: { role: TextField, text: "0" }
       text: "6500"
       submit: false
+  - echo: Open the pay period picker with its six ways to get paid.
   - tap: { text: per month }
-  - await: { visible: { text: One-time } }
+  - await: { visible: { text: One-time }, timeout: 10000 }
   - await: { idle: true }
-  - echo: The composer shows six flexible ways to model pay.

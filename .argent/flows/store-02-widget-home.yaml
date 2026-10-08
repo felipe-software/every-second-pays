@@ -1,0 +1,37 @@
+steps:
+  - echo: Goldie installs once per capture, so this runs after store-01-today seeded
+      the sources. Relaunch on the live dashboard.
+  - launch: software.felipe.everysecondpays
+  - await: { visible: { text: Design Studio }, timeout: 15000 }
+
+  - echo: Open the widget editor from Settings.
+  - tap: { id: settings-tab }
+  - await: { visible: { id: settings-widgets }, timeout: 15000 }
+  - tap: { id: settings-widgets }
+  - wait: 2500
+
+  - echo: The live widget preview never stops animating, so the Android tree reader
+      times out on this screen. Coordinates below are for the 1080x2400 Pixel 8
+      capture AVD. This one is the "Wide" segment under the preview.
+  - tap: { x: 0.5, y: 0.373 }
+  - wait: 1200
+  - echo: Scroll the editor to its end, where "Add to home screen" (id widgets-add) sits.
+  - tool: gesture-swipe
+    args: { fromX: 0.5, fromY: 0.85, toX: 0.5, toY: 0.35, durationMs: 300 }
+  - tool: gesture-swipe
+    args: { fromX: 0.5, fromY: 0.85, toX: 0.5, toY: 0.35, durationMs: 300 }
+  - tool: gesture-swipe
+    args: { fromX: 0.5, fromY: 0.85, toX: 0.5, toY: 0.35, durationMs: 300 }
+  - wait: 1500
+  - echo: The "Add to home screen" button, fully scrolled.
+  - tap: { x: 0.5, y: 0.806 }
+  - wait: 2500
+
+  - echo: The Pixel launcher's pin dialog. Its "Add to home screen" button sits bottom right.
+  - tap: { x: 0.781, y: 0.938 }
+  - wait: 2500
+
+  - echo: Go home, where the live widget now counts up on the launcher.
+  - tool: button
+    args: { button: home }
+  - wait: 3000

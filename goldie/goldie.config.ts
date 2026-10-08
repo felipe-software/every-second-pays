@@ -11,20 +11,25 @@ const config = {
         // Produced by: bun run goldie:build:android
         appPath: "./build/every-second-pays-release.apk",
         applicationId: "software.felipe.everysecondpays",
-        // Pixel 8 skin bundled with the configured AVD. The screen slightly
-        // overlaps the antialiased skin opening to avoid background seams.
+        // Pixel 8 emulator skin (back.webp) with its 1080x2400 screen opening
+        // at (49, 55) re-cut from an 89px to a 78px corner radius (frame.webp),
+        // so the black bezel rim stays even around the corners. The screen
+        // overlaps the opening by 2px to avoid background seams. Captures must
+        // be clean rectangles: `bun run goldie:capture` swaps argent's
+        // screenshot, which bakes in black rounded corners, for adb screencap.
         frame: {
-            image: "./assets/pixel_8/back.webp",
+            image: "./assets/pixel_8/frame.webp",
             width: 1187,
             height: 2513,
-            screen: { x: 44, y: 50, width: 1090, height: 2410 },
-            screenRadius: 105,
+            screen: { x: 47, y: 53, width: 1084, height: 2404 },
+            screenRadius: 80,
         },
     },
 
-    // Goldie names the Google Play phone output spec "pixel-10-pro". The local
-    // Pixel_8 AVD is exposed through Goldie's supported pixel_9_pro profile
-    // alias, so captures still run at the Pixel 8's native 1080x2400 size.
+    // Goldie names the Google Play phone output spec "pixel-10-pro". The
+    // Goldie_Pixel_8_API_36 AVD stays a real Pixel 8; goldie/bin/adb reports it
+    // under Goldie's supported pixel_9_pro profile, so captures still run at the
+    // Pixel 8's native 1080x2400 size.
     devices: ["pixel-10-pro"],
     locales: ["en-US"],
     appearance: "light",
@@ -61,32 +66,50 @@ const config = {
         {
             kind: "screenshot",
             id: "today",
-            flow: "store-01-home",
+            flow: "store-01-today",
             headline: { "en-US": "Every second pays" },
-            subhead: { "en-US": "See today's earnings at a glance." },
+            subhead: { "en-US": "Watch today's earnings count up live." },
+            layout: "hero",
         },
         {
             kind: "screenshot",
-            id: "income",
-            flow: "store-02-income",
-            headline: { "en-US": "Income on your terms" },
-            subhead: { "en-US": "Hourly, monthly, or one-time." },
+            id: "widget-home",
+            flow: "store-02-widget-home",
+            headline: { "en-US": "Live on your home screen" },
+            subhead: { "en-US": "A widget that keeps counting while you work." },
             layout: "classic",
         },
         {
             kind: "screenshot",
             id: "schedule",
             flow: "store-03-schedule",
-            headline: { "en-US": "Built around your week" },
-            subhead: { "en-US": "Set the days and hours that match your work." },
+            headline: { "en-US": "Built around your day" },
+            subhead: { "en-US": "Set your hours on a 24-hour dial." },
+            layout: "tilt",
+        },
+        {
+            kind: "screenshot",
+            id: "income",
+            flow: "store-04-income",
+            headline: { "en-US": "Income on your terms" },
+            subhead: { "en-US": "Hourly, monthly, yearly, or one-time." },
+            layout: "classic",
+        },
+        {
+            kind: "screenshot",
+            id: "widget-editor",
+            flow: "store-05-widget-editor",
+            headline: { "en-US": "Style your widget" },
+            subhead: { "en-US": "Pick its size, motion, and colors." },
             layout: "hero",
         },
         {
             kind: "screenshot",
             id: "settings",
-            flow: "store-04-settings",
+            flow: "store-06-settings",
             headline: { "en-US": "Make it yours" },
-            subhead: { "en-US": "Pick your appearance, accent, and language." },
+            subhead: { "en-US": "Dark mode, accent colors, and four languages." },
+            layout: "tilt-right",
         },
     ],
 };
