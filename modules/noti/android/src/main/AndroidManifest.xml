@@ -2,8 +2,7 @@
   <application>
     <receiver android:name=".MotionActionReceiver" android:exported="false" />
 
-    <!-- Live money widget. Disabled below Android 12 (values-v31 turns it on): it is built on
-         RemoteViews APIs added in API 31. -->
+    <!-- nmw_widgets_enabled is true only in values-v31: the widget needs API 31 RemoteViews APIs. -->
     <receiver
       android:name=".money.MoneyWidgetProvider"
       android:enabled="@bool/nmw_widgets_enabled"
@@ -17,8 +16,6 @@
         android:resource="@xml/nmw_money_widget_info" />
     </receiver>
 
-    <!-- Re-syncs the widget timeline after the clock or time zone changes. Boot and app updates
-         already reach the provider as APPWIDGET_UPDATE. -->
     <receiver
       android:name=".money.MoneyWidgetSyncReceiver"
       android:enabled="@bool/nmw_widgets_enabled"
@@ -29,7 +26,6 @@
       </intent-filter>
     </receiver>
 
-    <!-- Opened by the launcher's "Customize widget" action; forwards to the app's widget editor. -->
     <activity
       android:name=".money.MoneyWidgetConfigureActivity"
       android:enabled="@bool/nmw_widgets_enabled"

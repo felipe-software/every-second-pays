@@ -8,10 +8,7 @@ import Animated, {
     withSpring,
 } from "react-native-reanimated";
 
-/**
- * Fades its content in while it springs up a few points on mount. Driven by a shared value
- * rather than a layout animation, so it also plays inside native sheets.
- */
+// A shared value rather than a layout animation, so it also plays inside native sheets.
 export function RiseIn({ delay = 0, distance = 10, children }: { delay?: number; distance?: number; children: ReactNode }) {
     const progress = useSharedValue(0);
     const style = useAnimatedStyle(() => ({

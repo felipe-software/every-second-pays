@@ -50,9 +50,7 @@ export function SystemTimeInput({ label, value, onChange, variant = "field", fon
                 </Text>
             </RaisedPressable>
             {open ? (
-                // The Compose dialog follows the device appearance and Material You colors by
-                // default, so pin it to the app's appearance and paint it with the app palette:
-                // the accent marks the selection and its soft tint (`active`) is the clock face.
+                // The Compose dialog otherwise follows the device appearance and Material You colors.
                 <Host colorScheme={isDark ? "dark" : "light"} seedColor={colors.accent}>
                     <TimePickerDialog
                         initialDate={dateFromMinutes(value).toISOString()}

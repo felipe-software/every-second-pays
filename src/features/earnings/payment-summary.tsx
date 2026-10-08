@@ -35,8 +35,7 @@ export function PaymentSummary({
     const { t, locale, formatDays, formatMoney, formatTime } = useI18n();
     const recurring = draft.frequency !== "once";
 
-    // While one word is being edited the sentence may grow but never shrinks back, so the
-    // editor below can't bounce up and down as a time crosses a line break.
+    // Grows but never shrinks while one word is edited, so the editor below can't bounce as a time wraps.
     const layoutKey = `${token}:${draft.frequency}:${draft.shifts.length}`;
     const [settled, setSettled] = useState({ key: layoutKey, height: 0 });
     const minHeight = settled.key === layoutKey ? settled.height : 0;

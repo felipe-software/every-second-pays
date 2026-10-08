@@ -12,7 +12,6 @@ import Animated, {
 
 import { useEarningsTheme } from "./theme";
 
-/** A status dot that sends out a soft ring while a source is earning. */
 export function LiveDot({ live, size = 8 }: { live: boolean; size?: number }) {
     const { colors } = useEarningsTheme();
     const pulse = useSharedValue(0);

@@ -26,11 +26,6 @@ const PREVIEW_HEIGHT: Record<PreviewSize, number> = { small: 150, wide: 150, lar
 const STAGE_PADDING = 16;
 const STAGE_HEIGHTS = PREVIEW_SIZES.map((size) => PREVIEW_HEIGHT[size] + STAGE_PADDING * 2);
 
-/**
- * The live widget at each launcher size, side by side on a home-screen-like backdrop: swipe
- * between them, or pick one with [WidgetSizeSelector]. The backdrop grows and shrinks with the
- * swipe.
- */
 export function WidgetPreviewPager({
     config,
     revision,
@@ -53,8 +48,7 @@ export function WidgetPreviewPager({
     const dragging = useSharedValue(false);
     const shown = useSharedValue(page);
     const pageOffsets = PREVIEW_SIZES.map((_, index) => index * width);
-    // The pager is inside the tab pager's pan; claiming the swipe natively keeps it from
-    // switching tabs.
+    // Claims the swipe natively so the enclosing tab pager doesn't switch tabs.
     const native = useMemo(() => Gesture.Native().disallowInterruption(true), []);
 
     const swiped = (next: number) => {
@@ -79,7 +73,6 @@ export function WidgetPreviewPager({
         height: interpolate(offset.get(), pageOffsets, STAGE_HEIGHTS, Extrapolation.CLAMP),
     }));
 
-    // A size picked with the selector: glide over to it.
     useEffect(() => {
         if (page === shown.get()) return;
         dragging.set(false);
@@ -87,7 +80,6 @@ export function WidgetPreviewPager({
         pager.current?.scrollTo({ x: page * width, animated: true });
     }, [dragging, page, pager, shown, width]);
 
-    // Keep the chosen size in view when the width changes.
     useEffect(() => {
         pager.current?.scrollTo({ x: shown.get() * width, animated: false });
     }, [pager, shown, width]);
@@ -130,7 +122,6 @@ export function WidgetPreviewPager({
     );
 }
 
-/** Small, wide, or large: which size the preview shows. */
 export function WidgetSizeSelector({ value, onChange }: { value: PreviewSize; onChange: (size: PreviewSize) => void }) {
     const { t } = useI18n();
     return (

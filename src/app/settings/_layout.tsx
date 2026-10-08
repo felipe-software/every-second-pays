@@ -2,7 +2,6 @@ import { Stack } from "expo-router";
 
 import { useEarningsTheme } from "@/features/earnings/theme";
 
-/** Settings and its sub pages; each page draws its own header. */
 export default function SettingsLayout() {
     const { colors } = useEarningsTheme();
 

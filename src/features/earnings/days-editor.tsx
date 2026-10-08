@@ -64,7 +64,6 @@ function DayToggle({
 export function DaysEditor({ days, onChange }: { days: number[]; onChange: (days: number[]) => void }) {
     const { colors } = useEarningsTheme();
     const { t } = useI18n();
-    // The strip is one raised control: pressing any day sinks all of it.
     const sink = usePressSink();
 
     return (

@@ -46,7 +46,6 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
     const sheetRef = useRef<TrueSheet>(null);
     const [draft, setDraft] = useState<PaymentDraft>(() => source ? sourceToDraft(source) : cloneEmptyDraft());
     const [token, setToken] = useState<PaymentToken>("name");
-    // The footer floats over the editor, so the editor scrolls clear of it.
     const [footerHeight, setFooterHeight] = useState(0);
 
     const amount = parseAmount(draft.amount);
@@ -66,7 +65,7 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
             await onSave(draft, source?.id);
             dismiss();
         } catch {
-            // The parent owns the localized user-facing error message.
+            // The parent shows the error.
         }
     };
 
@@ -76,7 +75,7 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
             await onDelete(source.id);
             dismiss();
         } catch {
-            // The parent owns the localized user-facing error message.
+            // The parent shows the error.
         }
     };
 
@@ -157,7 +156,6 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >
-                {/* Each word opens its own editor, which springs in as the selection moves. */}
                 <RiseIn key={token}>
                     <PaymentEditor
                         draft={draft}

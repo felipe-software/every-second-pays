@@ -58,7 +58,6 @@ const plugins: NonNullable<ExpoConfig["plugins"]> = [
         },
     ],
     "@rnrepo/expo-config-plugin",
-    // Live money widget (forked react-native-noti in modules/noti).
     "./modules/noti/app.plugin.js",
 ];
 
@@ -97,8 +96,6 @@ export default (): ExpoConfig => ({
         favicon: "./src/assets/images/favicon.png",
     },
     plugins,
-    // Fingerprint runtime versions change with any native change, so an update only reaches
-    // binaries it can run on. See fingerprint.config.js for the patches it also tracks.
     runtimeVersion: { policy: "fingerprint" },
     updates: {
         url: `https://u.expo.dev/${EAS_PROJECT_ID}`,

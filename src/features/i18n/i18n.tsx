@@ -11,14 +11,11 @@ type I18nContextValue = {
     language: Language;
     locale: string;
     decimalSeparator: string;
-    /** The weekday weeks start on: 0 = Sunday … 6 = Saturday. */
     firstDayOfWeek: number;
     t: (key: TranslationKey, replacements?: Replacements) => string;
     formatMoney: (value: number, digits?: number) => string;
     formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string;
-    /** Always with minutes ("9:00 AM"), so times keep the same digit layout. */
     formatTime: (totalMinutes: number) => string;
-    /** Just the hour ("9 AM"), for axis labels. */
     formatHour: (totalMinutes: number) => string;
     formatTimeRange: (start: number, end: number, separator?: string) => string;
     formatTimeRangeParts: (start: number, end: number) => [string, string];
@@ -85,7 +82,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
             const minutes = ((totalMinutes % 1440) + 1440) % 1440;
             const date = new Date(2024, 0, 1, Math.floor(minutes / 60), minutes % 60);
             const formatter = new Intl.DateTimeFormat(locale, {
-                // A 24-hour time keeps its leading zero ("09:00"), so every time has four digits.
                 hour: twentyFourHour && withMinutes ? "2-digit" : "numeric",
                 ...(withMinutes ? { minute: "2-digit" as const } : {}),
                 ...(twentyFourHour ? { hourCycle: "h23" as const } : { hour12: true }),
@@ -104,7 +100,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         (totalMinutes: number) => timeParts(totalMinutes, false).map((part) => part.value).join(""),
         [timeParts],
     );
-    // "9:00" and "11:00 AM" instead of "9:00 AM" and "11:00 AM": a shared day period is only written once.
     const formatTimeRangeParts = useCallback(
         (start: number, end: number): [string, string] => {
             const startParts = timeParts(start);

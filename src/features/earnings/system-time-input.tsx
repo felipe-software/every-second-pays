@@ -12,11 +12,8 @@ export type SystemTimeInputProps = {
     label: string;
     value: number;
     onChange: (value: number) => void;
-    /** `field` is a labeled input; `inline` is just the time, for use under the hours arc. */
     variant?: "field" | "inline";
-    /** Font size of an `inline` time drawn by the app (Android). */
     fontSize?: number;
-    /** Width of an `inline` system picker (iOS). */
     width?: number;
 };
 

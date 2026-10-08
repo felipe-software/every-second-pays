@@ -1,15 +1,11 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 build-*
-# dependencies
 node_modules/
 
-# Expo
 .expo/
 dist/
 web-build/
 expo-env.d.ts
 
-# Native
 .kotlin/
 *.orig.*
 *.jks
@@ -18,39 +14,30 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
-# Metro
 .metro-health-check*
 
-# debug
 npm-debug.*
 yarn-debug.*
 yarn-error.*
 
-# macOS
 .DS_Store
 *.pem
 
-# local env files
 .env*.local
 
-# typescript
 *.tsbuildinfo
 
 example
 
-# generated native folders
 /ios
 /android
 
 /design
 
-# Goldie generated assets and local release builds
 /goldie/build/
 /goldie/out/
 /goldie/goldie.design.json
 
-# Local agent tooling
 /.agents/
 /skills-lock.json
-# Argent screen recordings
 /.argent/recordings/

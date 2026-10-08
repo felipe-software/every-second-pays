@@ -15,8 +15,6 @@ import android.widget.RemoteViews
 import org.json.JSONObject
 import kotlin.math.roundToInt
 
-// RemoteViews layout/margin/outline setters used throughout are API 31+; the module only
-// reaches this code on Android 12+.
 @android.annotation.TargetApi(31)
 internal class MotionRenderer(
   private val context: Context,

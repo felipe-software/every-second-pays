@@ -3,7 +3,6 @@ import { Text } from "react-native";
 import { RaisedPressable } from "@/components/elevated/raised";
 import { useI18n } from "@/features/i18n/i18n";
 
-/** The small raised "Try again" button shown under a load error. */
 export function TryAgainButton({ onPress, className }: { onPress: () => void; className?: string }) {
     const { t } = useI18n();
 

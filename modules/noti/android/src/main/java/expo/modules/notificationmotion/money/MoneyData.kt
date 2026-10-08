@@ -4,12 +4,7 @@ import android.graphics.Color
 import org.json.JSONArray
 import org.json.JSONObject
 
-/**
- * Earnings as a piecewise-linear function of time, published by the app. Each breakpoint holds
- * the total at that instant (in cents) and the rate after it (cents per millisecond), so the
- * widget can count without the app: between breakpoints the total grows linearly, and period
- * resets are breakpoints whose value drops back.
- */
+// Breakpoints published by the app: [time ms, total cents, rate after it in cents/ms].
 internal class MoneySchedule(
   private val times: LongArray,
   private val values: DoubleArray,
@@ -34,7 +29,6 @@ internal class MoneySchedule(
     return found
   }
 
-  /** Total in cents at `time`. Before the first breakpoint the schedule holds its first value. */
   fun valueAt(time: Long): Double {
     if (times.isEmpty()) return 0.0
     val at = index(time)
@@ -42,13 +36,11 @@ internal class MoneySchedule(
     return values[at] + rates[at] * (time - times[at])
   }
 
-  /** Cents per millisecond at `time`. */
   fun rateAt(time: Long): Double {
     val at = index(time)
     return if (at < 0) 0.0 else rates[at]
   }
 
-  /** The next instant the rate or the total jumps (a shift edge or a period reset). */
   fun nextBreakpoint(time: Long): Long? {
     val at = index(time) + 1
     return if (at in times.indices) times[at] else null
@@ -74,7 +66,6 @@ internal class MoneySchedule(
   }
 }
 
-/** A color that follows the launcher's day/night mode; both halves match for a fixed theme. */
 internal data class ColorPair(val day: Int, val night: Int) {
   fun withAlpha(alpha: Float) = ColorPair(applyAlpha(day, alpha), applyAlpha(night, alpha))
 
@@ -98,7 +89,6 @@ internal data class MoneyFormat(
   val groupSize: Int,
 )
 
-/** Everything the app publishes: schedules, palettes, number format, and translated labels. */
 internal class MoneyData(private val json: JSONObject) {
   val appPeriod: String = json.optString("appPeriod", "today")
   val hasSources: Boolean = json.optBoolean("hasSources", false)
@@ -115,7 +105,6 @@ internal class MoneyData(private val json: JSONObject) {
   private val palettes = json.optJSONObject("palettes") ?: JSONObject()
   private val schedules = mutableMapOf<String, MoneySchedule>()
 
-  /** The palette and appearance values that change the widget's look, for change detection. */
   val lookSignature: String =
     listOf(appearance.toString(), palettes.toString(), labels.toString(), json.optJSONObject("format")?.toString(), hasSources).joinToString("|")
 
@@ -161,7 +150,6 @@ internal class MoneyData(private val json: JSONObject) {
   }
 }
 
-/** One widget's customization. Unknown values fall back to the defaults. */
 internal data class MoneyConfig(
   val template: String,
   val effect: String,

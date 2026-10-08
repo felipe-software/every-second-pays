@@ -60,7 +60,6 @@ function AppearancePreview({
                 pressed={sink.pressed}
                 className="h-[116px]"
             >
-                {/* The 3 pt selection border sits inside the 1 px raised outline. */}
                 <View className="flex-1 overflow-hidden rounded-[15px] border-[3px] p-2" style={{ borderColor: border }}>
                     {followsDevice ? (
                         <View

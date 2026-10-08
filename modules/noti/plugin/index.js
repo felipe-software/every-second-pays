@@ -6,7 +6,6 @@ const { resources, writeResources } = require('./compiler');
 const WIDGET_PROVIDER = 'expo.modules.notificationmotion.MotionWidgetProvider';
 const SCHEME_META_DATA = 'expo.modules.notificationmotion.SCHEME';
 
-/** The live money widget's "Customize" action deep-links into the app with this scheme. */
 function configureScheme(androidManifest, scheme) {
     const application = androidManifest.manifest.application?.[0];
     if (!application) throw new Error('AndroidManifest.xml does not contain an application node.');

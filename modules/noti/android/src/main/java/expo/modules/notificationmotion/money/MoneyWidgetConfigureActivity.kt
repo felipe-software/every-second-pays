@@ -6,10 +6,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 
-/**
- * The launcher's "Customize" action. Accepts right away (configuration is optional, so the
- * widget is already showing) and opens the app's widget editor on that widget.
- */
 class MoneyWidgetConfigureActivity : Activity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -28,7 +24,6 @@ class MoneyWidgetConfigureActivity : Activity() {
   }
 
   companion object {
-    /** Set by the config plugin from the app's URL scheme. */
     const val SCHEME_META_DATA = "expo.modules.notificationmotion.SCHEME"
   }
 }

@@ -8,17 +8,15 @@ import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.roundToLong
 
-/** How a counter character is drawn: the whole amount is large, everything else is small. */
 internal enum class Glyph { BIG, SMALL }
 
 internal data class CounterChar(val text: String, val glyph: Glyph)
 
-/** A counter split into characters, the currency first. */
 internal class CounterText(val chars: List<CounterChar>) {
   val plain get() = chars.joinToString("") { it.text }
 
   companion object {
-    /** Matches the app: totals are rounded to the cent; hiding cents drops them. */
+    // Must round like the app so both show the same total.
     fun cents(value: Double): Long = max(0.0, value).roundToLong()
 
     fun format(cents: Long, format: MoneyFormat, showCents: Boolean): CounterText {
@@ -30,7 +28,7 @@ internal class CounterText(val chars: List<CounterChar>) {
         grouped.append(digit)
       }
       val chars = mutableListOf<CounterChar>()
-      // A hair space keeps the currency off the first digit, like the app's 4 pt margin.
+      // A hair space (U+200A), like the app's 4 pt currency margin.
       chars += CounterChar(format.currency + " ", Glyph.SMALL)
       grouped.forEach { chars += CounterChar(it.toString(), Glyph.BIG) }
       if (showCents) {
@@ -42,17 +40,12 @@ internal class CounterText(val chars: List<CounterChar>) {
   }
 }
 
-/** A run of characters that didn't change, or a slot whose character animates old → new. */
 internal sealed interface Segment {
   val glyph: Glyph
   data class Run(val text: String, override val glyph: Glyph) : Segment
   data class Slot(val from: String, val to: String, override val glyph: Glyph, val wholeDigit: Boolean) : Segment
 }
 
-/**
- * Splits `next` into runs and slots against `previous`, comparing from the right so the cents
- * line up even when the total gains a digit (9.99 → 10.00 animates every column).
- */
 internal fun segments(previous: CounterText?, next: CounterText): List<Segment> {
   val output = mutableListOf<Segment>()
   val offset = next.chars.size - (previous?.chars?.size ?: 0)
@@ -64,7 +57,6 @@ internal fun segments(previous: CounterText?, next: CounterText): List<Segment> 
     runGlyph = null
   }
   next.chars.forEachIndexed { index, char ->
-    // The currency (index 0) never animates, and a new leading digit enters from nothing.
     val mapped = index - offset
     val old = when {
       previous == null || index == 0 -> char.text
@@ -84,14 +76,11 @@ internal fun segments(previous: CounterText?, next: CounterText): List<Segment> 
   return output
 }
 
-/** Font metrics for one counter size, in dp. */
 internal class CounterMetrics(
   val bigSize: Float,
   val smallSize: Float,
   val rowHeight: Float,
-  /** A line of small text: cents slots roll within this, not the whole row. */
   val smallRowHeight: Float,
-  /** Top padding (px) that puts small text on the big text's baseline. */
   val smallPaddingPx: Int,
   private val big: Paint,
   private val small: Paint,
@@ -107,8 +96,8 @@ internal class CounterMetrics(
 
 internal class MoneyTypography(private val context: Context) {
   private val density = context.resources.displayMetrics.density
-  // Launchers don't resolve an app's font resources inside RemoteViews, so the widget uses the
-  // system sans; measuring with the same face keeps bursts on the digits they belong to.
+  // Launchers don't resolve app font resources in RemoteViews, so measure with the system sans
+  // they render.
   private val bold: Typeface = Typeface.create("sans-serif", Typeface.BOLD)
 
   private fun paint(sizeDp: Float) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -136,7 +125,6 @@ internal class MoneyTypography(private val context: Context) {
     )
   }
 
-  /** The largest size where the widest counter fits the box. */
   fun fit(widest: CounterText, width: Float, height: Float, maxSize: Float): CounterMetrics {
     var low = 12f
     var high = maxSize
@@ -150,15 +138,10 @@ internal class MoneyTypography(private val context: Context) {
 
   companion object {
     const val SMALL_RATIO = 0.46f
-    /** A slight negative tracking, like the app's tight total. */
     const val LETTER_SPACING = -0.02f
   }
 }
 
-/**
- * The frames the launcher flips through until the app re-syncs: the total sampled every `tick`
- * from `startAt`. A frame never runs ahead of the real total; it trails by at most one unit.
- */
 internal class MoneyTimeline(
   val startAt: Long,
   val tick: Long,
@@ -166,7 +149,6 @@ internal class MoneyTimeline(
   val nextSyncAt: Long,
   val ratePerHour: Double,
 ) {
-  /** What the launcher is probably showing at `time`, assuming it never paused. */
   fun shownAt(time: Long): Long? {
     if (cents.isEmpty() || time < startAt) return null
     val index = ((time - startAt) / tick).toInt().coerceAtMost(cents.size - 1)
@@ -174,8 +156,8 @@ internal class MoneyTimeline(
   }
 
   companion object {
-    /** The flipper's interval, fixed in nmw_widget.xml: AdapterViewFlipper's isn't remotable.
-     * Slower totals just repeat a frame, and a frame that changes nothing doesn't animate. */
+    // Keep in sync with the flipper interval in nmw_widget.xml; AdapterViewFlipper's isn't
+    // remotable.
     const val TICK = 1_000L
     private const val IDLE_SYNC = 30 * 60_000L
 

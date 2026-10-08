@@ -5,9 +5,7 @@ const subscribe = () => () => {};
 const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 
-/**
- * To support static rendering, this value needs to be re-calculated on the client side for web
- */
+// Static web rendering has no color scheme, so render light until the client hydrates.
 export function useColorScheme() {
     const hasHydrated = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
 
