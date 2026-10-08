@@ -18,15 +18,10 @@ function paletteColors(palette: (typeof PALETTES)[number]["id"], isDark: boolean
     return { canvas, row, ink, muted, accent, accentDeep };
 }
 
-/** The locale's thousands separator, e.g. "," or a narrow no-break space; empty if it has none. */
 function groupSeparator(locale: string) {
     return (1_000_000).toLocaleString(locale).replace(/\d/g, "").charAt(0);
 }
 
-/**
- * Everything the native widget needs to count on its own: the earnings schedule of every
- * period, each palette in light and dark, the number format, and translated labels.
- */
 export function buildWidgetData({
     sources,
     appPeriod,

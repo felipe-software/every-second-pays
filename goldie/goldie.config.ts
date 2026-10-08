@@ -2,21 +2,14 @@ const APP_ROOT = decodeURIComponent(new URL("..", import.meta.url).pathname).rep
 const config = {
     appRoot: APP_ROOT,
 
-    // Goldie requires the iOS fields in its shared config shape, but this
-    // project setup intentionally targets Google Play only.
+    // Required by Goldie's config shape; this project targets Google Play only.
     appPath: "",
     bundleId: "software.felipe.everysecondpays",
 
     android: {
-        // Produced by: bun run goldie:build:android
         appPath: "./build/every-second-pays-release.apk",
         applicationId: "software.felipe.everysecondpays",
-        // Pixel 8 emulator skin (back.webp) with its 1080x2400 screen opening
-        // at (49, 55) re-cut from an 89px to a 78px corner radius (frame.webp),
-        // so the black bezel rim stays even around the corners. The screen
-        // overlaps the opening by 2px to avoid background seams. Captures must
-        // be clean rectangles: `bun run goldie:capture` swaps argent's
-        // screenshot, which bakes in black rounded corners, for adb screencap.
+        // The screen overlaps the 1080x2400 opening at (49, 55) by 2px to hide background seams.
         frame: {
             image: "./assets/pixel_8/frame.webp",
             width: 1187,
@@ -26,16 +19,11 @@ const config = {
         },
     },
 
-    // Goldie names the Google Play phone output spec "pixel-10-pro". The
-    // Goldie_Pixel_8_API_36 AVD stays a real Pixel 8; goldie/bin/adb reports it
-    // under Goldie's supported pixel_9_pro profile, so captures still run at the
-    // Pixel 8's native 1080x2400 size.
+    // Captured on the Pixel 8 AVD, which goldie/bin/adb reports as a supported pixel_9_pro.
     devices: ["pixel-10-pro"],
     locales: ["en-US"],
     appearance: "light",
 
-    // This value only applies if an iPhone target is added later. Android
-    // uses android.frame above instead.
     frame: { variant: "17-pro-blue" },
     theme: {
         background: "linear-gradient(160deg, #D9F9EF 0%, #F2FDF9 55%, #FFFFFF 100%)",

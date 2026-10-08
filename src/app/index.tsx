@@ -112,7 +112,6 @@ export default function EarningsScreen() {
         if (!ready) return;
 
         const calculatedCents = Math.round(calculatedTotal * 100);
-        // Switching periods swaps in another total; it isn't money arriving, so nothing flies.
         if (displayedPeriod.current !== period) {
             displayedPeriod.current = period;
             clearUpdateTimers();
@@ -127,9 +126,7 @@ export default function EarningsScreen() {
             return;
         }
 
-        // Saving updates the source list before the native sheet finishes dismissing.
-        // Wait until the sheet is gone so newly mounted source values have valid window
-        // coordinates and the money flight is visible instead of playing behind it.
+        // Wait for the sheet to dismiss: new source rows need valid window coordinates, and the flight would play behind it.
         if (sheetOpen) return;
 
         if (!initializedDisplay.current) {
@@ -269,8 +266,7 @@ export default function EarningsScreen() {
                     />
 
                     <ScrollView
-                        // Keeps the list where it was with the old rate line: 16 + its 13.6 pt line + 56,
-                        // minus the period button's 12 pt gap and 35 pt footprint.
+                        // 38.6 keeps the list where it sat under the old rate line: 16 + 13.6 + 56 - 12 - 35.
                         className="mt-[38.6px] flex-1 px-[22px]"
                         contentContainerStyle={{ gap: 10, paddingBottom: Platform.OS === "android" ? 124 : 32 }}
                         showsVerticalScrollIndicator={false}

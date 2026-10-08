@@ -16,7 +16,6 @@ const PERIOD_KEYS: Record<EarningsPeriod, TranslationKey> = {
     year: "period.year",
 };
 
-/** Stacked up and down chevrons: the button cycles through values in place. */
 function CycleGlyph({ color }: { color: string }) {
     return (
         <Svg width={9} height={12} viewBox="0 0 9 12">
@@ -33,7 +32,6 @@ function CycleGlyph({ color }: { color: string }) {
     );
 }
 
-/** The raised pill under the total that names the period it shows; tapping moves to the next. */
 export function PeriodButton({ period, onPress }: { period: EarningsPeriod; onPress: () => void }) {
     const { colors } = useEarningsTheme();
     const { t, locale } = useI18n();

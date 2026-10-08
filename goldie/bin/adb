@@ -1,9 +1,6 @@
 #!/bin/sh
-# Goldie only captures on emulators whose AVD profile is pixel_9_pro or
-# pixel_10_pro. The capture AVD (Goldie_Pixel_8_API_36) must stay a real Pixel 8:
-# renaming its profile makes the emulator switch to that device's screen size,
-# corners and cutout. Answer Goldie's profile lookup for it and pass every other
-# command through to the real adb.
+# Goldie only captures pixel_9_pro/pixel_10_pro AVDs, but renaming the Pixel 8 AVD's
+# profile changes its screen, so fake Goldie's profile lookup instead.
 BIN_DIR=$(cd "$(dirname "$0")" && pwd)
 REAL=$(PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -vx "$BIN_DIR" | paste -sd: -) command -v adb)
 if [ "$1" = "-s" ] && [ "$3 $4 $5" = "emu avd path" ]; then

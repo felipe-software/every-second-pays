@@ -26,7 +26,6 @@ function UpDownChevron({ color }: { color: string }) {
     );
 }
 
-/** A settings row naming one option and its current value; tapping opens a menu of values. */
 export function WidgetMenuRow<T extends string>({ label, value, options, onChange, testID }: WidgetMenuRowProps<T>) {
     const [open, setOpen] = useState(false);
     const { colors, isDark } = useEarningsTheme();

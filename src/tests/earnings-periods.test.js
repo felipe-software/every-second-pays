@@ -38,7 +38,6 @@ const weekdayJob = {
 };
 const DAY_PAY = 288;
 
-/** Brute-force reference: walk every past day of the period one by one. */
 function slowEarned(source, period, now, firstDay) {
     const start = periodStart(period, now, firstDay);
     let total = earnedToday(source, now);
@@ -49,7 +48,6 @@ function slowEarned(source, period, now, firstDay) {
 }
 
 describe("periodStart", () => {
-    // Wednesday, October 7, 2026, 12:30.
     const now = new Date(2026, 9, 7, 12, 30);
 
     test("starts each period at local midnight", () => {
@@ -68,7 +66,6 @@ describe("periodStart", () => {
     test("a week starting today begins at today's midnight", () => {
         const sunday = new Date(2026, 9, 4, 8);
         expect(periodStart("week", sunday, SUNDAY)).toEqual(new Date(2026, 9, 4));
-        // Monday-first, Sunday is the last day of the week.
         expect(periodStart("week", sunday, MONDAY)).toEqual(new Date(2026, 8, 28));
     });
 
@@ -104,11 +101,9 @@ describe("earnedInPeriod", () => {
     });
 
     test("adds every full working day before today", () => {
-        // Wednesday 12:30: Monday and Tuesday are done, today is 3.5 hours in.
         const now = new Date(2026, 9, 7, 12, 30);
         const today = 3.5 * 3600 * 0.01;
         expect(earnedInPeriod(weekdayJob, "week", now, MONDAY)).toBeCloseTo(2 * DAY_PAY + today, 6);
-        // Sunday-first, Sunday is in the week but isn't a working day.
         expect(earnedInPeriod(weekdayJob, "week", now, SUNDAY)).toBeCloseTo(2 * DAY_PAY + today, 6);
         // October 1–6, 2026: Thu, Fri, Mon, Tue are working days.
         expect(earnedInPeriod(weekdayJob, "month", now, MONDAY)).toBeCloseTo(4 * DAY_PAY + today, 6);
@@ -137,7 +132,7 @@ describe("earnedInPeriod", () => {
         expect(earnedInPeriod(weekdayJob, "year", afterSpring, MONDAY)).toBeCloseTo(slowEarned(weekdayJob, "year", afterSpring, MONDAY), 6);
         expect(earnedInPeriod(weekdayJob, "week", afterFall, SUNDAY)).toBeCloseTo(slowEarned(weekdayJob, "week", afterFall, SUNDAY), 6);
         expect(earnedInPeriod(weekdayJob, "year", afterFall, MONDAY)).toBeCloseTo(slowEarned(weekdayJob, "year", afterFall, MONDAY), 6);
-        // Monday–Thursday of the week after the fall change: Mon, Tue, Wed done.
+        // Thursday after the fall change: Mon, Tue, Wed are done.
         expect(earnedInPeriod(weekdayJob, "week", afterFall, MONDAY)).toBeCloseTo(3 * DAY_PAY, 6);
     });
 
@@ -154,9 +149,7 @@ describe("earnedInPeriod", () => {
         const landedLastYear = { ...bonus, paidAt: new Date(2025, 11, 31, 23, 59).getTime() };
         expect(PERIODS.map((period) => earnedInPeriod(landedLastYear, period, now, MONDAY))).toEqual([0, 0, 0, 0]);
 
-        // Saved before landing dates were recorded: counts everywhere, as it always did.
         expect(PERIODS.map((period) => earnedInPeriod(bonus, period, now, MONDAY))).toEqual([500, 500, 500, 500]);
-        // Scheduled for later: never counts.
         expect(PERIODS.map((period) => earnedInPeriod({ ...bonus, when: "later" }, period, now, MONDAY))).toEqual([0, 0, 0, 0]);
     });
 });

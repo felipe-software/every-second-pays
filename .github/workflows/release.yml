@@ -44,9 +44,7 @@ jobs:
         with:
           bun-version: 1.4.2
 
-      # First run only: tag the current package.json version on the commit
-      # before this push and start the release branch from it, so the new
-      # commits produce the next patch release.
+      # Tag the pre-push commit, not HEAD, so this push's commits form the next release.
       - name: Bootstrap release branch
         if: ${{ !inputs.dry_run }}
         env:
@@ -107,7 +105,7 @@ jobs:
             args+=(--dry-run)
           fi
 
-          # semantic-release reads the branch from GITHUB_REF; publish from the release branch.
+          # semantic-release reads the branch from GITHUB_REF.
           GITHUB_REF="refs/heads/${RELEASE_BRANCH}" bun --bun "${SEMANTIC_RELEASE_BIN}" "${args[@]}"
 
       - name: Summarize

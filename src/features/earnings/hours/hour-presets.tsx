@@ -17,7 +17,6 @@ const PRESET_KEYS: Record<HourPreset["id"], TranslationKey> = {
     evenings: "payment.preset.evenings",
 };
 
-/** A titled, segmented row of common schedules; the matching one is raised. */
 export function HourPresets({ shifts, onPick }: { shifts: readonly Shift[]; onPick: (shifts: Shift[]) => void }) {
     const { colors } = useEarningsTheme();
     const { t } = useI18n();
@@ -41,7 +40,6 @@ export function HourPresets({ shifts, onPick }: { shifts: readonly Shift[]; onPi
                                 onPick(preset.shifts.map((shift) => ({ ...shift })));
                             }}
                             containerClassName="min-w-0 flex-1"
-                            // Only the matching preset is raised; the rest sit flat on the track.
                             surface={selected ? "raised" : "fill"}
                             flat={!selected}
                             depth={2}

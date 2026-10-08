@@ -47,7 +47,6 @@ function Swatch({
             style={{ borderColor: selected ? palette.accent : "transparent", borderWidth: 2 }}
         >
             <Raised
-                // Each swatch shows its own palette's accent, not the current one.
                 surface={{ face: palette.accent, edge: edgeColor(palette.accent, { accent: true }) }}
                 depth={3}
                 radius={18}

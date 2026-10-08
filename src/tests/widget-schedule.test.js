@@ -10,9 +10,8 @@ afterEach(() => {
 
 const MONDAY = 1;
 const sources = [
-    // $36 an hour = 1 cent a second, 9 AM–5 PM on weekdays.
+    // $36 an hour = 1 cent a second.
     { id: 1, name: "Studio", frequency: "hour", amount: 36, days: [1, 2, 3, 4, 5], shifts: [{ start: 540, end: 1020 }] },
-    // A split day, every day, paid monthly.
     {
         id: 2,
         name: "Agency",
@@ -21,9 +20,7 @@ const sources = [
         days: [0, 1, 2, 3, 4, 5, 6],
         shifts: [{ start: 480, end: 720 }, { start: 780, end: 1080 }],
     },
-    // Overnight-ish: ends at midnight.
     { id: 3, name: "Night", frequency: "hour", amount: 20, days: [5, 6], shifts: [{ start: 1200, end: 1440 }] },
-    // Landed in the past, and a scheduled one that never counts.
     { id: 4, name: "Bonus", frequency: "once", amount: 150, days: [], shifts: [], when: "today", paidAt: Date.UTC(2026, 9, 5, 12) },
     { id: 5, name: "Later", frequency: "once", amount: 900, days: [], shifts: [], when: "later" },
 ];
@@ -65,7 +62,6 @@ describe("earnings schedule", () => {
         const allDay = [{ id: 1, name: "Always", frequency: "second", amount: 1, days: [0, 1, 2, 3, 4, 5, 6], shifts: [{ start: 0, end: 1440 }] }];
         const now = new Date(2026, 9, 6, 9, 30);
         const schedule = buildEarningsSchedule(allDay, "year", now, MONDAY, 5 * 86_400_000);
-        // Midnights don't reset a yearly total and the rate never changes: only the ends remain.
         expect(schedule.length).toBe(2);
         expect(schedule[0][2]).toBeCloseTo(0.1, 10);
     });
