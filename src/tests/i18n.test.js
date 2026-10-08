@@ -185,6 +185,16 @@ test("respects 12/24-hour preferences and locale defaults when the preference is
     expect(readI18n().formatTime(1440)).toBe(readI18n().formatTime(0));
 });
 
+test("times always show their minutes, while hour labels don't", () => {
+    calendars = [{ uses24hourClock: false }];
+    expect(readI18n().formatTime(9 * 60)).toMatch(/^9:00\sAM$/);
+    expect(readI18n().formatHour(9 * 60)).toMatch(/^9\sAM$/);
+    locales = [{ languageCode: "pt", languageTag: "pt-BR", decimalSeparator: "," }];
+    calendars = [{ uses24hourClock: true }];
+    expect(readI18n().formatTime(9 * 60)).toBe("09:00");
+    expect(readI18n().formatTime(1440)).toBe("00:00");
+});
+
 test("formats translated empty, full and mixed weekday schedules", () => {
     locales = [{ languageCode: "pt", languageTag: "pt-BR", decimalSeparator: "," }];
     const i18n = readI18n();

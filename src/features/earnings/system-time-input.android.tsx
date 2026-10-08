@@ -9,10 +9,10 @@ import { useI18n } from "@/features/i18n/i18n";
 
 import { dateFromMinutes } from "./model";
 import type { SystemTimeInputProps } from "./system-time-input";
-import { INLINE_TIME_PADDING } from "./hours/dial-geometry";
+import { INLINE_TIME_PADDING } from "./hours/arc-geometry";
 import { useEarningsTheme } from "./theme";
 
-export function SystemTimeInput({ label, value, onChange, variant = "field", text, fontSize = 20 }: SystemTimeInputProps) {
+export function SystemTimeInput({ label, value, onChange, variant = "field", fontSize = 20 }: SystemTimeInputProps) {
     const [open, setOpen] = useState(false);
     const { t, formatTime } = useI18n();
     const { colors, isDark } = useEarningsTheme();
@@ -35,7 +35,7 @@ export function SystemTimeInput({ label, value, onChange, variant = "field", tex
                 }}
                 hitSlop={inline ? 8 : undefined}
                 containerClassName={inline ? "min-w-0 shrink" : undefined}
-                surface="fill"
+                surface={inline ? "chip" : "fill"}
                 depth={2}
                 radius={inline ? 7 : 13}
                 className={inline ? "items-center justify-center py-0.5" : "h-11 items-center justify-center"}
@@ -43,10 +43,10 @@ export function SystemTimeInput({ label, value, onChange, variant = "field", tex
             >
                 <Text
                     numberOfLines={1}
-                    className={inline ? "font-sans font-bold text-ink" : "font-sans text-[13px] font-semibold text-ink"}
+                    className={inline ? "font-sans font-bold text-ink tabular-nums" : "font-sans text-[13px] font-semibold text-ink tabular-nums"}
                     style={inline ? { fontSize, letterSpacing: -fontSize * 0.02 } : undefined}
                 >
-                    {text ?? formatTime(value)}
+                    {formatTime(value)}
                 </Text>
             </RaisedPressable>
             {open ? (

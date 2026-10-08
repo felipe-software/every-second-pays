@@ -39,7 +39,7 @@ function ShiftChip({
             className="h-11 flex-row items-center gap-2 pr-3 pl-4"
         >
             <View className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: colors.accent, opacity: selected ? 1 : 0.5 }} />
-            <Text className="font-sans text-[14px] font-semibold" style={{ color: selected ? colors.ink : colors.muted }}>
+            <Text className="font-sans text-[14px] font-semibold tabular-nums" style={{ color: selected ? colors.ink : colors.muted }}>
                 {formatTimeRange(shift.start, shift.end)}
             </Text>
             {selected && removable ? (

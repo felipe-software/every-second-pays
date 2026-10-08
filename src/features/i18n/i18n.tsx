@@ -16,7 +16,10 @@ type I18nContextValue = {
     t: (key: TranslationKey, replacements?: Replacements) => string;
     formatMoney: (value: number, digits?: number) => string;
     formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string;
+    /** Always with minutes ("9:00 AM"), so times keep the same digit layout. */
     formatTime: (totalMinutes: number) => string;
+    /** Just the hour ("9 AM"), for axis labels. */
+    formatHour: (totalMinutes: number) => string;
     formatTimeRange: (start: number, end: number, separator?: string) => string;
     formatTimeRangeParts: (start: number, end: number) => [string, string];
     formatDays: (days: number[]) => string;
@@ -73,26 +76,35 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         (value: number, digits = 2) => formatNumber(value, { minimumFractionDigits: digits, maximumFractionDigits: digits }),
         [formatNumber],
     );
+    const twentyFourHour = useMemo(
+        () => uses24HourClock ?? new Intl.DateTimeFormat(locale, { hour: "numeric" }).resolvedOptions().hour12 === false,
+        [locale, uses24HourClock],
+    );
     const timeParts = useCallback(
-        (totalMinutes: number) => {
+        (totalMinutes: number, withMinutes = true) => {
             const minutes = ((totalMinutes % 1440) + 1440) % 1440;
             const date = new Date(2024, 0, 1, Math.floor(minutes / 60), minutes % 60);
             const formatter = new Intl.DateTimeFormat(locale, {
-                hour: "numeric",
-                ...(minutes % 60 ? { minute: "2-digit" as const } : {}),
-                ...(uses24HourClock == null ? {} : { hour12: !uses24HourClock }),
+                // A 24-hour time keeps its leading zero ("09:00"), so every time has four digits.
+                hour: twentyFourHour && withMinutes ? "2-digit" : "numeric",
+                ...(withMinutes ? { minute: "2-digit" as const } : {}),
+                ...(twentyFourHour ? { hourCycle: "h23" as const } : { hour12: true }),
             });
             return typeof formatter.formatToParts === "function"
                 ? formatter.formatToParts(date)
                 : [{ type: "literal" as const, value: formatter.format(date) }];
         },
-        [locale, uses24HourClock],
+        [locale, twentyFourHour],
     );
     const formatTime = useCallback(
         (totalMinutes: number) => timeParts(totalMinutes).map((part) => part.value).join(""),
         [timeParts],
     );
-    // "9" and "11 AM" instead of "9 AM" and "11 AM": a shared day period is only written once.
+    const formatHour = useCallback(
+        (totalMinutes: number) => timeParts(totalMinutes, false).map((part) => part.value).join(""),
+        [timeParts],
+    );
+    // "9:00" and "11:00 AM" instead of "9:00 AM" and "11:00 AM": a shared day period is only written once.
     const formatTimeRangeParts = useCallback(
         (start: number, end: number): [string, string] => {
             const startParts = timeParts(start);
@@ -148,11 +160,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         formatMoney,
         formatNumber,
         formatTime,
+        formatHour,
         formatTimeRange,
         formatTimeRangeParts,
         formatDays,
         weekdayName,
-    }), [decimalSeparator, firstDayOfWeek, formatDays, formatMoney, formatNumber, formatTime, formatTimeRange, formatTimeRangeParts, language, locale, t, weekdayName]);
+    }), [decimalSeparator, firstDayOfWeek, formatDays, formatMoney, formatNumber, formatHour, formatTime, formatTimeRange, formatTimeRangeParts, language, locale, t, weekdayName]);
 
     return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

@@ -3,7 +3,7 @@ import { View } from "react-native";
 
 import type { Shift } from "../model";
 import { useEarningsTheme } from "../theme";
-import { DayDial } from "./day-dial";
+import { DayArc } from "./day-arc";
 import { HourPresets } from "./hour-presets";
 import { ShiftChips } from "./shift-chips";
 
@@ -21,7 +21,7 @@ export function HoursEditor({ shifts, onChange }: { shifts: Shift[]; onChange: (
     return (
         <View className="gap-4">
             <View className="gap-3 rounded-[28px] px-4 pt-3 pb-4" style={{ backgroundColor: colors.card }}>
-                <DayDial
+                <DayArc
                     shifts={shifts}
                     selectedIndex={selectedIndex}
                     onSelect={setSelected}
