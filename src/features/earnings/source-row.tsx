@@ -129,7 +129,7 @@ export function SourceRow({
                     <Text numberOfLines={1} className="font-sans text-[17px] font-semibold tracking-[-0.25px] text-ink">
                         {source.name}
                     </Text>
-                    <Text numberOfLines={1} className="font-sans text-[12.5px] text-muted">{subtitle}</Text>
+                    <Text numberOfLines={1} className="font-sans text-[12.5px] text-muted tabular-nums">{subtitle}</Text>
                 </View>
                 <View className="items-end gap-1.5">
                     <View ref={setValueNode} collapsable={false} testID={`source-value-${source.id}`}>
@@ -141,7 +141,7 @@ export function SourceRow({
                     </View>
                     <View className="flex-row items-center gap-1.5">
                         {active ? <LiveDot live size={6} /> : null}
-                        <Text className={`font-sans text-[12px] font-medium ${active ? "text-accent-deep" : "text-muted"}`}>{state}</Text>
+                        <Text className={`font-sans text-[12px] font-medium tabular-nums ${active ? "text-accent-deep" : "text-muted"}`}>{state}</Text>
                     </View>
                 </View>
             </RaisedPressable>

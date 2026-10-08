@@ -12,15 +12,15 @@ export type SystemTimeInputProps = {
     label: string;
     value: number;
     onChange: (value: number) => void;
-    /** `field` is a labeled input; `inline` is just the time, for use inside the hours dial. */
+    /** `field` is a labeled input; `inline` is just the time, for use under the hours arc. */
     variant?: "field" | "inline";
-    /** Overrides the displayed time where the platform renders its own (e.g. "12" in "12 – 5 PM"). */
-    text?: string;
     /** Font size of an `inline` time drawn by the app (Android). */
     fontSize?: number;
+    /** Width of an `inline` system picker (iOS). */
+    width?: number;
 };
 
-export function SystemTimeInput({ label, value, onChange, variant = "field" }: SystemTimeInputProps) {
+export function SystemTimeInput({ label, value, onChange, variant = "field", width = 104 }: SystemTimeInputProps) {
     const { locale } = useI18n();
     const { colors, isDark } = useEarningsTheme();
     const uses24HourClock = useCalendars()[0]?.uses24hourClock;
@@ -39,7 +39,7 @@ export function SystemTimeInput({ label, value, onChange, variant = "field" }: S
                 appHaptics.selection();
                 onChange(date.getHours() * 60 + date.getMinutes());
             }}
-            style={variant === "inline" ? { width: 104, height: 34 } : { width: "100%", height: 44 }}
+            style={variant === "inline" ? { width, height: 34 } : { width: "100%", height: 44 }}
         />
     );
 
