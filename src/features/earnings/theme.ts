@@ -18,7 +18,7 @@ function deriveColors(base: ThemeColors, isDark: boolean) {
     // use a light ink tint there instead (about 1.18:1 against the sheet in every palette).
     // The tint is pre-blended so raised controls stay opaque over their own edge.
     const fill = isDark ? base.row : mixColors(base.canvas, base.ink, 0.08);
-    // The bright card that groups the hours dial and its controls inside the payment sheet.
+    // The bright card that groups the hours arc and its controls inside the payment sheet.
     const card = isDark ? mixColors(base.canvas, base.ink, 0.07) : mixColors(base.canvas, "#FFFFFF", 0.78);
     // The selected segment: the bright card in light mode, a lifted fill in dark mode.
     const raised = isDark ? mixColors(fill, base.ink, 0.12) : card;

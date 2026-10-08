@@ -85,19 +85,14 @@ export function PrimaryButton({
     );
 }
 
-/**
- * A tappable word in the payment sentence. `reserve` lists the widest values the word can
- * take; the pill keeps that width so editing it never rewraps the sentence.
- */
+/** A tappable word in the payment sentence. */
 export function TokenButton({
     active,
     children,
-    reserve,
     onPress,
 }: {
     active: boolean;
     children: string;
-    reserve?: readonly string[];
     onPress: () => void;
 }) {
     return (
@@ -116,17 +111,7 @@ export function TokenButton({
             selected={active}
             className="items-center px-2 pb-px"
         >
-            {reserve?.map((value) => (
-                <Text
-                    key={value}
-                    aria-hidden
-                    numberOfLines={1}
-                    className="h-0 font-sans text-[24px] font-semibold opacity-0"
-                >
-                    {value}
-                </Text>
-            ))}
-            <Text numberOfLines={1} className="font-sans text-[24px] leading-[27px] font-semibold text-ink">{children}</Text>
+            <Text numberOfLines={1} className="font-sans text-[24px] leading-[27px] font-semibold text-ink tabular-nums">{children}</Text>
         </RaisedPressable>
     );
 }

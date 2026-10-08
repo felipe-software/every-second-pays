@@ -34,11 +34,6 @@ export function PaymentSummary({
 }) {
     const { t, locale, formatDays, formatMoney, formatTime } = useI18n();
     const recurring = draft.frequency !== "once";
-    // While the hours are being edited, an hour word keeps the width of its hour's longest
-    // form ("9:45 AM"), so dragging the minutes never rewraps the sentence.
-    const hourReserve = (minutes: number) => token === "hours"
-        ? [formatTime(Math.floor(minutes / 60) * 60 + 45)]
-        : undefined;
 
     // While one word is being edited the sentence may grow but never shrinks back, so the
     // editor below can't bounce up and down as a time crosses a line break.
@@ -77,11 +72,11 @@ export function PaymentSummary({
                     {draft.shifts.map((shift, index) => (
                         <Fragment key={`${shift.start}-${shift.end}-${index}`}>
                             <Connector>{t(index === 0 ? "payment.summary.from" : "payment.summary.andFrom")}</Connector>
-                            <TokenButton active={token === "hours"} reserve={hourReserve(shift.start)} onPress={() => onTokenChange("hours")}>
+                            <TokenButton active={token === "hours"} onPress={() => onTokenChange("hours")}>
                                 {formatTime(shift.start)}
                             </TokenButton>
                             <Connector>{t("payment.summary.to")}</Connector>
-                            <TokenButton active={token === "hours"} reserve={hourReserve(shift.end)} onPress={() => onTokenChange("hours")}>
+                            <TokenButton active={token === "hours"} onPress={() => onTokenChange("hours")}>
                                 {formatTime(shift.end)}
                             </TokenButton>
                         </Fragment>
