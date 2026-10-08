@@ -8,8 +8,6 @@ import android.content.Intent
 import android.os.Bundle
 import org.json.JSONObject
 
-// RemoteViews layout/margin/outline setters used throughout are API 31+; the module only
-// reaches this code on Android 12+.
 @android.annotation.TargetApi(31)
 class MotionWidgets private constructor(private val context: Context) {
   private val manager = AppWidgetManager.getInstance(context)

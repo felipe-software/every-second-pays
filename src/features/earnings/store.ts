@@ -37,12 +37,10 @@ export const useEarningsStore = create<EarningsState>((set, get) => ({
         if (!draft.name.trim() || !Number.isFinite(amount) || amount <= 0) {
             throw new Error("Enter a name and a positive amount.");
         }
-        // A one-time payment remembers when it landed, so it only counts in periods that include
-        // that moment. Editing one that had already landed keeps its original date.
         const previous = id == null ? undefined : get().sources.find((source) => source.id === id);
         const landed = (source?: Pick<PaymentSource, "frequency" | "when">) => source?.frequency === "once" && source.when === "today";
         const paidAt = landed(draft) ? (landed(previous) ? previous?.paidAt : Date.now()) : undefined;
-        // Drafts made from a saved source carry its id and landing date along.
+        // Drafts built from a saved source still carry its id and paidAt at runtime.
         const { paidAt: _paidAt, id: _id, ...fields } = draft as PaymentDraft & Partial<Pick<PaymentSource, "id" | "paidAt">>;
         set({ saving: true });
         try {

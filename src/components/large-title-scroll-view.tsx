@@ -10,15 +10,13 @@ import { useEarningsTheme } from "@/features/earnings/theme";
 
 const IS_IOS = Platform.OS === "ios";
 export const PAGE_GUTTER = 22;
-// Fits the 40pt raised back button.
 const BAR_HEIGHT = 52;
 const BACKDROP_FADE_HEIGHT = 32;
 const BACKDROP_SOLID_BAR_FRACTION = 0.7;
 const BACKDROP_FADE_IN_SCROLL = 20;
 const COMPACT_TITLE_RISE = 8;
 const BLUR_INTENSITY = 30;
-// On iOS the blur outlasts the background below the bar, so the fade reads as a progressive blur.
-// Android has no blur behind it, so the background stays denser to keep content legible.
+// Android has no blur behind the bar, so its background stays denser to keep content legible.
 const BLUR_MASK_STOPS = "rgba(0, 0, 0, 0.85) 75%, transparent 100%";
 const BACKGROUND_MASK_STOPS = `rgba(0, 0, 0, ${IS_IOS ? 0.35 : 0.6}) 70%, transparent 100%`;
 
@@ -28,7 +26,6 @@ type LargeTitleScrollViewProps = Omit<
 > & {
     title: string;
     headerLeft?: ReactNode;
-    // Drawn again inside the bar, so content fades into the same colors it scrolls over.
     background?: ReactNode;
 };
 
@@ -73,8 +70,6 @@ function TitleBar({
     scrollY,
 }: ScrollHeaderProps & Pick<LargeTitleScrollViewProps, "title" | "headerLeft" | "background">) {
     const insets = useSafeAreaInsets();
-    // Like iOS, the backdrop appears as soon as content slides under the status bar,
-    // well before the compact title does.
     const backdropStyle = useAnimatedStyle(() => ({
         opacity: interpolate(scrollY.get(), [0, BACKDROP_FADE_IN_SCROLL], [0, 1], Extrapolation.CLAMP),
     }));

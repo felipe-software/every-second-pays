@@ -85,7 +85,6 @@ export function PrimaryButton({
     );
 }
 
-/** A tappable word in the payment sentence. */
 export function TokenButton({
     active,
     children,

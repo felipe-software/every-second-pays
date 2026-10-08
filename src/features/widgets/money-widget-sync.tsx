@@ -10,11 +10,6 @@ import { useI18n } from "@/features/i18n/i18n";
 import { buildWidgetData } from "./widget-data";
 import { useWidgetStore } from "./widget-store";
 
-/**
- * Keeps the home-screen widgets fed: republishes the earnings schedule whenever sources, the
- * period, the look, or the language change, and every time the app comes back to the
- * foreground (which also extends the schedule's horizon).
- */
 function AndroidMoneyWidgetSync() {
     const { t, locale, firstDayOfWeek, decimalSeparator } = useI18n();
     const sources = useEarningsStore((state) => state.sources);

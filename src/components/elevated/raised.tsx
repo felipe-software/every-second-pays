@@ -16,10 +16,8 @@ import { useSquash } from "./use-squash";
 
 const PRESS_DURATION = 80;
 
-/** Width of the edge-colored outline around every raised face. */
 export const RAISED_OUTLINE = 1;
 
-/** Faces with their own edge token; the edge is always derived from the face. */
 export type RaisedTone = "row" | "active" | "fill" | "canvas" | "raised" | "chip" | "danger" | "accent";
 
 const FACE_TOKENS = {
@@ -44,36 +42,22 @@ const EDGE_TOKENS = {
     accent: "edgeAccent",
 } as const;
 
-/** 2 for small controls, 3 for chips and rows, 4 for primary buttons and large cards. */
 export type RaisedDepth = 2 | 3 | 4;
 
 type RaisedProps = {
-    /**
-     * A palette face, or explicit colors for controls painted in another palette (theme
-     * previews, color swatches). Faces must be opaque: the edge sits right behind them.
-     */
+    /** Faces must be opaque: the edge sits right behind them. */
     surface: RaisedTone | { face: string; edge: string };
     depth?: RaisedDepth;
-    /** Not raised: no outline and no edge, and pressing doesn't sink it. Keeps the same footprint. */
     flat?: boolean;
     radius: number;
-    /** Plays the squash-and-spring when it turns on. */
     selected?: boolean;
-    /** Plays the squash-and-spring whenever this value changes. */
     squashKey?: unknown;
-    /** Sinks the face while pressed; see `usePressSink`. */
     pressed?: SharedValue<number>;
     className?: string;
     style?: StyleProp<ViewStyle>;
     children?: ReactNode;
 };
 
-/**
- * A raised surface: the face has a 1 px outline in its edge color and sits on the same
- * shape in that color, offset down by `depth`, so the edge shows all around and thicker
- * along the bottom. Pressing slides the face down over the edge; the outline stays.
- * Room for the edge is reserved below the face, so sinking never moves anything around it.
- */
 export function Raised({
     surface,
     depth = 3,
@@ -116,8 +100,7 @@ export function Raised({
                     {
                         borderRadius: radius,
                         borderWidth: RAISED_OUTLINE,
-                        // A flat face keeps an invisible outline so its content never shifts
-                        // when it becomes raised (e.g. a preset getting selected).
+                        // A flat face keeps an invisible outline so its content doesn't shift when it becomes raised.
                         borderColor: flat ? face : edge,
                         backgroundColor: face,
                     },
@@ -131,12 +114,6 @@ export function Raised({
     );
 }
 
-/**
- * Press tracking for a raised surface: sinks the face and plays a light haptic as the finger
- * lands. Use it directly when the pressable is bigger than the surface, e.g. a preview card
- * with a caption underneath, or a strip of toggles that sink together: spread the handlers on
- * the pressable(s) and hand `pressed` to the `Raised` surface.
- */
 export function usePressSink() {
     const pressed = useSharedValue(0);
     const sink = (value: number) => pressed.set(withTiming(value, {
@@ -151,7 +128,6 @@ export function usePressSink() {
     return { pressed, onPressIn, onPressOut: () => sink(0) };
 }
 
-/** A raised button that sinks into its edge while pressed. */
 export function RaisedPressable({
     surface,
     depth,

@@ -14,15 +14,10 @@ import android.view.ViewTreeObserver
 import expo.modules.kotlin.AppContext
 import expo.modules.kotlin.views.ExpoView
 
-/**
- * The real widget, live, inside the app: renders the same RemoteViews the launcher gets into an
- * AppWidgetHostView (collection adapters only apply inside one) and keeps its timeline fresh.
- */
 @SuppressLint("ViewConstructor")
 class MoneyWidgetPreviewView(context: Context, appContext: AppContext) : ExpoView(context, appContext) {
-  // React Native swallows layout requests from native children, so a frame the ticker adds
-  // would draw unlaid (blank) for a frame before Expo's posted layout ran: a flicker every
-  // second. Laying the widget out right before each draw avoids it.
+  // React Native swallows native children's layout requests, so each new ticker frame would draw
+  // blank once before Expo's posted layout runs. Laying out before each draw avoids the flicker.
   private val layoutBeforeDraw = ViewTreeObserver.OnPreDrawListener {
     if (host.isLayoutRequested && width > 0 && height > 0) {
       host.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY))
@@ -58,12 +53,10 @@ class MoneyWidgetPreviewView(context: Context, appContext: AppContext) : ExpoVie
     scheduleRender()
   }
 
-  /** Bumped by the app when the published data changes, so the preview re-renders. */
   fun setRevision(@Suppress("UNUSED_PARAMETER") value: Int) {
     scheduleRender()
   }
 
-  /** Props, size, and attachment often change together; render once for all of them. */
   private fun scheduleRender() {
     handler.removeCallbacks(renderSoon)
     handler.post(renderSoon)

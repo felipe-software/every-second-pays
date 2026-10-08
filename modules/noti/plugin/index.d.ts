@@ -22,7 +22,6 @@ export type NotiAnimation = {
 export type NotiPluginOptions = {
     animations?: Record<string, NotiAnimation>;
     widgets?: boolean;
-    /** URL scheme the money widget's "Customize" action opens. Defaults to the app's scheme. */
     scheme?: string;
 };
 declare function withNoti(

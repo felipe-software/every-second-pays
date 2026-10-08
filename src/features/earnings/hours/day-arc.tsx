@@ -42,12 +42,10 @@ const HANDLE_HIT_RADIUS = 30;
 const TICK_INSET = ARC_STROKE / 2 + 3;
 const LABEL_INSET = ARC_STROKE / 2 + 19;
 const ICON_SIZE = 16;
-/** How far under each end of the arc its icon and its label sit. */
 const ICON_DROP = 25;
 const END_LABEL_DROP = 43;
 const TIMES_HEIGHT = 34;
 const CENTER_FONT = { max: 17, min: 11 };
-// On Android both times are raised pills: their padding and outline take room from the text.
 const TIME_PILLS = Platform.OS === "android";
 const PILL_CHROME = TIME_PILLS ? 2 * 2 * (INLINE_TIME_PADDING + RAISED_OUTLINE) : 0;
 const IOS_PICKER = { max: 104, gap: 6 };
@@ -61,7 +59,7 @@ type Edge = "start" | "end";
 type TouchState = {
     drag: { edge: Edge; index: number; shift: Shift } | null;
     tappedIndex: number;
-    /** Offset from page to arc coordinates; moves only report page coordinates reliably. */
+    // Page-to-arc offset: moves only report page coordinates reliably.
     origin: { x: number; y: number };
 };
 
@@ -76,7 +74,6 @@ function handleAt(geometry: ArcGeometry, shift: Shift, x: number, y: number): Ed
     return nearest.distance <= HANDLE_HIT_RADIUS ? nearest.edge : null;
 }
 
-/** Moves one end of a shift to the touch, never letting it cross the other end. */
 function dragShift(geometry: ArcGeometry, shift: Shift, edge: Edge, x: number, y: number): Shift | null {
     const minutes = minutesAt(geometry, x, y);
     const next = edge === "start"
@@ -85,7 +82,6 @@ function dragShift(geometry: ArcGeometry, shift: Shift, edge: Edge, x: number, y
     return next.start === shift.start && next.end === shift.end ? null : next;
 }
 
-/** The shift under a touch. Shifts may overlap, so one under the selected shift wins over it. */
 function otherShiftAt(geometry: ArcGeometry, shifts: readonly Shift[], selectedIndex: number, x: number, y: number) {
     if (!isOnArc(geometry, x, y)) return -1;
     const minutes = minutesAt(geometry, x, y);
@@ -94,7 +90,6 @@ function otherShiftAt(geometry: ArcGeometry, shifts: readonly Shift[], selectedI
     );
 }
 
-/** Where shifts overlap: the time two of them share, and the shifts sharing it. */
 function overlapsOf(shifts: readonly Shift[]) {
     return shifts.flatMap((shift, index) =>
         shifts.slice(index + 1).flatMap((other, offset) => {
@@ -105,7 +100,6 @@ function overlapsOf(shifts: readonly Shift[]) {
     );
 }
 
-/** Follows a shift's minutes, morphing between presets but tracking a dragged handle 1:1. */
 function useShiftMinutes(shift: Shift, instant: boolean) {
     const start = useSharedValue(shift.start);
     const end = useSharedValue(shift.end);
@@ -192,7 +186,6 @@ function HourTicks({ geometry, color }: { geometry: ArcGeometry; color: string }
     );
 }
 
-/** A 16 pt icon drawn on a 24-unit grid, centered on a point. */
 function EndIcon({ x, y, kind, color }: { x: number; y: number; kind: "sun" | "moon"; color: string }) {
     return (
         <G transform={`translate(${x - ICON_SIZE / 2} ${y - ICON_SIZE / 2}) scale(${ICON_SIZE / 24})`}>
@@ -213,11 +206,6 @@ function EndIcon({ x, y, kind, color }: { x: number; y: number; kind: "sun" | "m
     );
 }
 
-/**
- * A low arc from the morning to midnight, the afternoon at its peak, showing every shift
- * of the day. The selected shift has handles to drag its start and end; tapping another
- * shift's stretch selects it, and the times under the peak open the platform time picker.
- */
 export function DayArc({
     shifts,
     selectedIndex,
@@ -233,10 +221,8 @@ export function DayArc({
     const { t, formatNumber, formatHour, formatTime } = useI18n();
     const window = useWindowDimensions();
     const [width, setWidth] = useState(window.width - HORIZONTAL_INSET);
-    // While a handle is dragged the arc keeps the span it started with, so it can't rescale
-    // under the finger when the earliest shift moves.
+    // Freezes the span during a drag so the arc can't rescale under the finger.
     const [dragFirst, setDragFirst] = useState<number | null>(null);
-    // A drag spans many renders, so its state lives in a ref.
     const touch = useRef<TouchState>(IDLE_TOUCH);
 
     const geometry = arcGeometry(width, dragFirst ?? firstArcMinute(shifts));
@@ -271,10 +257,7 @@ export function DayArc({
         setDragFirst(null);
     };
 
-    // The arc uses the JS responder system rather than a gesture handler: becoming the
-    // responder makes Android stop the sheet and its scroll view from stealing the drag.
-    // It only claims touches that start on a handle or on another shift's stretch, so the
-    // sheet still scrolls and the time buttons under the peak keep their own taps.
+    // JS responder, not a gesture handler: becoming the responder stops Android's sheet and scroll view stealing the drag.
     const responder = {
         onStartShouldSetResponder: (event: GestureResponderEvent) => {
             const { locationX: x, locationY: y, pageX, pageY } = event.nativeEvent;
@@ -289,8 +272,7 @@ export function DayArc({
             if (edge) setDragFirst(geometry.first);
             return true;
         },
-        // Returning true from the grant blocks native parents (the sheet's drag, its
-        // scroll view) from taking the touch over on Android.
+        // Returning true blocks native parents (the sheet's drag, its scroll view) from taking over on Android.
         onResponderGrant: () => true,
         onResponderTerminationRequest: () => false,
         onResponderMove: (event: GestureResponderEvent) => {
@@ -345,7 +327,6 @@ export function DayArc({
                         color={colors.accent}
                         instant={dragging}
                     />
-                    {/* A line through the band where shifts overlap, so one hidden under another still shows. */}
                     {overlapsOf(shifts).map((overlap) => (
                         <ShiftArc
                             key={overlap.key}
@@ -396,7 +377,6 @@ export function DayArc({
                 </Text>
             ))}
 
-            {/* Tapping either time opens the platform's own time picker for exact entry. */}
             <View
                 pointerEvents="box-none"
                 className="absolute inset-x-0 items-center gap-1"

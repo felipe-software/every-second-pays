@@ -9,7 +9,6 @@ import { useI18n } from "@/features/i18n/i18n";
 import { ForwardChevron, WidgetsIcon } from "./widget-glyphs";
 import { useWidgetStore } from "./widget-store";
 
-/** Settings' entry into the Widgets page. Live widgets are Android 12+ only. */
 export function WidgetsSettingsRow() {
     const { colors } = useEarningsTheme();
     const { t } = useI18n();

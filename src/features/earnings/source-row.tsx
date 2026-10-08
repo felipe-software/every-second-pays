@@ -43,10 +43,8 @@ export function SourceRow({
     transferDelay,
 }: {
     source: PaymentSource;
-    /** Position in the list, used to stagger the rows rising in. */
     index: number;
     now: Date;
-    /** What the source earned in the selected period. */
     earned: number;
     onPress: () => void;
     onValueNodeChange: (sourceId: number, node: View | null) => void;
@@ -63,7 +61,6 @@ export function SourceRow({
         ? schedule
         : source.when !== "today"
             ? t("home.scheduled")
-            // Payments saved before landing dates were recorded keep saying "today".
             : source.paidAt == null || isSameDay(source.paidAt, now)
                 ? t("home.landedToday")
                 : t("home.landedOn", { date: formatLandingDate(source.paidAt, now, locale) });

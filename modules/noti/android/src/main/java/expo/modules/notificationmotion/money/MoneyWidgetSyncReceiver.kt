@@ -6,7 +6,6 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 
-/** The wall clock moved: every timeline is sampled at the wrong instants now. */
 class MoneyWidgetSyncReceiver : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent) {
     if (Build.VERSION.SDK_INT < 31) return

@@ -16,7 +16,6 @@ export function ForwardChevron({ color }: { color: string }) {
     );
 }
 
-/** The settings row's icon: a widget with a coin dropping into it. */
 export function WidgetsIcon({ accent, ink }: { accent: string; ink: string }) {
     return (
         <Svg width={26} height={26} viewBox="0 0 26 26">

@@ -60,8 +60,6 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # An update only reaches binaries with the same runtime version. Publishing one that no
-      # build can run would just sit on the channel, so stop and ask for a store build instead.
       - name: Find a build that can run this update
         env:
           LOCAL_BUILD_RUNTIME: ${{ inputs.local_build_runtime }}

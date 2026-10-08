@@ -35,7 +35,6 @@ export function LanguageMenu({ preference, disabled, onOpen, onPressIn, onPressO
     const { t } = useI18n();
     const { colors, isDark } = useEarningsTheme();
     const { width } = useWindowDimensions();
-    // Screen padding on both sides, then the raised row's outline.
     const menuWidth = Math.min(width, 430) - 44 - 2 * RAISED_OUTLINE;
     const selected = LANGUAGE_OPTIONS.find((option) => option.value === preference)!;
     const openMenu = () => {

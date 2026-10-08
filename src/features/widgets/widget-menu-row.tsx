@@ -4,7 +4,6 @@ import { appHaptics } from "@/features/haptics/haptics";
 
 import type { WidgetMenuRowProps } from "./widget-menu-row.types";
 
-/** Live widgets are Android-only; elsewhere the row just steps through the values. */
 export function WidgetMenuRow<T extends string>({ label, value, options, onChange, testID }: WidgetMenuRowProps<T>) {
     const index = options.findIndex((option) => option.value === value);
     return (
