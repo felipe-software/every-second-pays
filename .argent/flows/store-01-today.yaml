@@ -1,0 +1,9 @@
+steps:
+  - echo: Launch a clean release build in English and wait for the empty dashboard.
+  - launch: software.felipe.everysecondpays
+  - await: { visible: { text: No payment sources yet }, timeout: 15000 }
+  - await: { idle: true }
+  - run: store-seed-sources
+  - echo: The dashboard counts today's pay live across salary, gig, and project income.
+  - await: { visible: { id: period-button }, timeout: 15000 }
+  - wait: 1500
