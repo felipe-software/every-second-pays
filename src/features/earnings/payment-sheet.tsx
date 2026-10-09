@@ -1,9 +1,10 @@
-import { TrueSheet } from "@lodev09/react-native-true-sheet";
+import type { TrueSheet } from "@lodev09/react-native-true-sheet";
 import { useRef, useState } from "react";
 import { Platform, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { RiseIn } from "@/components/elevated/rise-in";
+import { RecedingSheet, SHEET_RECEDE_ENABLED } from "@/components/sheet-recede";
 import { useI18n } from "@/features/i18n/i18n";
 import { appHaptics } from "@/features/haptics/haptics";
 
@@ -88,14 +89,14 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
                 : t("payment.addPayment");
 
     return (
-        <TrueSheet
+        <RecedingSheet
             ref={sheetRef}
             backgroundColor={Platform.OS === "ios" ? undefined : colors.canvas}
             detents={[0.82, 1]}
             initialDetentIndex={0}
             dimmed
-            // A black dim hides the canvas-colored sheet in dark mode, so lift the backdrop instead.
-            dimmedColor={isDark ? colors.track : undefined}
+            // A black dim hides the canvas-colored sheet in dark mode, so lift the backdrop unless the page recedes.
+            dimmedColor={isDark && !SHEET_RECEDE_ENABLED ? colors.track : undefined}
             dismissible={!saving}
             draggable={!saving}
             grabber
@@ -165,6 +166,6 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
                     />
                 </RiseIn>
             </ScrollView>
-        </TrueSheet>
+        </RecedingSheet>
     );
 }
