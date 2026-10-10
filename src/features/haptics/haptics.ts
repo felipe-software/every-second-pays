@@ -1,16 +1,76 @@
+import { requireOptionalNativeModule } from "expo";
 import { Presets, Settings, usePatternComposer, type Pattern } from "react-native-pulsar";
 import { useCallback, useEffect } from "react";
+import { Platform } from "react-native";
 
-const MONEY_LANDING_PATTERN: Pattern = {
-    discretePattern: [
-        { time: 0, amplitude: 0.22, frequency: 0.82 },
-        { time: 52, amplitude: 0.1, frequency: 0.44 },
-    ],
-    continuousPattern: {
-        amplitude: [],
-        frequency: [],
-    },
+import { canCompose, type Chunk, type Note, type PrimitiveDurations, toChunks, toPattern } from "./score";
+import { toWaveform, type Waveform } from "./waveform";
+
+type HapticPlayerModule = {
+    hasAmplitudeControl(): boolean;
+    playWaveform(timings: number[], amplitudes: number[]): void;
+    primitiveDurations(): PrimitiveDurations | null;
+    playScore(chunks: Chunk[]): void;
+    stop(): void;
 };
+
+const PLAYER = Platform.OS === "android" ? requireOptionalNativeModule<HapticPlayerModule>("HapticPlayer") : null;
+// Pulsar's Android player cuts a rumble into coarse steps and drops the hits laid over it.
+const WAVEFORM = PLAYER?.hasAmplitudeControl() ? PLAYER : null;
+const DURATIONS = PLAYER?.primitiveDurations() ?? null;
+
+const SILENT: Pattern = { discretePattern: [], continuousPattern: { amplitude: [], frequency: [] } };
+
+type Haptic = { pattern: Pattern; playWaveform: () => void };
+
+type Hit = [time: number, amplitude: number, frequency: number];
+
+function haptic(hits: Hit[], rumble: [time: number, level: number][] = [], pitch = 0.4): Haptic {
+    const pattern: Pattern = {
+        discretePattern: hits.map(([time, amplitude, frequency]) => ({ time, amplitude, frequency })),
+        continuousPattern: {
+            amplitude: rumble.map(([time, value]) => ({ time, value })),
+            frequency: rumble.length ? [{ time: 0, value: pitch }, { time: rumble.at(-1)![0], value: pitch }] : [],
+        },
+    };
+    const { timings, amplitudes } = toWaveform(pattern);
+    return { pattern, playWaveform: () => WAVEFORM?.playWaveform(timings, amplitudes) };
+}
+
+function useHaptic({ pattern, playWaveform }: Haptic) {
+    const play = usePatternComposer(WAVEFORM ? SILENT : pattern).play;
+    return WAVEFORM ? playWaveform : play;
+}
+
+export type ScoreHaptic =
+    | { kind: "composition"; score: readonly Note[]; durations: PrimitiveDurations }
+    | { kind: "waveform"; waveform: Waveform }
+    | { kind: "pattern"; pattern: Pattern };
+
+// The device's own primitives where it has them all: tuned to its actuator, they feel crisper
+// than any waveform.
+export function scoreHaptic(score: readonly Note[]): ScoreHaptic {
+    if (PLAYER && DURATIONS && canCompose(score, DURATIONS)) return { kind: "composition", score, durations: DURATIONS };
+    const pattern = toPattern(score);
+    return WAVEFORM ? { kind: "waveform", waveform: toWaveform(pattern) } : { kind: "pattern", pattern };
+}
+
+export function useScoreHaptic(haptic: ScoreHaptic) {
+    const composer = usePatternComposer(haptic.kind === "pattern" ? haptic.pattern : SILENT);
+    // `late`: how far into the score it already is; only a composition can start partway.
+    const play = (late = 0) => {
+        if (haptic.kind === "composition") PLAYER?.playScore(toChunks(haptic.score, haptic.durations, late));
+        else if (haptic.kind === "waveform") WAVEFORM?.playWaveform(haptic.waveform.timings, haptic.waveform.amplitudes);
+        else composer.play();
+    };
+    const stop = () => {
+        if (haptic.kind === "pattern") composer.stop();
+        else PLAYER?.stop();
+    };
+    return { play, stop };
+}
+
+const MONEY_LANDING = haptic([[0, 0.7, 0.8]], [[0, 0.45], [70, 0]], 0.6);
 
 const PRELOADED_PRESETS = ["Anvil", "Buzz", "Firecracker", "Strike", "Wisp"];
 
@@ -32,75 +92,30 @@ export function useHapticsWarmup() {
 }
 
 export function useMoneyLandingHaptic() {
-    return usePatternComposer(MONEY_LANDING_PATTERN).play;
-}
-
-function taps(count: number, gap: number, amplitude: number, frequency: number): Pattern {
-    return {
-        discretePattern: Array.from({ length: count }, (_, index) => ({ time: index * gap, amplitude, frequency })),
-        continuousPattern: { amplitude: [], frequency: [] },
-    };
-}
-
-function hits(...events: [time: number, amplitude: number, frequency: number][]): Pattern {
-    return {
-        discretePattern: events.map(([time, amplitude, frequency]) => ({ time, amplitude, frequency })),
-        continuousPattern: { amplitude: [], frequency: [] },
-    };
+    return useHaptic(MONEY_LANDING);
 }
 
 // Timings mirror the onboarding animations they accompany; keep them in sync with
 // `src/features/onboarding`.
-const ONBOARDING_PATTERNS = {
-    // The bird bursting into the day's eight bills.
-    burst: hits([0, 0.55, 0.9], [45, 0.22, 0.7]),
-    // The counter swallowing a day, a week or a month.
-    impact: hits([0, 0.6, 0.45], [70, 0.2, 0.3]),
-    // The counter swallowing a whole year, after the last bundle lands.
-    finale: {
-        discretePattern: [
-            { time: 0, amplitude: 1, frequency: 0.5 },
-            { time: 110, amplitude: 0.5, frequency: 0.35 },
-            { time: 230, amplitude: 0.28, frequency: 0.3 },
-        ],
-        continuousPattern: {
-            amplitude: [{ time: 0, value: 0 }, { time: 30, value: 0.4 }, { time: 600, value: 0 }],
-            frequency: [{ time: 0, value: 0.3 }, { time: 600, value: 0.2 }],
-        },
-    },
-    // A weekday's eight bills landing in its column, 42 ms apart.
-    column: taps(8, 42, 0.16, 0.8),
-    // The rest of the month's seventeen workdays filling, 46 ms apart.
-    month: taps(17, 46, 0.14, 0.75),
-    // January's bundle snapping its strap closed.
-    bundle: hits([0, 0.4, 0.6]),
-    // The other eleven months landing on the pile, 60 ms apart.
-    pile: taps(11, 60, 0.3, 0.25),
+const ONBOARDING_HAPTICS = {
     // The widget settling into its home screen slot, then its small rebound.
-    widget: hits([0, 0.7, 0.35], [180, 0.22, 0.5]),
+    widget: haptic([[0, 0.9, 0.5], [180, 0.5, 0.5]], [[0, 0.6], [140, 0.2], [180, 0.45], [320, 0]]),
     // The padlock's shackle snapping shut.
-    lock: hits([0, 0.9, 0.95], [60, 0.35, 0.6]),
+    lock: haptic([[0, 1, 0.95], [60, 0.6, 0.6]], [[0, 0.5], [160, 0]], 0.7),
     // A privacy promise checking off.
-    tick: hits([0, 0.3, 0.85]),
-} satisfies Record<string, Pattern>;
+    tick: haptic([[0, 0.6, 0.85]], [[0, 0.3], [50, 0]], 0.7),
+};
 
-export type OnboardingHaptic = keyof typeof ONBOARDING_PATTERNS;
+export type OnboardingHaptic = keyof typeof ONBOARDING_HAPTICS;
 
 export function useOnboardingHaptics() {
-    // Each composer's `play` is stable, so the returned function is too.
-    const burst = usePatternComposer(ONBOARDING_PATTERNS.burst).play;
-    const impact = usePatternComposer(ONBOARDING_PATTERNS.impact).play;
-    const finale = usePatternComposer(ONBOARDING_PATTERNS.finale).play;
-    const column = usePatternComposer(ONBOARDING_PATTERNS.column).play;
-    const month = usePatternComposer(ONBOARDING_PATTERNS.month).play;
-    const bundle = usePatternComposer(ONBOARDING_PATTERNS.bundle).play;
-    const pile = usePatternComposer(ONBOARDING_PATTERNS.pile).play;
-    const widget = usePatternComposer(ONBOARDING_PATTERNS.widget).play;
-    const lock = usePatternComposer(ONBOARDING_PATTERNS.lock).play;
-    const tick = usePatternComposer(ONBOARDING_PATTERNS.tick).play;
+    // Each player is stable, so the returned function is too.
+    const widget = useHaptic(ONBOARDING_HAPTICS.widget);
+    const lock = useHaptic(ONBOARDING_HAPTICS.lock);
+    const tick = useHaptic(ONBOARDING_HAPTICS.tick);
     const landing = useMoneyLandingHaptic();
-    return useCallback((haptic: OnboardingHaptic | "landing") => {
-        const plays = { burst, impact, finale, column, month, bundle, pile, widget, lock, tick, landing };
-        plays[haptic]();
-    }, [burst, impact, finale, column, month, bundle, pile, widget, lock, tick, landing]);
+    return useCallback((name: OnboardingHaptic | "landing") => {
+        const plays = { widget, lock, tick, landing };
+        plays[name]();
+    }, [widget, lock, tick, landing]);
 }

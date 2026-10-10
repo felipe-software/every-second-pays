@@ -1,25 +1,15 @@
 import { useEffect, useEffectEvent, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import Animated from "react-native-reanimated";
+import Animated, { useDerivedValue, useSharedValue } from "react-native-reanimated";
 
-import type { OnboardingHaptic } from "@/features/haptics/haptics";
+import { useScoreHaptic } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 
 import { introCounter, introWords, ONBOARDING_ART } from "./art/sources";
-import { StepArt } from "./art/step-art";
-import { useOnboardingHaptic } from "./haptics-context";
+import { FPS, StepArt } from "./art/step-art";
+import { INTRO_HAPTICS, INTRO_HAPTICS_AT } from "./intro-haptics";
 import { IntroLabels } from "./intro-labels";
-import {
-    BIRD,
-    DAY_PAY,
-    DIVE,
-    introDrop,
-    LIFT,
-    MONTH_PAY,
-    MONTH_WORKDAYS,
-    type Stage,
-    YEAR_PAY,
-} from "./intro-timeline";
+import { artShift, DAY_PAY, introDrop, LIFT, MONTH_PAY, type Stage, STORY, YEAR_PAY } from "./intro-timeline";
 import { DEPTH, PageLayer } from "./pager";
 import { StepCopy } from "./step-copy";
 
@@ -34,6 +24,30 @@ const PERIOD_KEYS = {
 
 /** What the example wage adds up to over each period: a week is its five workdays. */
 const PERIOD_PAY: Record<Period, number> = { day: DAY_PAY, week: DAY_PAY * 5, month: MONTH_PAY, year: YEAR_PAY };
+
+type Beat =
+    | { type: "stage"; stage: Stage }
+    | { type: "ready" | "haptics" | "lift" | "copy" | "done" }
+    | { type: "total"; period: Period };
+
+// On the illustration's own frames rather than timers, so a busy JS thread can't put the story
+// out of step with what's drawn.
+const INTRO_BEATS: [time: number, beat: Beat][] = [
+    [420, { type: "stage", stage: 1 }],
+    [700, { type: "ready" }],
+    [INTRO_HAPTICS_AT, { type: "haptics" }],
+    [STORY.day, { type: "total", period: "day" }],
+    [STORY.week, { type: "stage", stage: 2 }],
+    [STORY.weekTotal, { type: "total", period: "week" }],
+    [STORY.month, { type: "stage", stage: 3 }],
+    [STORY.monthTotal, { type: "total", period: "month" }],
+    [STORY.year, { type: "stage", stage: 4 }],
+    [STORY.finale, { type: "total", period: "year" }],
+    [STORY.finale + LIFT.delay, { type: "lift" }],
+    // The promise comes in while the story is still rising into place.
+    [STORY.finale + LIFT.delay + 200, { type: "copy" }],
+    [STORY.finale + LIFT.delay + 600, { type: "done" }],
+];
 
 type IntroState = {
     stage: Stage;
@@ -64,7 +78,6 @@ const REPLAY: IntroState = { ...START, done: true };
 export function IntroStep({
     index,
     playing,
-    stopped,
     reduced,
     onSkipReady,
     onImpact,
@@ -75,8 +88,6 @@ export function IntroStep({
     index: number;
     /** On screen, so the illustration runs. */
     playing: boolean;
-    /** Leaving the onboarding: no more beats. */
-    stopped: boolean;
     reduced: boolean;
     onSkipReady: () => void;
     onImpact: (big: boolean) => void;
@@ -93,84 +104,49 @@ export function IntroStep({
     const words = introWords(language);
     const [state, setState] = useState(reduced ? SETTLED : START);
     const [replays, setReplays] = useState(0);
-    const playHaptic = useOnboardingHaptic();
+    const haptics = useScoreHaptic(INTRO_HAPTICS);
+    const [storyStart] = art.segments.story;
+    const frame = useSharedValue(reduced ? art.segments.ambient[0] : storyStart);
+    const artShifted = useDerivedValue(() => artShift(((frame.get() - storyStart) * 1000) / FPS));
 
     const ready = useEffectEvent(onSkipReady);
     const finish = useEffectEvent(onDone);
-    const impact = useEffectEvent(onImpact);
-    const lift = useEffectEvent(onLift);
-    const haptic = useEffectEvent((name: OnboardingHaptic | "landing") => playHaptic(name));
 
     useEffect(() => {
-        if (reduced) {
-            ready();
-            finish();
-            return;
+        if (!reduced) return;
+        ready();
+        finish();
+    }, [reduced]);
+
+    const stopHaptics = useEffectEvent(haptics.stop);
+    useEffect(() => {
+        if (playing) return () => stopHaptics();
+    }, [playing]);
+
+    const update = (change: Partial<IntroState>) => setState((current) => ({ ...current, ...change }));
+    const play = (beat: Beat, late: number) => {
+        switch (beat.type) {
+            case "stage":
+                return update({ stage: beat.stage });
+            case "ready":
+                if (replays === 0) onSkipReady();
+                return;
+            case "haptics":
+                return haptics.play(late);
+            case "total":
+                update({ landed: beat.period });
+                return onImpact(beat.period === "year");
+            case "lift":
+                update({ lifted: true });
+                return onLift(true);
+            case "copy":
+                return update({ copyIn: true });
+            case "done":
+                update({ done: true });
+                return onDone();
         }
-        if (stopped) return;
-
-        const timers: ReturnType<typeof setTimeout>[] = [];
-        const at = (time: number, beat: () => void) => timers.push(setTimeout(beat, time));
-        const update = (change: Partial<IntroState>) => setState((current) => ({ ...current, ...change }));
-        const hit = (period: Period, big: boolean) => {
-            update({ landed: period });
-            impact(big);
-            haptic(big ? "finale" : "impact");
-        };
-
-        const first = replays === 0;
-        at(420, () => update({ stage: 1 }));
-        if (first) at(700, ready);
-
-        // Day: the bird bursts into eight bills, which dive into the hours one by one, nine to five.
-        const burstAt = BIRD.at + BIRD.flight;
-        at(burstAt, () => haptic("burst"));
-        for (let hour = 0; hour < 8; hour += 1) {
-            // A dive lands at 70% of its run.
-            at(burstAt + DIVE.delay + hour * DIVE.gap + DIVE.duration * 0.7, () => haptic("landing"));
-        }
-        const dayHit = burstAt + DIVE.delay + 7 * DIVE.gap + DIVE.duration;
-        at(dayHit, () => hit("day", false));
-
-        // Week: the day re-flows into Monday; Tuesday to Friday fill; the weekend stays empty.
-        const weekAt = dayHit + 500;
-        at(weekAt, () => update({ stage: 2 }));
-        [700, 970, 1240, 1510].forEach((offset) => {
-            // The first bill lands at 76% of its 520 ms drop.
-            at(weekAt + offset + 395, () => haptic("column"));
-        });
-        at(weekAt + 2310, () => hit("week", false));
-
-        // Month: each weekday column compresses into a calendar cell, then the month fills.
-        const monthAt = weekAt + 2700;
-        const monthDropsAt = monthAt + 700;
-        at(monthAt, () => update({ stage: 3 }));
-        at(monthDropsAt + 304, () => haptic("month"));
-        at(monthDropsAt + (MONTH_WORKDAYS - 1) * 46 + 600, () => hit("month", false));
-
-        // Year: the month packs into a strapped bundle of cash that hops onto the pile, and the
-        // other eleven months drop onto it one after another.
-        const yearAt = monthAt + 2250;
-        const rainAt = yearAt + 740;
-        const rainGap = 60;
-        at(yearAt, () => update({ stage: 4 }));
-        at(yearAt + 700, () => haptic("bundle"));
-        at(rainAt + 340, () => haptic("pile"));
-        const finaleAt = rainAt + 10 * rainGap + 400;
-        at(finaleAt, () => hit("year", true));
-        at(finaleAt + LIFT.delay, () => {
-            update({ lifted: true });
-            lift(true);
-        });
-        // The promise comes in while the story is still rising into place.
-        at(finaleAt + LIFT.delay + 200, () => update({ copyIn: true }));
-        at(finaleAt + LIFT.delay + 600, () => {
-            update({ done: true });
-            finish();
-        });
-
-        return () => timers.forEach(clearTimeout);
-    }, [reduced, replays, stopped]);
+    };
+    const cues = INTRO_BEATS.map(([time], index) => ({ frame: storyStart + (time * FPS) / 1000, name: String(index) }));
 
     const replay = () => {
         setState(REPLAY);
@@ -193,8 +169,11 @@ export function IntroStep({
                         playing={playing}
                         reduced={reduced}
                         replay={replays}
+                        frame={frame}
+                        cues={cues}
+                        onCue={(name, late) => play(INTRO_BEATS[Number(name)][1], late)}
                     />
-                    <IntroLabels stage={state.stage} />
+                    <IntroLabels stage={state.stage} shift={artShifted} />
                     <View
                         accessible={landed !== null}
                         accessibilityLiveRegion="polite"
