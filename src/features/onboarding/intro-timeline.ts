@@ -1,4 +1,4 @@
-import { cubicBezier } from "react-native-reanimated";
+import { cubicBezier, Easing } from "react-native-reanimated";
 
 // The intro's example wage: each bill is an hour of work, a day is eight of them, a month 22
 // workdays, a year twelve months. The timeline below is the design's, in ms from the start.
@@ -15,6 +15,58 @@ export const BIRD = { at: 200, flight: 1900 } as const;
 /** Each of the day's bills dives into its hour this long after the burst, 80 ms apart. */
 export const DIVE = { delay: 520, gap: 80, duration: 400 } as const;
 
+const BURST = BIRD.at + BIRD.flight;
+const DAY = BURST + DIVE.delay + 7 * DIVE.gap + DIVE.duration;
+const WEEK_AT = DAY + 500;
+const MONTH_AT = WEEK_AT + 2700;
+const MONTH_DROPS = MONTH_AT + 700;
+const YEAR_AT = MONTH_AT + 2250;
+const RAIN = YEAR_AT + 740;
+
+export const STORY = {
+    burst: BURST,
+    // A dive lands at 70% of its run.
+    dives: Array.from({ length: 8 }, (_, hour) => BURST + DIVE.delay + hour * DIVE.gap + DIVE.duration * 0.7),
+    day: DAY,
+    week: WEEK_AT,
+    // Tuesday to Friday's first bills landing, 76% into their 520 ms drop; the rest follow 42 ms apart.
+    columns: [700, 970, 1240, 1510].map((offset) => WEEK_AT + offset + 395),
+    columnGap: 42,
+    weekTotal: WEEK_AT + 2310,
+    month: MONTH_AT,
+    workdays: MONTH_DROPS + 304,
+    workdayGap: 46,
+    monthTotal: MONTH_DROPS + (MONTH_WORKDAYS - 1) * 46 + 600,
+    year: YEAR_AT,
+    hop: YEAR_AT + 700,
+    pile: RAIN + 340,
+    pileGap: 60,
+    finale: RAIN + 10 * 60 + 400,
+} as const;
+
+// Hangs each stage's art the same gap under the period word; keep in step with intro.json's stage layer.
+const ART_SHIFT = [
+    { at: STORY.day + 60, duration: 420, to: -153 },
+    { at: STORY.week, duration: 570, to: -103 },
+    { at: STORY.month, duration: 370, to: -33 },
+    { at: STORY.year, duration: 420, to: 9 },
+] as const;
+const ART_SHIFT_EASING = Easing.bezierFn(0.4, 0, 0.2, 1);
+
+export function artShift(storyTime: number) {
+    "worklet";
+    let shift = 0;
+    for (const { at, duration, to } of ART_SHIFT) {
+        if (storyTime <= at) break;
+        if (storyTime >= at + duration) {
+            shift = to;
+            continue;
+        }
+        return shift + (to - shift) * ART_SHIFT_EASING((storyTime - at) / duration);
+    }
+    return shift;
+}
+
 /** Weekday columns on the artboard, Monday first. */
 export const WEEK = { x0: 62, dx: 48 } as const;
 
@@ -26,8 +78,8 @@ export type Stage = 0 | 1 | 2 | 3 | 4;
  * `INTRO_DROP` below the artboard while it plays, centered in the still empty screen. Once the
  * year has landed it rises to `REST_DROP`, midway between the Skip button and the title.
  */
-export const INTRO_DROP = 160;
-export const REST_DROP = 100;
+export const INTRO_DROP = 170;
+export const REST_DROP = 110;
 export const LIFT = { delay: 350, duration: 940, easing: cubicBezier(0.22, 1, 0.36, 1) } as const;
 
 /** Places a layer of the story: lowered at once while it plays, risen over `LIFT` after. */

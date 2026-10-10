@@ -1,5 +1,5 @@
-import { StyleSheet, View } from "react-native";
-import Animated from "react-native-reanimated";
+import { StyleSheet } from "react-native";
+import Animated, { type SharedValue, useAnimatedStyle } from "react-native-reanimated";
 
 import { useI18n } from "@/features/i18n/i18n";
 
@@ -11,14 +11,20 @@ import { EASE_SPRING } from "./motion";
  * The words the intro's illustration needs in the reader's own format: the day's first and last
  * hour, and the week's day letters, which move up over the calendar when the week becomes a month.
  */
-export function IntroLabels({ stage }: { stage: Stage }) {
+export function IntroLabels({ stage, shift }: { stage: Stage; shift: SharedValue<number> }) {
     const { colors } = useOnboardingTheme();
+    const shifted = useAnimatedStyle(() => ({ transform: [{ translateY: shift.get() }] }));
     const { weekdayName, formatHour } = useI18n();
     const showDays = stage === 2 || stage === 3;
     const hourFade = { opacity: stage === 1 ? 1 : 0, transitionProperty: "opacity", transitionDuration: 420 } as const;
 
     return (
-        <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
+        <Animated.View
+            pointerEvents="none"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={[StyleSheet.absoluteFill, shifted]}
+        >
             <Animated.Text style={[styles.hour, { left: 41, color: colors.muted }, hourFade]}>
                 {formatHour(9 * 60)}
             </Animated.Text>
@@ -44,7 +50,7 @@ export function IntroLabels({ stage }: { stage: Stage }) {
                     {weekdayName((column + 1) % 7, "narrow")}
                 </Animated.Text>
             ))}
-        </View>
+        </Animated.View>
     );
 }
 

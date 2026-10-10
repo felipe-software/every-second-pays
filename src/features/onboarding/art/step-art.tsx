@@ -4,6 +4,7 @@ import { StyleSheet } from "react-native";
 import {
     cancelAnimation,
     Easing,
+    type SharedValue,
     useAnimatedReaction,
     useSharedValue,
     withRepeat,
@@ -18,7 +19,7 @@ import { useOnboardingTheme } from "../look";
 import { type Cue, type OnboardingAnimation, onboardingSkottie } from "./skottie";
 
 /** The frame rate every onboarding animation is exported at. */
-const FPS = 60;
+export const FPS = 60;
 
 function runTo(from: number, to: number) {
     "worklet";
@@ -45,6 +46,7 @@ export function StepArt({
     playing,
     reduced,
     replay = 0,
+    frame: sharedFrame,
     cues,
     onCue,
 }: {
@@ -56,9 +58,10 @@ export function StepArt({
     playing: boolean;
     reduced: boolean;
     replay?: number;
+    frame?: SharedValue<number>;
     /** Moments to act on (haptics), by frame. */
     cues?: Cue[];
-    onCue?: (name: string) => void;
+    onCue?: (name: string, late: number) => void;
 }) {
     const { artLook: look } = useOnboardingTheme();
     const variants = useArtVariants();
@@ -70,7 +73,8 @@ export function StepArt({
     const [introStart, introEnd] = source.segments[intro];
     const loopSpan = loop ? source.segments[loop] : null;
     const settled = loopSpan ? loopSpan[0] : introEnd;
-    const frame = useSharedValue(reduced ? settled : introStart);
+    const ownFrame = useSharedValue(reduced ? settled : introStart);
+    const frame = sharedFrame ?? ownFrame;
 
     const replayed = useRef(replay);
 
@@ -98,19 +102,25 @@ export function StepArt({
         return () => cancelAnimation(frame);
     }, [frame, introEnd, introStart, loopSpan, playing, reduced, replay, settled]);
 
-    const loopStart = loopSpan ? loopSpan[0] : introEnd;
+    const [loopStart, loopEnd] = loopSpan ?? [introEnd, introEnd];
+    // Both threads' `performance.now()` read the same clock.
+    const cueCrossed = (name: string, crossedAt: number) => onCue?.(name, performance.now() - crossedAt);
     useAnimatedReaction(
         () => frame.get(),
         (current, previous) => {
             if (!cues || !onCue || previous == null || reduced) return;
+            const now = performance.now();
             // The loop jumping back to its start runs on from there, so cues past `previous`
             // to the loop's end and from its start up to `current` have both been crossed.
             const wrapped = current < previous;
             for (const cue of cues) {
+                const beforeWrap = wrapped && cue.frame > previous;
                 const crossed = wrapped
-                    ? cue.frame > previous || (cue.frame >= loopStart && cue.frame <= current)
+                    ? beforeWrap || (cue.frame >= loopStart && cue.frame <= current)
                     : cue.frame > previous && cue.frame <= current;
-                if (crossed) scheduleOnRN(onCue, cue.name);
+                if (!crossed) continue;
+                const since = beforeWrap ? loopEnd - cue.frame + current - loopStart : current - cue.frame;
+                scheduleOnRN(cueCrossed, cue.name, now - (since * 1000) / FPS);
             }
         },
     );

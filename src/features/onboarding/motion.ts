@@ -29,8 +29,12 @@ export function riseKeyframes(distance: number, scale = 1) {
     return rule;
 }
 
+// Reanimated attaches a CSS animation a frame after mount; until then the view would show fully.
+const HIDDEN_UNTIL_ANIMATED = { opacity: 0 } as const;
+
 export function rise(delay: number, distance = 26, scale = 1) {
     return {
+        ...HIDDEN_UNTIL_ANIMATED,
         animationName: [riseKeyframes(distance, scale), FADE_IN],
         animationDuration: [950, 480],
         animationTimingFunction: [EASE_SPRING, "ease-out" as const],
@@ -47,6 +51,7 @@ const WORD_MOVE = css.keyframes({
 /** A title word tipping up into place. */
 export function wordIn(delay: number) {
     return {
+        ...HIDDEN_UNTIL_ANIMATED,
         animationName: [WORD_MOVE, FADE_IN],
         animationDuration: [1000, 520],
         animationTimingFunction: [EASE_SPRING, "ease-out" as const],
