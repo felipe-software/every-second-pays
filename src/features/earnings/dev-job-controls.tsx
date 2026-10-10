@@ -4,6 +4,7 @@ import { Text, View } from "react-native";
 import { RaisedPressable } from "@/components/elevated/raised";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
+import { useOnboardingStore } from "@/features/onboarding/store";
 
 import type { PaymentDraft, PaymentSource } from "./model";
 import { useEarningsStore } from "./store";
@@ -36,6 +37,7 @@ export function DevJobControls() {
     const [adding, setAdding] = useState(false);
     const [addError, setAddError] = useState(false);
     const disabled = adding || earningsSaving;
+    const replayOnboarding = useOnboardingStore((state) => state.replay);
 
     if (!__DEV__) return null;
 
@@ -94,6 +96,22 @@ export function DevJobControls() {
                 >
                     <Text className={`text-center font-sans text-[14px] font-semibold ${disabled ? "text-muted" : "text-ink"}`}>
                         {t("settings.addNeverActiveJob")}
+                    </Text>
+                </RaisedPressable>
+                <RaisedPressable
+                    testID="replay-onboarding"
+                    accessibilityRole="button"
+                    onPress={() => {
+                        appHaptics.secondaryAction();
+                        replayOnboarding();
+                    }}
+                    surface="canvas"
+                    depth={4}
+                    radius={15}
+                    className="min-h-[52px] items-center justify-center px-4"
+                >
+                    <Text className="text-center font-sans text-[14px] font-semibold text-ink">
+                        {t("settings.replayOnboarding")}
                     </Text>
                 </RaisedPressable>
             </View>
