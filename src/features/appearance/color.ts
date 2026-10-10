@@ -7,6 +7,11 @@ function toHex(channel: number) {
     return Math.round(Math.min(255, Math.max(0, channel))).toString(16).padStart(2, "0");
 }
 
+export function withAlpha(hex: string, opacity: number) {
+    const [red, green, blue] = parseHex(hex);
+    return `rgba(${red},${green},${blue},${opacity})`;
+}
+
 export function mixColors(from: string, to: string, amount: number) {
     const a = parseHex(from);
     const b = parseHex(to);
