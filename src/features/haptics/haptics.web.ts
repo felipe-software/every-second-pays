@@ -1,3 +1,5 @@
+import type { Note } from "./score";
+
 export const appHaptics = {
     press: () => {},
     selection: () => {},
@@ -14,8 +16,17 @@ export function useMoneyLandingHaptic() {
     return () => {};
 }
 
-export type OnboardingHaptic =
-    | "burst" | "impact" | "finale" | "column" | "month" | "bundle" | "pile" | "widget" | "lock" | "tick";
+export type ScoreHaptic = null;
+
+export function scoreHaptic(_score: readonly Note[]): ScoreHaptic {
+    return null;
+}
+
+export function useScoreHaptic(_haptic: ScoreHaptic) {
+    return { play: (_late?: number) => {}, stop: () => {} };
+}
+
+export type OnboardingHaptic = "widget" | "lock" | "tick";
 
 export function useOnboardingHaptics() {
     return (_haptic: OnboardingHaptic | "landing") => {};

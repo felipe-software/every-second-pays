@@ -254,7 +254,6 @@ export function Onboarding() {
                 <IntroStep
                     index={index}
                     playing={playing}
-                    stopped={exiting}
                     reduced={reduced}
                     onSkipReady={() => setSkipReady(true)}
                     onImpact={(big) => setFlare((value) => ({ count: value.count + 1, big }))}

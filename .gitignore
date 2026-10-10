@@ -41,3 +41,4 @@ example
 /.agents/
 /skills-lock.json
 /.argent/recordings/
+/modules/*/android/build/
