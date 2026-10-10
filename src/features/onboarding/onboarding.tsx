@@ -113,6 +113,7 @@ export function Onboarding() {
     const [introDone, setIntroDone] = useState(false);
     const [exiting, setExiting] = useState(false);
     const [flare, setFlare] = useState({ count: 0, big: false });
+    const [introLifted, setIntroLifted] = useState(reduced);
 
     const position = useSharedValue(0);
     const lagging = useSharedValue(0);
@@ -257,6 +258,8 @@ export function Onboarding() {
                     reduced={reduced}
                     onSkipReady={() => setSkipReady(true)}
                     onImpact={(big) => setFlare((value) => ({ count: value.count + 1, big }))}
+                    onLift={setIntroLifted}
+                    onReplay={() => setIntroDone(false)}
                     onDone={() => {
                         setIntroDone(true);
                         reveal();
@@ -294,7 +297,7 @@ export function Onboarding() {
                 animationFillMode: "forwards",
             }]}
         >
-            <OnboardingBackground pages={PAGES} position={backdrop} flare={flare} scale={scale} offsetX={offsetX} offsetY={offsetY} />
+            <OnboardingBackground pages={PAGES} position={backdrop} flare={flare} flareLifted={introLifted} scale={scale} offsetX={offsetX} offsetY={offsetY} />
             <GestureDetector gesture={pan}>
                 <View style={StyleSheet.absoluteFill}>
                     <View

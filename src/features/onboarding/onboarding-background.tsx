@@ -2,6 +2,7 @@ import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { css, interpolate, type SharedValue, useAnimatedStyle } from "react-native-reanimated";
 
+import { introDrop } from "./intro-timeline";
 import { useOnboardingTheme } from "./look";
 import { glow } from "./paint";
 
@@ -95,6 +96,7 @@ export const OnboardingBackground = memo(function OnboardingBackground({
     pages,
     position,
     flare,
+    flareLifted,
     scale,
     offsetX,
     offsetY,
@@ -103,6 +105,8 @@ export const OnboardingBackground = memo(function OnboardingBackground({
     position: SharedValue<number>;
     /** Counts the intro's hits; each one flashes the top of the screen. */
     flare: { count: number; big: boolean };
+    /** The flare rises with the intro's story, from below its place. */
+    flareLifted: boolean;
     scale: number;
     offsetX: number;
     offsetY: number;
@@ -116,18 +120,20 @@ export const OnboardingBackground = memo(function OnboardingBackground({
                 }]}
             >
                 {BLOBS.map((blob, index) => <DriftingBlob key={index} blob={blob} pages={pages} position={position} />)}
-                {flare.count ? (
-                    <Animated.View
-                        key={flare.count}
-                        style={[styles.flare, {
-                            experimental_backgroundImage: glow(colors.accent, [0.7], [0.22, 55]),
-                            animationName: flare.big ? FLARE_BIG : FLARE,
-                            animationDuration: flare.big ? 1700 : 1200,
-                            animationTimingFunction: "ease-out",
-                            animationFillMode: "both",
-                        }]}
-                    />
-                ) : null}
+                <Animated.View style={[StyleSheet.absoluteFill, introDrop(flareLifted)]}>
+                    {flare.count ? (
+                        <Animated.View
+                            key={flare.count}
+                            style={[styles.flare, {
+                                experimental_backgroundImage: glow(colors.accent, [0.7], [0.22, 55]),
+                                animationName: flare.big ? FLARE_BIG : FLARE,
+                                animationDuration: flare.big ? 1700 : 1200,
+                                animationTimingFunction: "ease-out",
+                                animationFillMode: "both",
+                            }]}
+                        />
+                    ) : null}
+                </Animated.View>
             </View>
         </View>
     );

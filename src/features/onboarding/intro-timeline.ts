@@ -1,3 +1,5 @@
+import { cubicBezier } from "react-native-reanimated";
+
 // The intro's example wage: each bill is an hour of work, a day is eight of them, a month 22
 // workdays, a year twelve months. The timeline below is the design's, in ms from the start.
 export const HOUR_PAY = 20;
@@ -18,3 +20,22 @@ export const WEEK = { x0: 62, dx: 48 } as const;
 
 /** 1 the day, 2 the week, 3 the month, 4 the year. */
 export type Stage = 0 | 1 | 2 | 3 | 4;
+
+/**
+ * Screen one's story (the art, the total and its period, the flare behind them) sits
+ * `INTRO_DROP` below the artboard while it plays, centered in the still empty screen. Once the
+ * year has landed it rises to `REST_DROP`, midway between the Skip button and the title.
+ */
+export const INTRO_DROP = 160;
+export const REST_DROP = 100;
+export const LIFT = { delay: 350, duration: 940, easing: cubicBezier(0.22, 1, 0.36, 1) } as const;
+
+/** Places a layer of the story: lowered at once while it plays, risen over `LIFT` after. */
+export function introDrop(lifted: boolean) {
+    return {
+        transform: [{ translateY: lifted ? REST_DROP : INTRO_DROP }],
+        transitionProperty: "transform",
+        transitionDuration: lifted ? LIFT.duration : 0,
+        transitionTimingFunction: LIFT.easing,
+    } as const;
+}

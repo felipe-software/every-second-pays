@@ -30,10 +30,11 @@ export function IntroLabels({ stage }: { stage: Stage }) {
                     key={column}
                     style={[styles.day, {
                         left: WEEK.x0 + WEEK.dx * column - 20,
-                        top: stage >= 3 ? 296 : 530,
                         color: colors.muted,
                         opacity: showDays ? (column >= 5 ? 0.55 : 1) : 0,
-                        transitionProperty: ["top", "opacity"],
+                        // Moved by a transform, not `top`, so the move doesn't lay out every frame.
+                        transform: [{ translateY: stage >= 3 ? MONTH_DAYS_TOP - WEEK_DAYS_TOP : 0 }],
+                        transitionProperty: ["transform", "opacity"],
                         transitionDuration: [820, 420],
                         transitionTimingFunction: [EASE_SPRING, "ease"],
                         transitionDelay: column * 20,
@@ -47,6 +48,10 @@ export function IntroLabels({ stage }: { stage: Stage }) {
     );
 }
 
+/** Where the day letters sit under the week's columns, and over the month's calendar. */
+const WEEK_DAYS_TOP = 530;
+const MONTH_DAYS_TOP = 296;
+
 const styles = StyleSheet.create({
     hour: {
         position: "absolute",
@@ -56,6 +61,7 @@ const styles = StyleSheet.create({
     },
     day: {
         position: "absolute",
+        top: WEEK_DAYS_TOP,
         width: 40,
         textAlign: "center",
         fontFamily: "Archivo-SemiBold",

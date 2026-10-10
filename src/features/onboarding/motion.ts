@@ -11,8 +11,6 @@ export const EASE_SOFT = linear(0, 0.017, 0.06, 0.122, 0.194, 0.272, 0.351, 0.43
 
 /** `EASE_SOFT` for worklet timings (the pager), which take an easing function. */
 export const EASE_SOFT_FN = Easing.bezierFn(0.22, 1, 0.36, 1);
-/** Odometer digits: fast off the mark, long settle. */
-export const EASE_ROLL_FN = Easing.bezierFn(0.16, 1, 0.3, 1);
 
 export const FADE_IN = css.keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
 

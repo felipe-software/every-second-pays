@@ -35,8 +35,8 @@ const built = new Map<string, SkSkottieAnimation>();
 const names = new WeakMap<OnboardingAnimation, string>();
 let nextName = 0;
 
-/** Keeps the most recently used looks; each holds a whole scene graph. */
-const CACHE_SIZE = 6;
+/** Keeps the most recently used animations and looks; each holds a whole scene graph. */
+const CACHE_SIZE = 8;
 
 function templateOf(source: OnboardingAnimation) {
     let template = templates.get(source);

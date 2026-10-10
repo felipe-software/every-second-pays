@@ -65,11 +65,15 @@ function Check({ delay }: { delay: number }) {
 }
 
 function PromiseRow({ label, row }: { label: string; row: typeof ROWS[number] }) {
-    const { colors } = useOnboardingTheme();
+    const { colors, isDark } = useOnboardingTheme();
+    // White cards on a light canvas, as the app's own raised cards; the design's gray `fill`
+    // reads as sunken there.
+    const face = isDark ? colors.fill : colors.raised;
+    const edge = isDark ? colors.edgeFill : colors.edgeRaised;
     return (
         <Animated.View style={[styles.rowShell, rise(row.rise, 18)]}>
-            <View style={[styles.rowEdge, { backgroundColor: colors.edgeFill }]} />
-            <View style={[styles.row, { backgroundColor: colors.fill, borderColor: colors.edgeFill }]}>
+            <View style={[styles.rowEdge, { backgroundColor: edge }]} />
+            <View style={[styles.row, { backgroundColor: face, borderColor: edge }]}>
                 <Animated.View
                     style={[styles.checkDisc, {
                         backgroundColor: colors.accent,
