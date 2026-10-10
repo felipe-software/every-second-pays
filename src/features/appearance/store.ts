@@ -31,8 +31,7 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
         const appearance = parseAppearance({ ...get().appearance, ...change });
         if (appearance.mode === previousAppearance.mode && appearance.palette === previousAppearance.palette) return;
 
-        // Apply the choice before persisting it so the control and theme update in
-        // the same frame instead of briefly showing a disabled intermediate state.
+        // Apply before persisting so the control and theme update in one frame instead of flashing a disabled state.
         set({ appearance, saving: true });
         try {
             await writeAppearancePreference(appearance);

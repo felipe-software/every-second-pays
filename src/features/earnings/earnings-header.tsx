@@ -11,10 +11,8 @@ import { PeriodButton } from "./period-button";
 import { usePeriodStore } from "./period-store";
 import { useEarningsTheme } from "./theme";
 
-// A horizontal swipe on the total steps through the periods once it travels this far.
 const SWIPE_DISTANCE = 30;
 
-/** Whole-number size: long totals shrink so they still fit on one line. */
 function wholeFontSize(characters: number) {
     return characters <= 5 ? 88 : characters === 6 ? 74 : 62;
 }
@@ -72,8 +70,7 @@ export function EarningsHeader({
         letterSpacing: -wholeSize * 0.05,
     };
 
-    // Claims horizontal drags sooner (±12) than the Android tab pager (±16), and gives up on
-    // vertical ones so the list below still scrolls.
+    // Must activate sooner (±12) than the Android tab pager (±16) to win horizontal drags.
     const swipe = Gesture.Pan()
         .activeOffsetX([-12, 12])
         .failOffsetY([-14, 14])
@@ -86,8 +83,7 @@ export function EarningsHeader({
     return (
         <View className="items-center pt-[54px]" style={{ zIndex: 10 }}>
             <GestureDetector gesture={swipe}>
-                {/* box-only: NumberFlow draws with native Compose views on Android. A swipe that
-                    starts on one of them leaves Android cancelling the next tap anywhere. */}
+                {/* box-only: a swipe starting on NumberFlow's native Compose views makes Android cancel the next tap anywhere. */}
                 <View collapsable={false} pointerEvents="box-only" className="self-stretch">
                     <MoneyCounterCelebration
                         transfer={ready && !loadError ? moneyTransfer : null}

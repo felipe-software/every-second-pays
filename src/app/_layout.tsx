@@ -7,6 +7,7 @@ import {
     Archivo_700Bold,
     useFonts,
 } from "@expo-google-fonts/archivo";
+import { ReanimatedTrueSheetProvider } from "@lodev09/react-native-true-sheet/reanimated";
 import { NavigationBar } from "expo-navigation-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -14,6 +15,12 @@ import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import AppTabs from "@/components/app-tabs";
+import {
+    SHEET_RECEDE_BACKDROP,
+    SHEET_RECEDE_ENABLED,
+    SheetRecede,
+    useSheetReceded,
+} from "@/components/sheet-recede";
 import { useAppearanceSync } from "@/features/appearance/use-appearance-sync";
 import { usePeriodStore } from "@/features/earnings/period-store";
 import { useEarningsTheme } from "@/features/earnings/theme";
@@ -28,10 +35,11 @@ SplashScreen.preventAutoHideAsync();
 
 function SystemBars() {
     const { isDark } = useEarningsTheme();
+    const receded = useSheetReceded();
 
     return (
         <>
-            <StatusBar style={isDark ? "light" : "dark"} />
+            <StatusBar style={isDark || receded ? "light" : "dark"} />
             <NavigationBar style="auto" />
         </>
     );
@@ -71,12 +79,18 @@ export default function RootLayout() {
     return (
         <I18nProvider>
             <MoneyWidgetSync />
-            <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.canvas }}>
-                <SystemBars />
-                <KeyboardProvider>
-                    {appRevealed ? <AppTabs /> : null}
-                </KeyboardProvider>
-                {onboarding === "pending" ? <Onboarding /> : null}
+            <GestureHandlerRootView
+                style={{ flex: 1, backgroundColor: SHEET_RECEDE_ENABLED ? SHEET_RECEDE_BACKDROP : colors.canvas }}
+            >
+                <ReanimatedTrueSheetProvider>
+                    <SystemBars />
+                    <KeyboardProvider>
+                        <SheetRecede backgroundColor={colors.canvas}>
+                            {appRevealed ? <AppTabs /> : null}
+                        </SheetRecede>
+                    </KeyboardProvider>
+                    {onboarding === "pending" ? <Onboarding /> : null}
+                </ReanimatedTrueSheetProvider>
             </GestureHandlerRootView>
         </I18nProvider>
     );

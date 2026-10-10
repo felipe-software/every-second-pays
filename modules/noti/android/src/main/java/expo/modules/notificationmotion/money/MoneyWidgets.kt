@@ -14,15 +14,6 @@ import expo.modules.notificationmotion.NotificationMotionModule
 import org.json.JSONArray
 import org.json.JSONObject
 
-/**
- * Owns the live money widgets: their configs, the data the app last published, and the
- * re-sync clock. The launcher animates each widget from a timeline of frames; this class
- * replaces that timeline before it runs out.
- *
- * Re-syncs use a non-wakeup alarm. While the screen is on it fires about on time; while the
- * device sleeps it waits, then fires as soon as the device wakes, which is exactly when a
- * stale timeline would first be seen again.
- */
 @TargetApi(31)
 class MoneyWidgets private constructor(private val context: Context) {
   private val manager = AppWidgetManager.getInstance(context)
@@ -33,9 +24,6 @@ class MoneyWidgets private constructor(private val context: Context) {
   fun isInstalled(): Boolean = manager.installedProviders.any { it.provider == component }
 
   fun isPinningSupported(): Boolean = isInstalled() && manager.isRequestPinAppWidgetSupported
-
-  // -------------------------------------------------------------------------------------------
-  // App-facing API.
 
   @Synchronized fun setData(serialized: String) {
     JSONObject(serialized)
@@ -53,7 +41,7 @@ class MoneyWidgets private constructor(private val context: Context) {
     val config = MoneyConfig.parse(serialized)
     val preview = renderer.render(config, data(), PIN_PREVIEW_SIZE, System.currentTimeMillis(), null, null, null, null, maxFrames = 30)
     val extras = Bundle().apply { putParcelable(AppWidgetManager.EXTRA_APPWIDGET_PREVIEW, preview.views) }
-    // Each request carries its own config; the launcher adds the new widget id when it calls back.
+    // A unique URI per request keeps each config; mutable so the launcher can add the new widget id.
     val nonce = System.currentTimeMillis()
     val callback = Intent(context, MoneyWidgetProvider::class.java)
       .setAction(MoneyWidgetProvider.ACTION_PINNED)
@@ -85,9 +73,6 @@ class MoneyWidgets private constructor(private val context: Context) {
     scheduleSync()
   }
 
-  // -------------------------------------------------------------------------------------------
-  // Provider callbacks.
-
   @Synchronized fun pinned(widgetId: Int, serializedConfig: String?) {
     serializedConfig?.let {
       preferences.edit().putString(configKey(widgetId), MoneyConfig.parse(it).toJson()).apply()
@@ -98,7 +83,7 @@ class MoneyWidgets private constructor(private val context: Context) {
     NotificationMotionModule.dispatchMoneyWidgetsChanged()
   }
 
-  /** Re-renders `widgetIds` from scratch: the launcher may have lost the cached views. */
+  // Re-renders from scratch: the launcher may have lost the cached views.
   @Synchronized fun refresh(widgetIds: IntArray) {
     val now = System.currentTimeMillis()
     widgetIds.forEach { id ->
@@ -133,9 +118,6 @@ class MoneyWidgets private constructor(private val context: Context) {
     refresh(newIds)
   }
 
-  // -------------------------------------------------------------------------------------------
-  // Rendering.
-
   internal fun data(): MoneyData = MoneyData.parse(preferences.getString(DATA, null))
 
   internal fun config(widgetId: Int): MoneyConfig =
@@ -147,7 +129,6 @@ class MoneyWidgets private constructor(private val context: Context) {
     val options = manager.getAppWidgetOptions(widgetId)
     @Suppress("DEPRECATION")
     val sizes = options.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES)
-    // Portrait size: the launcher's first entry, or min width × max height.
     sizes?.firstOrNull()?.let { return MoneyWidgetRenderer.Size(it.width, it.height) }
     val width = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
     val height = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0)
@@ -198,6 +179,8 @@ class MoneyWidgets private constructor(private val context: Context) {
       alarms.cancel(intent)
       return
     }
+    // Non-wakeup on purpose: a sleeping device fires it on wake, exactly when a stale timeline
+    // would be seen.
     alarms.set(AlarmManager.RTC, next, intent)
   }
 
@@ -211,7 +194,7 @@ class MoneyWidgets private constructor(private val context: Context) {
     )
   }
 
-  /** Taps inside the ticker go through the collection's template, which must be mutable. */
+  // Taps inside the ticker go through the collection's template, which must be mutable.
   private fun openAppTemplate(widgetId: Int): PendingIntent? {
     val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return null
     return PendingIntent.getActivity(

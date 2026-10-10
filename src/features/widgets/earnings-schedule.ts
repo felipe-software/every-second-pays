@@ -11,11 +11,7 @@ export type Breakpoint = [number, number, number];
 
 const DAY_MINUTES = 1440;
 
-/**
- * Every instant the period total can stop growing linearly: shift edges, where the rate
- * changes, and local midnights, where periods start (and one-time payments start or stop
- * counting). Local `Date` arithmetic keeps the instants right across DST changes.
- */
+// Local `Date` arithmetic keeps the instants right across DST changes.
 function changeInstants(sources: readonly PaymentSource[], from: Date, until: number) {
     const minutes = new Set<number>([0]);
     for (const source of sources) {
@@ -37,12 +33,7 @@ function changeInstants(sources: readonly PaymentSource[], from: Date, until: nu
     return [...instants].sort((a, b) => a - b);
 }
 
-/**
- * The period total as breakpoints for the widget to interpolate between, from `now` until
- * `horizonMs` later. It's computed with the same model as the Earnings screen, so the widget
- * can't drift from it. After the last breakpoint the rate is 0: a widget left alone past the
- * horizon stops counting instead of guessing.
- */
+// After the last breakpoint the rate is 0, so a widget left past the horizon stops counting instead of guessing.
 export function buildEarningsSchedule(
     sources: readonly PaymentSource[],
     period: EarningsPeriod,
@@ -63,7 +54,6 @@ export function buildEarningsSchedule(
             0,
         );
         const point: Breakpoint = [time, total * 100, (rate * 100) / 1000];
-        // Skip breakpoints that just continue the previous segment.
         const previous = points.at(-1);
         if (previous && !last && previous[2] === point[2]
             && Math.abs(previous[1] + previous[2] * (time - previous[0]) - point[1]) < 1e-6) return;

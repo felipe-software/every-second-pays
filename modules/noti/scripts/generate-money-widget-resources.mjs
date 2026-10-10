@@ -1,11 +1,3 @@
-// Generates the Android resources behind the live money widget: digit motions, money particles,
-// one-shot bursts, and the layouts that host them. Every motion here is a framework view
-// animation, so the launcher runs it on its own without the app process.
-//
-//   node modules/noti/scripts/generate-money-widget-resources.mjs <res dir> <kotlin dir>
-//
-// The module's build runs this (see android/build.gradle) into its build directory, so none of
-// the output is checked in. Resources get the `nmw_` prefix; the Kotlin side is MoneyEffects.kt.
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -21,8 +13,7 @@ const write = (relative, body) => {
     files[relative] = header + body.trim() + '\n';
 };
 
-// ---------------------------------------------------------------------------------------------
-// Deterministic randomness, so regenerating produces identical files.
+// Seeded so regenerating produces identical files.
 let seed = 0x5eed;
 const random = () => {
     seed = (seed * 1103515245 + 12345) & 0x7fffffff;
@@ -31,10 +22,7 @@ const random = () => {
 const between = (min, max) => min + random() * (max - min);
 const round = (value, digits = 2) => Number(value.toFixed(digits));
 
-// ---------------------------------------------------------------------------------------------
-// Interpolators.
 const interpolators = {
-    // Rolls past the target and settles: the main digit motion.
     nmw_i_overshoot: `<overshootInterpolator ${NS} android:tension="1.6" />`,
     nmw_i_overshoot_soft: `<overshootInterpolator ${NS} android:tension="0.9" />`,
     nmw_i_bounce: `<bounceInterpolator ${NS} />`,
@@ -43,28 +31,17 @@ const interpolators = {
     nmw_i_accelerate: `<accelerateInterpolator ${NS} android:factor="1.6" />`,
     nmw_i_gravity: `<accelerateInterpolator ${NS} android:factor="1.25" />`,
     nmw_i_ease: `<accelerateDecelerateInterpolator ${NS} />`,
-    // The app's flight easing, Easing.inOut(Easing.cubic).
     nmw_i_cubic: `<pathInterpolator ${NS} android:controlX1="0.65" android:controlY1="0" android:controlX2="0.35" android:controlY2="1" />`,
     nmw_i_linear: `<linearInterpolator ${NS} />`,
-    // sin(πt): out to one side and back, for a flight's sideways curve.
     nmw_i_bow: `<cycleInterpolator ${NS} android:cycles="0.5" />`,
-    // A thrown bill: up, then back down past the start. Values are fractions of the translation.
     nmw_i_arc_high: `<pathInterpolator ${NS} android:pathData="M0,0 C0.18,-3.4 0.42,-3.4 1,1" />`,
     nmw_i_arc_low: `<pathInterpolator ${NS} android:pathData="M0,0 C0.2,-2.6 0.45,-2.6 1,1" />`,
-    // Rises past the target, then settles onto it from above (values above 1 overshoot).
     nmw_i_lob: `<pathInterpolator ${NS} android:pathData="M0,0 C0.3,0.85 0.55,1.18 1,1" />`,
-    // Holds, then fades out at the very end (used on alpha 1 → 0 and shrinking scales).
     nmw_i_late: `<pathInterpolator ${NS} android:pathData="M0,0 L0.72,0 L1,1" />`,
     nmw_i_last: `<pathInterpolator ${NS} android:pathData="M0,0 L0.86,0 L1,1" />`,
 };
 for (const [name, body] of Object.entries(interpolators)) write(`interpolator/${name}.xml`, body);
 
-// ---------------------------------------------------------------------------------------------
-// Animation helpers.
-//
-// A <set> applies its children in document order, and rotate/scale pivot on the view's own
-// center. So every set lists rotations and scales first and translations last: otherwise a
-// rotation swings the already-moved view around where it started.
 const i = (name) => `@interpolator/${name}`;
 const attrs = (values) =>
     Object.entries(values)
@@ -76,6 +53,8 @@ const translate = (o) => `<translate ${attrs(o)} />`;
 const alpha = (o) => `<alpha ${attrs(o)} />`;
 const scale = (o) => `<scale ${attrs({ pivotX: '50%', pivotY: '50%', ...o })} />`;
 const rotate = (o) => `<rotate ${attrs({ pivotX: '50%', pivotY: '50%', ...o })} />`;
+// Translations go last: a <set> applies children in order and rotate/scale pivot on the view's own
+// center, so an earlier translation makes the rotation swing the view around where it started.
 const order = (child) => (child.startsWith('<translate') ? 1 : 0);
 const set = (children, { fillAfter = true, fillBefore = true } = {}) =>
     `<set ${NS} android:shareInterpolator="false" android:fillAfter="${fillAfter}" android:fillBefore="${fillBefore}">\n    ${[...children].sort((a, b) => order(a) - order(b)).join('\n    ')}\n</set>`;
@@ -84,15 +63,9 @@ const late = (children, offset) =>
     children.map((child) => child.replace(/android:startOffset="(\d+)"/, (_, value) => `android:startOffset="${Number(value) + offset}"`)
         .replace(/^<(\w+) (?!.*startOffset)/, `<$1 android:startOffset="${offset}" `));
 
-// ---------------------------------------------------------------------------------------------
-// The money landing, after the app's MoneyCounterCelebration: bills fly into the digits that
-// changed and land at IMPACT, then those digits roll over while the counter bumps. A timeline
-// frame lasts a second, so the whole beat fits in one.
+// The whole landing beat must fit in one second-long timeline frame.
 const IMPACT = 440;
 
-// ---------------------------------------------------------------------------------------------
-// Digit motions. Each slot animates the old digit out and the new one in, both triggered on
-// the frame's first draw. `_late` waits for the bills to land first.
 const motions = {
     roll: {
         in: [
@@ -118,7 +91,6 @@ const motions = {
         ],
     },
     flip: {
-        // A split-flap card: the old digit folds shut, then the new one unfolds.
         in: [
             scale({ fromXScale: 1, toXScale: 1, fromYScale: 0, toYScale: 1, startOffset: 170, duration: 300, interpolator: i('nmw_i_overshoot_soft') }),
             alpha({ fromAlpha: 0.35, toAlpha: 1, startOffset: 170, duration: 300, interpolator: i('nmw_i_decelerate') }),
@@ -129,7 +101,6 @@ const motions = {
         ],
     },
     blur: {
-        // Zooms in from out of focus while the old digit shrinks away.
         in: [
             scale({ fromXScale: 1.9, toXScale: 1, fromYScale: 1.9, toYScale: 1, duration: 480, interpolator: i('nmw_i_decelerate_hard') }),
             alpha({ fromAlpha: 0, toAlpha: 1, duration: 360, interpolator: i('nmw_i_decelerate') }),
@@ -140,7 +111,6 @@ const motions = {
         ],
     },
     slot: {
-        // A reel: the digit streaks in from below, stretched by its own speed.
         in: [
             scale({ fromXScale: 0.92, toXScale: 1, fromYScale: 1.8, toYScale: 1, duration: 620, interpolator: i('nmw_i_decelerate_hard') }),
             translate({ fromYDelta: '180%', toYDelta: '0', duration: 620, interpolator: i('nmw_i_decelerate_hard') }),
@@ -158,7 +128,6 @@ for (const [name, motion] of Object.entries(motions)) {
     anim(`nmw_m_${name}_out_late`, late(motion.out, IMPACT));
 }
 
-// The whole counter takes the hit when bills land, like the app's COUNTER_IMPACT_SCALE.
 for (const [name, peak] of [['cents', 1.045], ['whole', 1.1]]) {
     anim(`nmw_bump_${name}`, [
         scale({ fromXScale: 1, toXScale: peak, fromYScale: 1, toYScale: peak, startOffset: IMPACT, duration: 105, interpolator: i('nmw_i_decelerate') }),
@@ -166,44 +135,32 @@ for (const [name, peak] of [['cents', 1.045], ['whole', 1.1]]) {
     ]);
 }
 
-// ---------------------------------------------------------------------------------------------
-// Background money that becomes the landing money. The bills drifting behind the counter are
-// drawn inside the timeline frames, so the renderer knows where each one is every second: when
-// the total changes it picks a few that are on screen and flies them, from exactly where they
-// are, into the digits that changed. Nothing spawns out of nowhere.
-//
-// Each bill slot moves at a constant velocity in its own size per second; a frame places it with
-// margins and a layout animation carries it one second further, so consecutive frames join up.
-// Any wobble repeats every second for the same reason, but each bill has its own: a waveform
-// with its own shape and phase, so no two bills swing together. Sizes are multiples of a unit
-// the renderer scales with the counter.
-const depthOf = (index) => index % 3; // 0 = far, 1 = middle, 2 = near
+// Bills move at a constant velocity and every animation lasts one second, so consecutive frames
+// join up; MoneyAmbient simulates the same paths.
+const depthOf = (index) => index % 3;
 const DEPTH_SIZE = [0.62, 0.8, 1];
 const DEPTH_ALPHA = [0.5, 0.78, 1];
-const UNIT = 36; // dp; the layouts' size before the renderer scales it.
+const UNIT = 36;
 const ambient = {};
 const slot = (index, extra) => {
     const depth = depthOf(index);
     return { depth, size: DEPTH_SIZE[depth], alpha: DEPTH_ALPHA[depth], rotation: Math.round(between(-30, 30)), phase: round(random(), 3), ...extra };
 };
-// Falling, drifting sideways like a current, rising, and circling the total.
 ambient.rain = Array.from({ length: 10 }, (_, index) => slot(index, { vx: round(between(-0.06, 0.06), 3), vy: [0.55, 0.75, 1][depthOf(index)] }));
 ambient.stream = Array.from({ length: 10 }, (_, index) => slot(index, { vx: [0.6, 0.8, 1.05][depthOf(index)], vy: round(between(-0.05, 0.05), 3) }));
 ambient.fountain = Array.from({ length: 10 }, (_, index) => slot(index, { vx: round(between(-0.08, 0.08), 3), vy: -[0.55, 0.75, 1][depthOf(index)] }));
 ambient.orbit = Array.from({ length: 8 }, (_, index) => slot(index, {
-    // Degrees per second (clockwise when positive) and the radius as a share of the half width.
     spin: Math.round(between(22, 38)) * (index % 3 === 2 ? -1 : 1),
     radius: [0.5, 0.65, 0.8][depthOf(index)],
 }));
-// A one-second wobble: a sine and a smaller second harmonic, each at its own phase, shifted so
-// it's zero when the frame starts and ends (and moving at the same speed both times).
+// Zero at both ends of the second so consecutive frames join up.
 const wobbleWave = () => {
     const harmonics = [[1, 1, random()], [2, between(0.15, 0.4), random()]];
     const raw = (t) => harmonics.reduce((sum, [k, a, p]) => sum + a * Math.sin(2 * Math.PI * (k * t + p)), 0);
     const start = raw(0);
     return (t) => raw(t) - start;
 };
-// An interpolator can only run from 0 to 1, so a wobble is played as two animations of the same
+// An interpolator can only run from 0 to 1, so a wobble plays as two animations of the same
 // property: one along t + wave(t), and a linear one taking t back off.
 const wobbleInterpolator = (name, wave) => {
     const f = (t) => t + wave(t);
@@ -225,8 +182,6 @@ const wobbleInterpolator = (name, wave) => {
 for (const [name, slots] of Object.entries(ambient)) {
     slots.forEach((spec, index) => {
         if (name === 'orbit') {
-            // The bill's container turns around the frame's center; the bill turns back so it
-            // keeps its own tilt.
             anim(`nmw_seg_${name}_${index}`, [rotate({ fromDegrees: 0, toDegrees: spec.spin, duration: 1000, interpolator: i('nmw_i_linear') })]);
             anim(`nmw_seg_${name}_${index}_bill`, [rotate({ fromDegrees: 0, toDegrees: -spec.spin, duration: 1000, interpolator: i('nmw_i_linear') })]);
             for (const part of ['', '_bill']) {
@@ -234,7 +189,6 @@ for (const [name, slots] of Object.entries(ambient)) {
             }
             return;
         }
-        // Degrees of tilt and percent of the bill's size sideways, each with its own waveform.
         const tilt = Math.round(between(5, 10)) * (random() < 0.5 ? -1 : 1);
         const sway = round(between(4, 10), 1) * (random() < 0.5 ? -1 : 1);
         const tiltCurve = wobbleInterpolator(`nmw_i_tilt_${name}_${index}`, wobbleWave());
@@ -251,10 +205,8 @@ for (const [name, slots] of Object.entries(ambient)) {
     });
 }
 
-// A bill leaving the background for the counter. The renderer stretches the flight box from
-// where the bill is to the digit; the bill starts in one corner and crosses the box (100%p of
-// the box minus 100% of itself), so it lands on the digit whatever the distance. One variant
-// per direction.
+// The renderer stretches the flight box from the bill to the digit; crossing 100%p of the box minus
+// 100% of the bill lands it on the digit whatever the distance.
 const QUADRANTS = { lt: [1, 1], rt: [-1, 1], lb: [1, -1], rb: [-1, -1] };
 for (const [quadrant, [sx, sy]] of Object.entries(QUADRANTS)) {
     anim(`nmw_fly_${quadrant}`, [
@@ -264,27 +216,20 @@ for (const [quadrant, [sx, sy]] of Object.entries(QUADRANTS)) {
         alpha({ fromAlpha: 1, toAlpha: 0, startOffset: IMPACT - 70, duration: 70, interpolator: i('nmw_i_accelerate') }),
         translate({ fromXDelta: '0', toXDelta: `${100 * sx}%p`, fromYDelta: '0', toYDelta: `${100 * sy}%p`, duration: IMPACT, interpolator: i('nmw_i_cubic') }),
         translate({ fromXDelta: '0', toXDelta: `${-100 * sx}%`, fromYDelta: '0', toYDelta: `${-100 * sy}%`, duration: IMPACT, interpolator: i('nmw_i_cubic') }),
-        // A slight sideways bow, so the flight curves like the app's.
         translate({ fromXDelta: '0', toXDelta: `${-35 * sy}%`, duration: IMPACT, interpolator: i('nmw_i_bow') }),
     ]);
 }
 
-
-// The aurora: soft accent blobs drifting behind everything. Like the background bills they live
-// in the frames, each drifting back and forth at a steady speed and carried one second further
-// by a layout animation, so the renderer knows where they are. When money lands, the same blobs
-// brighten, like EarningsBackground's saturation pulse: in over 105 ms at impact, out over 360.
-//
-// Positions are fractions of the half width/height; drift is in the blob's own size, over a leg
-// of `leg` seconds each way. A layout animation can't make a blob brighter than its view, so the
-// view is drawn at the peak and the animations hold it down at REST.
+// An animation can't make a blob brighter than its view, so the view is drawn at the peak and the
+// animations hold it down at REST.
 const AURORA_REST = 0.525;
 const aurora = [
     { size: 260, baseX: -0.55, baseY: -0.7, dirX: 0.9, dirY: 0.44, amplitude: 0.14, leg: 7, alpha: 0.42, tone: 'accent', phase: 0 },
     { size: 220, baseX: 0.62, baseY: 0.62, dirX: -0.86, dirY: -0.5, amplitude: 0.14, leg: 8, alpha: 0.32, tone: 'deep', phase: 0.37 },
     { size: 180, baseX: 0.05, baseY: 0.05, dirX: 0.8, dirY: -0.6, amplitude: 0.12, leg: 11, alpha: 0.42, tone: 'accent', phase: 0.71 },
 ];
-const AURORA_PULSES = { n: 1, c: 1.43, w: 1.9 }; // none, cents, whole: peak over rest
+// Key order must match the renderer's PULSE_* constants and forward/back direction indices.
+const AURORA_PULSES = { n: 1, c: 1.43, w: 1.9 };
 const AURORA_DIRECTIONS = { f: 1, b: -1 };
 aurora.forEach((blob, index) => {
     const perSecond = (2 * blob.amplitude) / blob.leg * 100;
@@ -303,7 +248,6 @@ aurora.forEach((blob, index) => {
         }
     }
 });
-// The live dot: a soft pulse plus a halo that keeps spreading out of it.
 anim('nmw_p_live', [
     alpha({ fromAlpha: 1, toAlpha: 0.45, duration: 900, interpolator: i('nmw_i_ease'), ...loop({ repeatMode: 'reverse' }) }),
 ], { fillAfter: false });
@@ -312,23 +256,14 @@ anim('nmw_p_halo', [
     alpha({ fromAlpha: 0.7, toAlpha: 0, duration: 1500, interpolator: i('nmw_i_decelerate'), ...loop() }),
 ], { fillAfter: false });
 
-// ---------------------------------------------------------------------------------------------
-// Animators for the timeline flipper: frames swap instantly. Unchanged digits are the same
-// pixels in both frames, so only what animates inside the new frame moves.
 write('animator/nmw_instant_in.xml', `<objectAnimator ${NS} android:propertyName="alpha" android:valueFrom="1" android:valueTo="1" android:duration="0" />`);
 write('animator/nmw_instant_out.xml', `<objectAnimator ${NS} android:propertyName="alpha" android:valueFrom="0" android:valueTo="0" android:duration="0" />`);
 
-// ---------------------------------------------------------------------------------------------
-// Drawables. The money is the app's own bill (drawable-nodpi/nmw_note.png, cropped from
-// android-icon-foreground.png). The rest are white shapes the renderer tints.
 write('drawable/nmw_widget_bg.xml', `<shape ${NS} android:shape="rectangle"><solid android:color="#FFFFFFFF" /><corners android:radius="@android:dimen/system_app_widget_background_radius" /></shape>`);
 write('drawable/nmw_dot.xml', `<shape ${NS} android:shape="oval"><solid android:color="#FFFFFFFF" /></shape>`);
 write('drawable/nmw_glow_blob.xml', `<shape ${NS} android:shape="oval"><gradient android:type="radial" android:gradientRadius="50%" android:startColor="#FFFFFFFF" android:centerColor="#55FFFFFF" android:endColor="#00FFFFFF" /></shape>`);
 
-// ---------------------------------------------------------------------------------------------
-// Layouts.
 const PLACEHOLDER = '<FrameLayout android:layout_width="0dp" android:layout_height="0dp" />';
-/** A ViewFlipper whose second child plays `animName` when the renderer shows it. */
 const flipperTrigger = (id, animName, child, size = 'match_parent', extra = '') =>
     `<ViewFlipper android:id="@+id/${id}" android:layout_width="${size}" android:layout_height="${size}" android:animateFirstView="false" android:clipChildren="false" android:clipToPadding="false" android:inAnimation="@anim/${animName}" ${extra}>
         ${PLACEHOLDER}
@@ -351,8 +286,6 @@ write('layout/nmw_live.xml', `<FrameLayout ${NS} android:layout_width="14dp" and
     ${flipperTrigger('nmw_p1', 'nmw_p_live', image('nmw_i1', 'nmw_dot', [7, 7], 'center'))}
 </FrameLayout>`);
 
-// A frame's anchor: the counter's center, or its left edge for the ledger. Everything in a frame
-// is placed relative to it, so it lines up whatever size the launcher really gave the widget.
 const ANCHORS = { center: 'center', start: 'center_vertical|left' };
 const billImage = (id, spec, gravity) =>
     `<ImageView android:id="@+id/${id}" android:layout_width="${round(spec.size * UNIT, 1)}dp" android:layout_height="${round(spec.size * UNIT, 1)}dp" android:layout_gravity="${gravity}" android:alpha="${spec.alpha}" android:rotation="${spec.rotation}" android:importantForAccessibility="no" android:scaleType="fitCenter" android:src="@drawable/nmw_note" />`;
@@ -377,10 +310,8 @@ for (const [anchor, gravity] of Object.entries(ANCHORS)) {
     }
 }
 
-
-// Digit slots: the old digit and the new one, each in its own trigger so both are laid out and
-// both animate. The box masks rolls: a ViewGroup clips an animated child to the child's own,
-// already moved, bounds, so masking takes an untransformed parent.
+// The slot box masks rolls: a ViewGroup clips an animated child to the child's own, already moved,
+// bounds, so masking takes an untransformed parent.
 const slotText = (id) => `<TextView android:id="@+id/${id}" android:layout_width="wrap_content" android:layout_height="match_parent" android:fontFamily="sans-serif" android:textStyle="bold" android:fontFeatureSettings="tnum" android:letterSpacing="-0.02" android:gravity="top|center_horizontal" android:includeFontPadding="false" android:maxLines="1" android:textColor="#FFFFFFFF" />`;
 for (const name of Object.keys(motions)) {
     const clips = name === 'roll' || name === 'slot';
@@ -397,8 +328,6 @@ for (const name of Object.keys(motions)) {
 }
 write('layout/nmw_run.xml', `<TextView ${NS} android:id="@+id/nmw_run" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="sans-serif" android:textStyle="bold" android:fontFeatureSettings="tnum" android:letterSpacing="-0.02" android:gravity="top" android:includeFontPadding="false" android:maxLines="1" android:textColor="#FFFFFFFF" />`);
 
-// A timeline frame covers the whole widget. Layers: the aurora, the background bills, the
-// counter (inside a trigger for the bump), then the bills flying into it.
 for (const [anchor, gravity] of Object.entries(ANCHORS)) {
     for (const bump of ['cents', 'whole']) {
         write(`layout/nmw_frame_${anchor}_${bump}.xml`, frame(`<include layout="@layout/nmw_aurora" />
@@ -414,8 +343,6 @@ for (const [anchor, gravity] of Object.entries(ANCHORS)) {
 const textView = (id, font, size, extra = '', height = 'wrap_content') =>
     `<TextView android:id="@+id/${id}" android:layout_width="wrap_content" android:layout_height="${height}" android:fontFamily="${font}" android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textSize="${size}sp" android:textColor="#FFFFFFFF" ${extra} />`;
 
-// The widget: the label column, with the ticker over all of it (its frames hold the aurora, the
-// counter, and the money).
 write('layout/nmw_widget.xml', `<FrameLayout ${NS} android:id="@android:id/background" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/nmw_widget_bg" android:clipChildren="true" android:clipToOutline="true">
     <LinearLayout android:id="@+id/nmw_content" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_horizontal" android:orientation="vertical" android:paddingLeft="16dp" android:paddingTop="12dp" android:paddingRight="16dp" android:paddingBottom="12dp">
         <LinearLayout android:id="@+id/nmw_header" android:layout_width="wrap_content" android:layout_height="18dp" android:gravity="center_vertical" android:orientation="horizontal">
@@ -430,7 +357,6 @@ write('layout/nmw_widget.xml', `<FrameLayout ${NS} android:id="@android:id/backg
 write('layout/nmw_loading.xml', `<FrameLayout ${NS} android:id="@android:id/background" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/nmw_widget_bg" android:backgroundTint="#FF141816" android:clipToOutline="true">
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:fontFamily="sans-serif" android:textStyle="bold" android:text="$0.00" android:textColor="#FFEBF0ED" android:textSize="34sp" />
 </FrameLayout>`);
-// The widget picker's scalable preview.
 write('layout/nmw_preview.xml', `<FrameLayout ${NS} android:id="@android:id/background" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/nmw_widget_bg" android:backgroundTint="#FF141816" android:clipToOutline="true">
     ${image('nmw_preview_glow', 'nmw_glow_blob', [240, 240], 'center', 'android:alpha="0.35" android:tint="#FF58AD85"')}
     ${image('nmw_preview_note_a', 'nmw_note', [38, 38], 'top|left', 'android:layout_marginLeft="18dp" android:layout_marginTop="10dp" android:rotation="-18"')}
@@ -455,13 +381,11 @@ write('xml/nmw_money_widget_info.xml', `<appwidget-provider ${NS}
     android:widgetCategory="home_screen"
     android:widgetFeatures="reconfigurable|configuration_optional" />`);
 
-// ---------------------------------------------------------------------------------------------
 for (const [relative, contents] of Object.entries(files)) {
     const file = path.join(root, relative);
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, contents);
 }
-// The background bills' motion, so the renderer's simulation matches the layout animations.
 const kotlinSlot = (spec) =>
     `AmbientSlot(size = ${spec.size}f, alpha = ${spec.alpha}f, rotation = ${spec.rotation}f, vx = ${spec.vx ?? 0}f, vy = ${spec.vy ?? 0}f, spin = ${spec.spin ?? 0}f, radius = ${spec.radius ?? 0}f, phase = ${spec.phase}f)`;
 const kotlinDirectory = path.join(kotlinRoot, 'expo/modules/notificationmotion/money');
@@ -472,15 +396,9 @@ fs.writeFileSync(path.join(kotlinDirectory, 'MoneyEffects.kt'), `package expo.mo
 
 import expo.modules.notificationmotion.R
 
-/**
- * One background bill. Sizes are multiples of the bill unit; velocities are in the bill's own
- * size per second; [spin] is degrees per second around the frame's center (orbit only), at
- * [radius] times the half width. [phase] spreads the bills along their paths.
- */
 internal class AmbientSlot(
   val size: Float,
   val alpha: Float,
-  /** The bill's resting tilt, in degrees. */
   val rotation: Float,
   val vx: Float,
   val vy: Float,
@@ -490,17 +408,13 @@ internal class AmbientSlot(
 )
 
 internal object MoneyEffects {
-  /** The bill unit the layouts are drawn at, in dp. */
   const val UNIT = ${UNIT}f
-  /** When the flying bills land and the digits start rolling, in ms into the frame. */
   const val IMPACT = ${IMPACT}
   val slots: Map<String, List<AmbientSlot>> = mapOf(
 ${Object.entries(ambient).map(([name, slots]) => `    "${name}" to listOf(\n${slots.map((spec) => `      ${kotlinSlot(spec)},`).join('\n')}\n    ),`).join('\n')}
   )
 }
 
-/** One aurora blob: [baseX]/[baseY] are fractions of the half width/height from the center;
- * it drifts along [dirX]/[dirY] by ±[amplitude] of its [size] (dp), taking [leg] seconds each way. */
 internal class AuroraBlob(
   val size: Float,
   val baseX: Float,
@@ -517,7 +431,6 @@ internal object MoneyAurora {
   val blobs = listOf(
 ${aurora.map((blob) => `    AuroraBlob(size = ${blob.size}f, baseX = ${blob.baseX}f, baseY = ${blob.baseY}f, dirX = ${blob.dirX}f, dirY = ${blob.dirY}f, amplitude = ${blob.amplitude}f, leg = ${blob.leg}f, phase = ${blob.phase}f, deep = ${blob.tone === 'deep'}),`).join('\n')}
   )
-  /** Each blob's containers by direction (forward, back) and pulse (none, cents, whole). */
   val containers: List<List<IntArray>> = listOf(
 ${aurora.map((_, index) => `    listOf(${Object.keys(AURORA_DIRECTIONS).map((d) => `intArrayOf(${Object.keys(AURORA_PULSES).map((v) => `R.id.nmw_au${index}${d}${v}`).join(', ')})`).join(', ')}),`).join('\n')}
   )

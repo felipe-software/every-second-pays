@@ -15,19 +15,6 @@ import java.util.Locale
 import kotlin.math.max
 import kotlin.math.roundToInt
 
-/**
- * Builds the live money widget as RemoteViews. Everything that moves is a framework view
- * animation or a launcher-driven flipper, so the launcher keeps animating with the app closed:
- *
- * - The aurora, the background bills, and the counter all live in the frames (see [MoneyAmbient]
- *   and [MoneyAurora]); landing money brightens the aurora like the app's background.
- * - The counter is a timeline: an AdapterViewFlipper flips through pre-rendered frames every
- *   second. Each frame also carries the app's winged bills drifting behind the counter, placed
- *   where the previous frame left them (see [MoneyAmbient]). When the total changes, a few of
- *   those bills leave their path and fly into the digits that changed, which then roll the old
- *   value out and the new one in while the counter bumps. Every animation in a frame starts on
- *   its first draw, so it plays exactly when the launcher flips to it.
- */
 @TargetApi(31)
 internal class MoneyWidgetRenderer(private val context: Context) {
   data class Size(val width: Float, val height: Float)
@@ -37,18 +24,13 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     val full: Boolean,
     val signature: String,
     val timeline: MoneyTimeline,
-    /** The background bills' state through this timeline; pass it to the next render. */
     val ambientSnapshots: String?,
   )
 
-  /** A bill leaving the background for the counter in one frame. */
   private class Landing(val index: Int, val spot: MoneyAmbient.Spot)
 
-  /**
-   * Frames cover the whole widget so bills can fly in from its edges. Everything in a frame is
-   * placed relative to the widget's center (or left edge, for the ledger), never to its exact
-   * size, which the launcher only reports approximately.
-   */
+  // Frame content is placed relative to the widget's center (or left edge, for the ledger), never
+  // to its exact size, which the launcher only reports approximately.
   private class Geometry(
     val halfWidth: Float,
     val halfHeight: Float,
@@ -56,10 +38,8 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     val paddingY: Float,
     val header: Boolean,
     val caption: Boolean,
-    /** The space the counter may use: between the header and the caption. */
     val bandWidth: Float,
     val bandHeight: Float,
-    /** How far the band's center sits below the widget's center. */
     val offsetY: Float,
   )
 
@@ -128,12 +108,8 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     )
   }
 
-  // -------------------------------------------------------------------------------------------
-  // Whole widget.
-
-  /** Everything a re-sync leaves alone: the background, the glow, and the label styling. A
-   * re-sync is a partial update with only the dynamic part, so it merges into the cached views
-   * without touching these and the glow's infinite animations keep running. */
+  // Only sent on full updates: re-syncs are partial so they merge into the cached views and the
+  // glow's infinite animations keep running.
   private fun fullViews(
     views: RemoteViews,
     config: MoneyConfig,
@@ -152,7 +128,6 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     )
     click?.let { views.setOnClickPendingIntent(android.R.id.background, it) }
     clickTemplate?.let { views.setPendingIntentTemplate(R.id.nmw_ticker, it) }
-
 
     val start = config.template == "ledger"
     views.setInt(R.id.nmw_content, "setGravity", if (start) Gravity.START else Gravity.CENTER_HORIZONTAL)
@@ -189,7 +164,6 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     val widest = texts.maxBy { reference.width(it) }
     val maxSize = if (config.template == "ledger") 64f else 76f
     val metrics = typography.fit(widest, geometry.bandWidth * 0.94f, geometry.bandHeight * 0.86f, maxSize)
-    // Money only flows while it's being earned.
     val ambient = if (config.effect != "none" && timeline.ratePerHour > 0) {
       val all = MoneyEffects.slots[config.effect].orEmpty().size
       val count = when (config.intensity) {
@@ -218,11 +192,6 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     views.setDisplayedChild(R.id.nmw_ticker, 0)
   }
 
-  /**
-   * Picks up the background where the last render left it: restores its latest snapshot from
-   * before now and replays the seconds since, landings included, so bills don't jump on a
-   * re-sync and the lanes stay balanced.
-   */
   private fun catchUp(ambient: MoneyAmbient, saved: String?, config: MoneyConfig, data: MoneyData, timeline: MoneyTimeline) {
     val snapshots = saved?.let { runCatching { org.json.JSONArray(it) }.getOrNull() } ?: return
     val latest = (0 until snapshots.length())
@@ -249,8 +218,6 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     }
   }
 
-  /** Which background bills fly into the counter in the frame at [time], taken out of the
-   * background as they leave. A whole unit brings more of them, like the app's landing. */
   private fun land(config: MoneyConfig, ambient: MoneyAmbient, time: Long, before: CounterText?, text: CounterText, rising: Boolean): List<Landing> {
     val slots = segments(before, text).filterIsInstance<Segment.Slot>()
     val wanted = when {
@@ -274,9 +241,6 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     val cents = CounterText.cents(dollars * 100)
     return CounterText.format(cents, format, true).plain.replace(" ", "")
   }
-
-  // -------------------------------------------------------------------------------------------
-  // Timeline frames.
 
   private fun frame(
     config: MoneyConfig,
@@ -309,7 +273,6 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     views.setViewLayoutMargin(R.id.nmw_bump, RemoteViews.MARGIN_TOP, geometry.offsetY, TypedValue.COMPLEX_UNIT_DIP)
     if (start) views.setViewLayoutMargin(R.id.nmw_bump, RemoteViews.MARGIN_LEFT, geometry.paddingX, TypedValue.COMPLEX_UNIT_DIP)
 
-    // The counter row, and where the change sits in it.
     var x = 0f
     var changeStart: Float? = null
     var changeEnd = 0f
@@ -326,7 +289,6 @@ internal class MoneyWidgetRenderer(private val context: Context) {
         is Segment.Slot -> {
           views.addView(R.id.nmw_row, slot(config.motion, segment, metrics, colors, late = bills > 0))
           val width = max(metrics.width(segment.from, segment.glyph), metrics.width(segment.to, segment.glyph))
-          // Aim at the most significant group that changed: the whole amount, else the cents.
           if (segment.wholeDigit || !changeWhole) {
             if (segment.wholeDigit && !changeWhole) {
               changeWhole = true
@@ -341,14 +303,12 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     }
     val rowWidth = x
 
-    // The digits that changed, measured from the frame's anchor like everything else in it.
     val changeCenter = ((changeStart ?: 0f) + changeEnd) / 2
     val targetX = if (start) changeCenter + geometry.paddingX - geometry.halfWidth else changeCenter - rowWidth / 2
     ambient?.let { field ->
       landings.forEach { landing ->
         views.addView(R.id.nmw_over, flight(field.slots[landing.index], landing.spot, targetX, geometry.offsetY, start, geometry))
       }
-      // The landing bills already left the background: it shows them re-entering at their edge.
       views.addView(R.id.nmw_ambient, ambientLayer(config.effect, field, seconds, start, geometry))
     }
 
@@ -356,7 +316,6 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     if (landed) {
       trigger(views, R.id.nmw_bump)
     } else {
-      // Nothing changed (or the period reset): show the counter without the bump.
       views.setDisplayedChild(R.id.nmw_bump, 1)
     }
     if (config.background == "glow") {
@@ -365,7 +324,6 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     return views
   }
 
-  /** Random bills that are fully on screen right now, deterministic for a given frame. */
   private fun pick(ambient: MoneyAmbient, seconds: Double, count: Int, time: Long): List<Int> {
     if (count == 0) return emptyList()
     val candidates = ambient.slots.indices.filter { index ->
@@ -375,7 +333,6 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     return candidates.shuffled(java.util.Random(time)).take(count)
   }
 
-  /** Every background bill where the paths put it, hiding the ones already collected. */
   private fun ambientLayer(effect: String, ambient: MoneyAmbient, seconds: Double, start: Boolean, geometry: Geometry): RemoteViews {
     val views = RemoteViews(packageName, AMBIENT_LAYOUTS.getValue(effect).let { if (start) it.second else it.first })
     val total = MoneyEffects.slots[effect].orEmpty().size
@@ -397,13 +354,7 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     return views
   }
 
-  /**
-   * One bill leaving the background for the counter. The flight box spans from the bill to the
-   * digit; the bill starts in the corner where it is and crosses the box, landing on the digit
-   * when the slots start rolling.
-   */
   private fun flight(slot: AmbientSlot, spot: MoneyAmbient.Spot, targetX: Float, targetY: Float, start: Boolean, geometry: Geometry): RemoteViews {
-    // In the anchor's coordinates, like the target.
     val fromX = if (start) spot.x + geometry.halfWidth else spot.x
     val toX = if (start) targetX + geometry.halfWidth else targetX
     val rightward = toX >= fromX
@@ -447,13 +398,11 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     if (glyph == Glyph.SMALL && onBaseline) views.setViewPadding(id, 0, metrics.smallPaddingPx, 0, 0)
   }
 
-  /** The old digit animates out and the new one in, each in its own trigger: a view that's
-   * hidden before it was ever laid out has no size, so a single flipper can't animate both. */
+  // Out and in each get their own trigger: a view hidden before its first layout has no size, so
+  // a single flipper can't animate both.
   private fun slot(motion: String, segment: Segment.Slot, metrics: CounterMetrics, colors: MoneyColors, late: Boolean): RemoteViews {
     val layouts = if (late) SLOT_LATE_LAYOUTS else SLOT_LAYOUTS
     val views = RemoteViews(packageName, layouts[motion] ?: layouts.getValue("roll"))
-    // A small digit rolls within its own line, set down onto the big digits' baseline, so the
-    // old and new cents don't travel the height of the whole row.
     val small = segment.glyph == Glyph.SMALL
     views.setViewLayoutHeight(R.id.nmw_slot, if (small) metrics.smallRowHeight else metrics.rowHeight, TypedValue.COMPLEX_UNIT_DIP)
     if (small) {
@@ -466,22 +415,11 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     return views
   }
 
-  // -------------------------------------------------------------------------------------------
-  // Continuous layers.
-
-  /**
-   * The aurora's blobs where their drift puts them at [seconds], each carried one second on by
-   * its layout animation. [pulse] picks the variant that brightens them as money lands, like the
-   * app's background does: none, cents, or a whole unit.
-   */
   private fun aurora(views: RemoteViews, colors: MoneyColors, geometry: Geometry, seconds: Double, pulse: Int) {
     views.setViewVisibility(R.id.nmw_aurora, View.VISIBLE)
-    // Blobs are drawn for a widget whose longer side is AURORA_REFERENCE; they grow and shrink
-    // with the real one, and so does their drift, which is measured in their own size.
     val scale = (max(geometry.halfWidth, geometry.halfHeight) * 2 / AURORA_REFERENCE).coerceIn(0.45f, 1.7f)
     MoneyAurora.blobs.forEachIndexed { index, blob ->
       val size = blob.size * scale
-      // Back and forth along its direction: legs count up through 0..2, forward then back.
       val legs = ((seconds / blob.leg + blob.phase * 2) % 2 + 2) % 2
       val forward = legs < 1
       val offset = if (forward) legs * 2 - 1 else 1 - (legs - 1) * 2
@@ -506,7 +444,6 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     return views
   }
 
-  /** Each pass mirrors its bill at random, on either axis; only a flipped axis costs an action. */
   private fun mirror(views: RemoteViews, id: Int, spot: MoneyAmbient.Spot) {
     if (spot.flipX) views.setFloat(id, "setScaleX", -1f)
     if (spot.flipY) views.setFloat(id, "setScaleY", -1f)
@@ -516,8 +453,8 @@ internal class MoneyWidgetRenderer(private val context: Context) {
     views.setColorInt(id, "setColorFilter", color.day, color.night)
   }
 
-  /** Shows a ViewFlipper's second child with its in-animation. The animation waits for the
-   * child's first draw, so inside a timeline frame it plays when the launcher flips to it. */
+  // Flipping to child 0 then 1 plays the in-animation on the child's first draw, i.e. when the
+  // launcher flips to the frame.
   private fun trigger(views: RemoteViews, id: Int) {
     views.setDisplayedChild(id, 0)
     views.setDisplayedChild(id, 1)
@@ -527,19 +464,16 @@ internal class MoneyWidgetRenderer(private val context: Context) {
 
   companion object {
     const val MAX_FRAMES = 150
-    /** The widget size (longer side, dp) the aurora's blob sizes are drawn for. */
     private const val AURORA_REFERENCE = 320f
     private const val PULSE_NONE = 0
     private const val PULSE_CENTS = 1
     private const val PULSE_WHOLE = 2
-    /** How often a render saves the background's state, in frames. */
     private const val SNAPSHOT_EVERY = 15
-    /** A re-sync later than this starts the background over instead of replaying it. */
     private const val MAX_REPLAY = 10 * 60_000L
     private const val MIN_FRAMES = 20
     private const val MAX_BYTES = 420_000
     private const val REFERENCE_SIZE = 40f
-    /** The header's and caption's height in nmw_widget.xml. */
+    // Keep in sync with the header and caption height in nmw_widget.xml.
     private const val LABEL_HEIGHT = 18f
 
     private val SLOT_LAYOUTS = mapOf(
@@ -570,7 +504,6 @@ internal class MoneyWidgetRenderer(private val context: Context) {
       R.id.nmw_ai0, R.id.nmw_ai1, R.id.nmw_ai2, R.id.nmw_ai3, R.id.nmw_ai4,
       R.id.nmw_ai5, R.id.nmw_ai6, R.id.nmw_ai7, R.id.nmw_ai8, R.id.nmw_ai9,
     )
-    // The live dot's halo and dot.
     private val PARTICLES = intArrayOf(R.id.nmw_p0, R.id.nmw_p1)
     private val PARTICLE_IMAGES = intArrayOf(R.id.nmw_i0, R.id.nmw_i1)
   }

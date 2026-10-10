@@ -12,8 +12,6 @@ import android.os.Build
 import android.service.notification.StatusBarNotification
 import org.json.JSONObject
 
-// RemoteViews layout/margin/outline setters used throughout are API 31+; the module only
-// reaches this code on Android 12+.
 @android.annotation.TargetApi(31)
 internal class MotionNotifications private constructor(private val context: Context) {
   private data class Key(val id: Int, val tag: String?) {

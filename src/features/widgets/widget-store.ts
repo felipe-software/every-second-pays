@@ -10,15 +10,11 @@ const CONFIG_KEY = "widget-draft";
 const sameConfig = (a: MoneyWidgetConfig, b: MoneyWidgetConfig) => JSON.stringify(a) === JSON.stringify(b);
 
 type WidgetState = {
-    /** Android 12+ with the widget installed. Null until checked. */
     supported: boolean | null;
     pinSupported: boolean;
-    /** The widgets on the home screen; they all share [config]. */
     widgets: MoneyWidget[];
-    /** The one widget design: every placed widget and every new one uses it. */
     config: MoneyWidgetConfig;
     hydrated: boolean;
-    /** Bumped after every publish so live previews re-render with the new data. */
     revision: number;
     load: () => Promise<void>;
     refresh: () => Promise<void>;
@@ -27,7 +23,6 @@ type WidgetState = {
     published: () => void;
 };
 
-/** Gives every placed widget the shared design, skipping the ones that already have it. */
 async function applyToAll(widgets: MoneyWidget[], config: MoneyWidgetConfig) {
     await Noti.moneyWidgets.setDefaultConfig(config);
     await Promise.all(widgets.filter((widget) => !sameConfig(widget.config, config))
@@ -70,8 +65,7 @@ export const useWidgetStore = create<WidgetState>((set, get) => ({
         try {
             const widgets = await Noti.moneyWidgets.list();
             set({ widgets });
-            // A widget added from the launcher's picker starts from the default; this catches
-            // any that slipped through with an older design.
+            // Widgets added from the launcher's picker can still carry an older design.
             if (widgets.some((widget) => !sameConfig(widget.config, get().config))) await applyToAll(widgets, get().config);
         } catch {
             // Keep the last known list.

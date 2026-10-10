@@ -17,7 +17,6 @@ import { appHaptics } from "@/features/haptics/haptics";
 
 type Option<T extends string> = { value: T; label: string };
 
-/** A titled group of rows on one raised card, with hairlines between the rows. */
 export function SettingsCard({ title, children }: { title: string; children: ReactNode }) {
     const rows = Children.toArray(children).filter(Boolean);
     return (
@@ -72,7 +71,6 @@ function Segment({
     );
 }
 
-/** A small pill of equal segments; the whole pill sinks together. */
 export function CompactSegments<T extends string>({
     options,
     value,
@@ -133,7 +131,6 @@ function Swatch({ label, color, selected, onPress, children }: { label: string; 
     );
 }
 
-/** The color row: "same as the app" (drawn in the app's accent, half dimmed) and each palette. */
 export function ColorRow<T extends string>({
     label,
     appValue,
@@ -183,7 +180,6 @@ export function ColorRow<T extends string>({
 
 const SWITCH_TIMING = { duration: 180, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System };
 
-/** A row with a label and a raised on/off switch. */
 export function ToggleRow({ label, value, onChange, testID }: { label: string; value: boolean; onChange: (value: boolean) => void; testID?: string }) {
     const { colors } = useEarningsTheme();
     const sink = usePressSink();

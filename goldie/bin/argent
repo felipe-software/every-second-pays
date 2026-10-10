@@ -1,8 +1,6 @@
 #!/bin/sh
-# argent's screenshot bakes black rounded corners (~100px) into Android
-# captures, which show as black wedges inside the Pixel 8 bezel. For Goldie's
-# raw captures, take a clean rectangle with adb screencap instead and let the
-# frame's screenRadius shape the corners.
+# argent bakes black rounded corners into Android screenshots, which show inside the
+# bezel; take a clean adb screencap and let the frame's screenRadius shape the corners.
 BIN_DIR=$(cd "$(dirname "$0")" && pwd)
 REAL=$(PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -vx "$BIN_DIR" | paste -sd: -) command -v argent)
 if [ "$1" = run ] && [ "$2" = screenshot ]; then

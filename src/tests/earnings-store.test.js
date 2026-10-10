@@ -1,7 +1,6 @@
 import { beforeEach, expect, mock, test } from "bun:test";
 import { Database } from "bun:sqlite";
 
-// Exercise the production queries against SQLite without a native RN runtime.
 const sqlite = new Database(":memory:");
 let failRead = false;
 let failWrite = false;
@@ -90,19 +89,16 @@ test("one-time payments remember when they landed", async () => {
     expect(saved.paidAt).toBeGreaterThanOrEqual(before);
     expect(saved.paidAt).toBeLessThanOrEqual(Date.now());
 
-    // Editing it keeps the original landing date, even if the draft says otherwise.
     await store.getState().save({ ...bonus, amount: "600", paidAt: 1 }, saved.id);
     resetMemory();
     await store.getState().load();
     expect(store.getState().sources[0]).toMatchObject({ amount: 600, paidAt: saved.paidAt });
 
-    // Rescheduling or making it recurring drops the date.
     await store.getState().save({ ...bonus, when: "later" }, saved.id);
     expect(store.getState().sources[0].paidAt).toBeUndefined();
     await store.getState().save({ ...bonus, frequency: "month" }, saved.id);
     expect(store.getState().sources[0].paidAt).toBeUndefined();
 
-    // Landing again stamps a new date.
     await store.getState().save(bonus, saved.id);
     expect(store.getState().sources[0].paidAt).toBeGreaterThanOrEqual(saved.paidAt);
 });

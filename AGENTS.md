@@ -36,15 +36,13 @@ Docs: https://docs.expo.dev/eas/index.md
 
 ## Comments
 
-Write code that explains itself: clear names, small functions, and named constants say what it does. Don't add comments that repeat what the code already says.
-
-Add a comment only when it records something the code can't show:
+Don't write comments. The default is zero: code explains itself through clear names, small functions, and named constants. A comment is allowed only when it is absolutely necessary to understand the code, meaning a reader would otherwise get it wrong:
 
 - **Why** a choice was made, when the obvious alternative is wrong (a workaround, a platform quirk, a value that looks wrong but is deliberate).
 - **Constraints** the reader would otherwise break (ordering, timing, threading, "keep in sync with X").
-- **Links** to the issue, doc, or upstream bug behind a workaround.
+- **Links** to the upstream bug behind a workaround.
 
-Don't comment what a line does, restate a name in a docstring, narrate the change ("added X", "now uses Y"), or leave commented-out code. When you edit code, delete comments it has made stale.
+Keep these to one short line. No docstrings or JSDoc describing what a function, component, prop, or constant does; no file overviews, section headers, labels, or test narration; no comments on what a line does; no narrating the change ("added X", "now uses Y"); no commented-out code. Tool directives (`eslint-disable`, `@ts-expect-error`, `/** @type */`, `@Suppress`) are fine. When you edit code, delete comments it has made stale.
 
 ## Rules
 

@@ -136,12 +136,7 @@ const widgets = {
     },
 };
 
-/**
- * The live money widget. The app publishes an earnings schedule and each widget's config; the
- * native side renders animated timelines from them and keeps re-syncing without JavaScript.
- */
 const moneyWidgets = {
-    /** Android 12+ with the widget provider installed. */
     async isSupported(): Promise<boolean> {
         if (!supported()) return false;
         return native().isMoneyWidgetSupported();
@@ -153,11 +148,9 @@ const moneyWidgets = {
     async setData(data: MoneyWidgetData): Promise<void> {
         await native().setMoneyWidgetData(JSON.stringify(data));
     },
-    /** The config for widgets added from the launcher's widget picker. */
     async setDefaultConfig(config: MoneyWidgetConfig): Promise<void> {
         await native().setMoneyWidgetDefaultConfig(JSON.stringify(config));
     },
-    /** Opens the launcher's pin dialog; the widget it adds uses `config`. */
     async requestPin(config: MoneyWidgetConfig): Promise<boolean> {
         return native().requestPinMoneyWidget(JSON.stringify(config));
     },
@@ -168,7 +161,6 @@ const moneyWidgets = {
     async update(id: number, config: MoneyWidgetConfig): Promise<void> {
         await native().updateMoneyWidget(widgetId(id), JSON.stringify(config));
     },
-    /** Fires when a widget is added, removed, or restored. */
     addChangeListener(listener: () => void) {
         return native().addListener('onMoneyWidgetsChanged', listener);
     },
@@ -176,13 +168,11 @@ const moneyWidgets = {
 
 export type MoneyWidgetPreviewProps = ViewProps & {
     config: MoneyWidgetConfig;
-    /** Bump to re-render after publishing new data. */
     revision?: number;
 };
 
 let previewComponent: ComponentType<ViewProps & { config: string; revision: number }> | null = null;
 
-/** The real widget, rendered live by the same native code the launcher uses. Android 12+. */
 export function MoneyWidgetPreview({ config, revision = 0, ...props }: MoneyWidgetPreviewProps) {
     if (!supported()) return null;
     previewComponent ??= requireNativeView('NotificationMotion');

@@ -14,13 +14,10 @@ type PeriodState = {
     hydrated: boolean;
     load: () => Promise<void>;
     select: (period: EarningsPeriod) => void;
-    /** Tapping wraps around: This year is followed by Today. */
     cycle: () => void;
-    /** Swiping stops at Today and This year; returns whether the period changed. */
     step: (step: 1 | -1) => boolean;
 };
 
-/** The period the Earnings screen totals, remembered across launches. */
 export const usePeriodStore = create<PeriodState>((set, get) => ({
     period: "today",
     hydrated: false,
@@ -29,7 +26,6 @@ export const usePeriodStore = create<PeriodState>((set, get) => ({
         try {
             set({ period: parsePeriod(await Storage.getItem(STORAGE_KEY)) });
         } catch {
-            // Fall back to today; the choice is only a convenience.
         } finally {
             set({ hydrated: true });
         }
@@ -37,7 +33,6 @@ export const usePeriodStore = create<PeriodState>((set, get) => ({
     select: (period) => {
         if (period === get().period) return;
         set({ period });
-        // Saving is best effort: the screen already shows the new period either way.
         Storage.setItem(STORAGE_KEY, period).catch(() => {});
     },
     cycle: () => {

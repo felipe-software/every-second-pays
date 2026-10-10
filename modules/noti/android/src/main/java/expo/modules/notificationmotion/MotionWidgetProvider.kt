@@ -7,8 +7,6 @@ import android.content.Intent
 import android.util.Log
 import java.util.concurrent.Executors
 
-// RemoteViews layout/margin/outline setters used throughout are API 31+; the module only
-// reaches this code on Android 12+.
 @android.annotation.TargetApi(31)
 class MotionWidgetProvider : AppWidgetProvider() {
   override fun onReceive(context: Context, intent: Intent) {

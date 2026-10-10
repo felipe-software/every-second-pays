@@ -38,7 +38,6 @@ class NotificationMotionModule : Module() {
     AsyncFunction("updateWidget") { widgetId: Int, scene: String -> supported(); widgets.update(widgetId, scene) }
     AsyncFunction("updateAllWidgets") { scene: String -> supported(); widgets.updateAll(scene) }
 
-    // Live money widget: native timeline rendering, driven by a schedule the app publishes.
     AsyncFunction("isMoneyWidgetSupported") { Build.VERSION.SDK_INT >= 31 && money.isInstalled() }
     AsyncFunction("isMoneyWidgetPinningSupported") { Build.VERSION.SDK_INT >= 31 && money.isPinningSupported() }
     AsyncFunction("setMoneyWidgetData") { data: String -> supported(); money.setData(data) }

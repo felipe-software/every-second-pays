@@ -216,7 +216,6 @@ export type SerializedNode = {
     children: SerializedNode[];
 };
 
-/** Live money widget. */
 export type MoneyWidgetTemplate = 'hero' | 'ledger' | 'minimal';
 export type MoneyWidgetEffect = 'none' | 'rain' | 'stream' | 'fountain' | 'orbit';
 export type MoneyWidgetMotion = 'roll' | 'drop' | 'flip' | 'blur' | 'slot';
@@ -237,7 +236,7 @@ export type MoneyWidgetConfig = {
     cents: boolean;
     caption: boolean;
 };
-/** `[time in ms, total in cents at that time, cents per millisecond after it]` */
+// [time in ms, total in cents at that time, cents per millisecond after it]
 export type MoneyBreakpoint = [number, number, number];
 export type MoneyPaletteColors = {
     canvas: string;
@@ -254,7 +253,7 @@ export type MoneyWidgetData = {
     appearance: { mode: 'system' | 'light' | 'dark'; palette: string };
     palettes: Record<string, { light: MoneyPaletteColors; dark: MoneyPaletteColors }>;
     format: { currency: string; decimal: string; group: string; groupSize: number };
-    /** Period names plus `rate` ("{{amount}} an hour"), `idle`, and `empty`. */
+    // Period names plus `rate` ("{{amount}} an hour"), `idle`, and `empty`.
     labels: Record<string, string>;
 };
 export type MoneyWidget = { id: number; config: MoneyWidgetConfig; width: number; height: number };

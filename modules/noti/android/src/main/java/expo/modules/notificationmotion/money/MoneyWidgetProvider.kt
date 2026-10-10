@@ -8,7 +8,6 @@ import android.os.Build
 import android.util.Log
 import java.util.concurrent.Executors
 
-/** The live money widget. Rendering runs off the main thread; see [MoneyWidgets]. */
 class MoneyWidgetProvider : AppWidgetProvider() {
   override fun onReceive(context: Context, intent: Intent) {
     if (Build.VERSION.SDK_INT < 31) return

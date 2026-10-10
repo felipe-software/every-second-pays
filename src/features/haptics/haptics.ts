@@ -15,19 +15,12 @@ const MONEY_LANDING_PATTERN: Pattern = {
 const PRELOADED_PRESETS = ["Anvil", "Buzz", "Firecracker", "Strike", "Wisp"];
 
 export const appHaptics = {
-    // Used when a raised control sinks under the finger, before any action haptic on release.
     press: Presets.System.impactLight,
-    // Used for language menus, palettes, chips, tokens, work hours, and time adjustments.
     selection: Presets.wisp,
-    // Used when switching between the system, light, and dark appearance modes.
     themeMode: Presets.anvil,
-    // Used by the primary action button in the payment sheet.
     primaryAction: Presets.strike,
-    // Used when opening a source for editing or starting a new payment.
     secondaryAction: Presets.firecracker,
-    // Used when closing the payment sheet without saving.
     dismiss: Presets.wisp,
-    // Used when deleting an existing payment source.
     destructiveAction: Presets.buzz,
 };
 
@@ -39,7 +32,6 @@ export function useHapticsWarmup() {
 }
 
 export function useMoneyLandingHaptic() {
-    // Used once per animated note landing in either the whole or cents counter.
     return usePatternComposer(MONEY_LANDING_PATTERN).play;
 }
 

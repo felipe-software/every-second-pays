@@ -1,7 +1,6 @@
 import { View } from "react-native";
 
-// This route backs the native tab bar action. Native selection is prevented in
-// AppTabs, so its content is never shown.
+// Backs the native tab bar action; AppTabs prevents selecting it, so this never renders.
 export default function AddPaymentSourceAction() {
     return <View />;
 }
