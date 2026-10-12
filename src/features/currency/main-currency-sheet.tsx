@@ -1,14 +1,14 @@
-import { TrueSheet } from "@lodev09/react-native-true-sheet";
+import type { TrueSheet } from "@lodev09/react-native-true-sheet";
 import { useMemo, useRef, useState } from "react";
-import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AppSheet } from "@/components/app-sheet";
 import { CheckIcon } from "@/components/check-icon";
 import { PopIn } from "@/components/elevated/pop-in";
 import { LineIcon } from "@/components/line-icon";
 import { SettingsCard, SettingsRow } from "@/components/settings-card";
 import { TryAgainButton } from "@/components/try-again-button";
-import { SheetHeaderButton } from "@/features/earnings/sheet-header-button";
 import { useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
@@ -101,64 +101,42 @@ export function MainCurrencySheet({ onDismiss }: { onDismiss: () => void }) {
     };
 
     return (
-        <TrueSheet
-            ref={sheetRef}
-            backgroundColor={Platform.OS === "ios" ? undefined : colors.canvas}
-            detents={[0.88, 1]}
-            initialDetentIndex={0}
-            dimmed
-            dimmedColor={isDark ? colors.track : undefined}
-            grabber
-            scrollable
+        <AppSheet
+            sheetRef={sheetRef}
+            title={t("settings.currency")}
+            closeTestID="close-main-currency-sheet"
             onDidDismiss={onDismiss}
-            headerStyle={{ backgroundColor: "transparent" }}
-            header={
-                <View>
-                    <View className="flex-row items-center gap-3 px-[22px] pt-6 pb-3.5">
-                        <Text accessibilityRole="header" className="min-w-0 flex-1 font-sans text-[24px] font-bold tracking-[-0.65px] text-ink">
-                            {t("settings.currency")}
-                        </Text>
-                        <SheetHeaderButton
-                            accessibilityLabel={t("common.close")}
-                            kind="close"
-                            onPress={() => {
-                                appHaptics.dismiss();
-                                dismiss();
-                            }}
-                            testID="close-main-currency-sheet"
-                        />
-                    </View>
-                    <View
-                        className="mx-[22px] mb-1.5 h-12 flex-row items-center gap-2.5 rounded-[16px] pr-1.5 pl-3.5"
-                        style={{ backgroundColor: colors.cardFace, borderWidth: 1, borderColor: isDark ? colors.cardFace : colors.cardOutline }}
-                    >
-                        <LineIcon d={SEARCH_PATH} color={colors.muted} size={18} strokeWidth={2} />
-                        <TextInput
-                            testID="main-currency-search"
-                            accessibilityLabel={t("currency.searchAccessibility")}
-                            value={query}
-                            onChangeText={setQuery}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                            returnKeyType="search"
-                            placeholder={t("currency.searchPlaceholder")}
-                            placeholderTextColor={colors.muted}
-                            selectionColor={colors.accent}
-                            className="h-full min-w-0 flex-1"
-                            style={{ padding: 0, color: colors.ink, fontFamily: "Archivo", fontSize: 16 }}
-                        />
-                        {query ? (
-                            <Pressable
-                                accessibilityRole="button"
-                                accessibilityLabel={t("currency.clearSearch")}
-                                onPress={() => setQuery("")}
-                                hitSlop={4}
-                                className="h-9 w-9 items-center justify-center rounded-full"
-                            >
-                                <LineIcon d={CLEAR_PATH} color={colors.muted} size={14} strokeWidth={2.6} />
-                            </Pressable>
-                        ) : null}
-                    </View>
+            headerAccessory={
+                <View
+                    className="mx-[22px] mb-1.5 h-12 flex-row items-center gap-2.5 rounded-[16px] pr-1.5 pl-3.5"
+                    style={{ backgroundColor: colors.cardFace, borderWidth: 1, borderColor: isDark ? colors.cardFace : colors.cardOutline }}
+                >
+                    <LineIcon d={SEARCH_PATH} color={colors.muted} size={18} strokeWidth={2} />
+                    <TextInput
+                        testID="main-currency-search"
+                        accessibilityLabel={t("currency.searchAccessibility")}
+                        value={query}
+                        onChangeText={setQuery}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        returnKeyType="search"
+                        placeholder={t("currency.searchPlaceholder")}
+                        placeholderTextColor={colors.muted}
+                        selectionColor={colors.accent}
+                        className="h-full min-w-0 flex-1"
+                        style={{ padding: 0, color: colors.ink, fontFamily: "Archivo", fontSize: 16 }}
+                    />
+                    {query ? (
+                        <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={t("currency.clearSearch")}
+                            onPress={() => setQuery("")}
+                            hitSlop={4}
+                            className="h-9 w-9 items-center justify-center rounded-full"
+                        >
+                            <LineIcon d={CLEAR_PATH} color={colors.muted} size={14} strokeWidth={2.6} />
+                        </Pressable>
+                    ) : null}
                 </View>
             }
         >
@@ -200,6 +178,6 @@ export function MainCurrencySheet({ onDismiss }: { onDismiss: () => void }) {
                     </>
                 )}
             </ScrollView>
-        </TrueSheet>
+        </AppSheet>
     );
 }

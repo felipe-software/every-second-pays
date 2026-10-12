@@ -1,11 +1,9 @@
-import { TrueSheet } from "@lodev09/react-native-true-sheet";
+import type { TrueSheet } from "@lodev09/react-native-true-sheet";
 import { useRef } from "react";
-import { Platform, ScrollView, Text, View } from "react-native";
+import { ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { SheetHeaderButton } from "@/features/earnings/sheet-header-button";
-import { useEarningsTheme } from "@/features/earnings/theme";
-import { appHaptics } from "@/features/haptics/haptics";
+import { AppSheet } from "@/components/app-sheet";
 import { useI18n } from "@/features/i18n/i18n";
 
 import type { Currency } from "./currencies";
@@ -21,40 +19,12 @@ export function CurrencySheet({
     onDismiss: () => void;
 }) {
     const insets = useSafeAreaInsets();
-    const { colors, isDark } = useEarningsTheme();
     const { t } = useI18n();
     const sheetRef = useRef<TrueSheet>(null);
     const dismiss = () => void sheetRef.current?.dismiss().catch(() => undefined);
 
     return (
-        <TrueSheet
-            ref={sheetRef}
-            backgroundColor={Platform.OS === "ios" ? undefined : colors.canvas}
-            detents={[0.88, 1]}
-            initialDetentIndex={0}
-            dimmed
-            dimmedColor={isDark ? colors.track : undefined}
-            grabber
-            scrollable
-            onDidDismiss={onDismiss}
-            headerStyle={{ backgroundColor: "transparent" }}
-            header={
-                <View className="flex-row items-center gap-3 px-[22px] pt-6 pb-4">
-                    <Text className="min-w-0 flex-1 font-sans text-[24px] font-bold tracking-[-0.65px] text-ink">
-                        {t("payment.currency")}
-                    </Text>
-                    <SheetHeaderButton
-                        accessibilityLabel={t("common.close")}
-                        kind="close"
-                        onPress={() => {
-                            appHaptics.dismiss();
-                            dismiss();
-                        }}
-                        testID="close-currency-sheet"
-                    />
-                </View>
-            }
-        >
+        <AppSheet sheetRef={sheetRef} title={t("payment.currency")} closeTestID="close-currency-sheet" onDidDismiss={onDismiss}>
             <ScrollView
                 className="flex-1"
                 style={{ backgroundColor: "transparent" }}
@@ -70,6 +40,6 @@ export function CurrencySheet({
                     onPick={dismiss}
                 />
             </ScrollView>
-        </TrueSheet>
+        </AppSheet>
     );
 }

@@ -3,8 +3,8 @@ import { useRef, useState } from "react";
 import { Platform, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AppSheet } from "@/components/app-sheet";
 import { RiseIn } from "@/components/elevated/rise-in";
-import { RecedingSheet, SHEET_RECEDE_ENABLED } from "@/components/sheet-recede";
 import { DEFAULT_CURRENCY } from "@/features/currency/currencies";
 import { CurrencySheet } from "@/features/currency/currency-sheet";
 import { useCurrencyStore } from "@/features/currency/store";
@@ -23,7 +23,6 @@ import { PaymentEditor, type PaymentToken } from "./payment-editor";
 import { PrimaryButton } from "./payment-sheet-controls";
 import { PaymentSummary } from "./payment-summary";
 import { SheetHeaderButton } from "./sheet-header-button";
-import { useEarningsTheme } from "./theme";
 
 export { PrimaryButton } from "./payment-sheet-controls";
 
@@ -45,7 +44,6 @@ function cloneEmptyDraft(): PaymentDraft {
 
 export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSave }: PaymentSheetProps) {
     const insets = useSafeAreaInsets();
-    const { colors, isDark } = useEarningsTheme();
     const { t } = useI18n();
     const sheetRef = useRef<TrueSheet>(null);
     const [draft, setDraft] = useState<PaymentDraft>(() => ({
@@ -96,51 +94,25 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
                 : t("payment.addPayment");
 
     return (
-        <RecedingSheet
-            ref={sheetRef}
-            backgroundColor={Platform.OS === "ios" ? undefined : colors.canvas}
-            detents={[0.82, 1]}
-            initialDetentIndex={0}
-            dimmed
-            // A black dim hides the canvas-colored sheet in dark mode, so lift the backdrop unless the page recedes.
-            dimmedColor={isDark && !SHEET_RECEDE_ENABLED ? colors.track : undefined}
+        <AppSheet
+            sheetRef={sheetRef}
+            title={t(source ? "payment.editTitle" : "payment.newTitle")}
+            closeTestID="close-payment-sheet"
             dismissible={!saving}
-            draggable={!saving}
-            grabber
-            scrollable
-            presentation="page"
             onDidDismiss={onDismiss}
-            headerStyle={{ backgroundColor: "transparent" }}
-            footerStyle={{ backgroundColor: "transparent" }}
-            header={
-                <View className="flex-row items-center gap-3 px-[22px] pt-6 pb-4">
-                    <Text className="min-w-0 flex-1 font-sans text-[24px] font-bold tracking-[-0.65px] text-ink">
-                        {t(source ? "payment.editTitle" : "payment.newTitle")}
-                    </Text>
-                    {source ? (
-                        <SheetHeaderButton
-                            accessibilityLabel={t("payment.deleteAccessibility")}
-                            disabled={saving}
-                            kind="delete"
-                            label={t("payment.delete")}
-                            onPress={() => {
-                                appHaptics.destructiveAction();
-                                void deleteAndDismiss();
-                            }}
-                            testID="delete-source"
-                        />
-                    ) : null}
-                    <SheetHeaderButton
-                        accessibilityLabel={t("common.close")}
-                        kind="close"
-                        onPress={() => {
-                            appHaptics.dismiss();
-                            dismiss();
-                        }}
-                        testID="close-payment-sheet"
-                    />
-                </View>
-            }
+            headerActions={source ? (
+                <SheetHeaderButton
+                    accessibilityLabel={t("payment.deleteAccessibility")}
+                    disabled={saving}
+                    kind="delete"
+                    label={t("payment.delete")}
+                    onPress={() => {
+                        appHaptics.destructiveAction();
+                        void deleteAndDismiss();
+                    }}
+                    testID="delete-source"
+                />
+            ) : null}
             footer={
                 <View
                     onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
@@ -186,6 +158,6 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
                     onDismiss={() => setCurrencyOpen(false)}
                 />
             ) : null}
-        </RecedingSheet>
+        </AppSheet>
     );
 }
