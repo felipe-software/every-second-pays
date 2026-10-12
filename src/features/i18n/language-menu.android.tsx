@@ -6,29 +6,19 @@ import {
     RNHostView,
     Text as ComposeText,
 } from "@expo/ui/jetpack-compose";
-import { Image } from "expo-image";
-import { SymbolView } from "expo-symbols";
 import { useState } from "react";
-import { Pressable, Text, useWindowDimensions, View } from "react-native";
-import Svg, { Path } from "react-native-svg";
+import { Pressable, useWindowDimensions, View } from "react-native";
 
 import { RAISED_OUTLINE } from "@/components/elevated/raised";
 import { useEarningsTheme } from "@/features/earnings/theme";
 
 import { useI18n } from "./i18n";
 import { LANGUAGE_OPTIONS, type LanguageMenuProps } from "./language-options";
+import { LANGUAGE_ROW_HEIGHT, LanguageTriggerContent } from "./language-trigger";
 
 const GLOBE_ICON = require("../../assets/icons/globe.xml");
 const CHECK_ICON = require("../../assets/icons/check.xml");
 const MENU_RADIUS = 24;
-
-function UpDownChevron({ color }: { color: string }) {
-    return (
-        <Svg width={12} height={14} viewBox="0 0 12 14">
-            <Path d="m3 5 3-3 3 3M3 9l3 3 3-3" fill="none" stroke={color} strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
-        </Svg>
-    );
-}
 
 export function LanguageMenu({ preference, disabled, onOpen, onPressIn, onPressOut, onChange }: LanguageMenuProps) {
     const [open, setOpen] = useState(false);
@@ -47,22 +37,16 @@ export function LanguageMenu({ preference, disabled, onOpen, onPressIn, onPressO
             testID="language-menu"
             accessible
             accessibilityRole="button"
+            accessibilityLabel={`${t("settings.language")}, ${selected.label ?? t("settings.languageSystem")}`}
             accessibilityState={{ disabled, expanded: open }}
             disabled={disabled}
             onPress={openMenu}
             onPressIn={onPressIn}
             onPressOut={onPressOut}
-            className="min-h-[58px] flex-row items-center gap-2.5 px-4"
-            style={{ width: menuWidth }}
+            className="flex-row items-center gap-3 px-4"
+            style={{ width: menuWidth, minHeight: LANGUAGE_ROW_HEIGHT }}
         >
-            <Text className="flex-1 font-sans text-[16px] font-medium text-ink">{t("settings.language")}</Text>
-            {selected.flag ? (
-                <Image source={selected.flag} style={{ width: 24, height: 24 }} />
-            ) : (
-                <SymbolView name="globe" size={22} tintColor={colors.muted} />
-            )}
-            <Text className="font-sans text-[14px] text-muted">{selected.label ?? t("settings.languageSystem")}</Text>
-            <UpDownChevron color={colors.muted} />
+            <LanguageTriggerContent preference={preference} />
         </Pressable>
     );
 
@@ -74,7 +58,7 @@ export function LanguageMenu({ preference, disabled, onOpen, onPressIn, onPressO
             <Host
                 matchContents
                 colorScheme={isDark ? "dark" : "light"}
-                style={{ position: "absolute", top: 0, right: 0, width: 1, height: 58 }}
+                style={{ position: "absolute", top: 0, right: 0, width: 1, height: LANGUAGE_ROW_HEIGHT }}
             >
                 <DropdownMenu
                     expanded={open}
@@ -85,7 +69,7 @@ export function LanguageMenu({ preference, disabled, onOpen, onPressIn, onPressO
                 >
                     <DropdownMenu.Trigger>
                         <RNHostView matchContents>
-                            <View style={{ width: 1, height: 58 }} />
+                            <View style={{ width: 1, height: LANGUAGE_ROW_HEIGHT }} />
                         </RNHostView>
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Items>

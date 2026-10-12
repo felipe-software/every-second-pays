@@ -23,6 +23,7 @@ mock.module("expo-sqlite/kv-store", () => ({
     },
 }));
 mock.module("expo-localization", () => ({
+    getLocales: () => locales,
     useLocales: () => locales,
     useCalendars: () => calendars,
 }));

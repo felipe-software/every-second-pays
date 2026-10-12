@@ -10,7 +10,7 @@ steps:
   - tap: { id: settings-widgets }
   - wait: 2500
   - echo: The live preview never stops animating, so the tree reader times out here.
-      This coordinate is the "Wide" segment under the preview on the 1080x2400
+      This coordinate is the "Wide" size segment in the Layout card on the 1080x2400
       Pixel 8 capture AVD.
-  - tap: { x: 0.5, y: 0.373 }
+  - tap: { x: 0.5, y: 0.457 }
   - wait: 2500

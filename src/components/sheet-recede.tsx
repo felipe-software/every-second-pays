@@ -18,7 +18,7 @@ export const SHEET_RECEDE_BACKDROP = "#000000";
 
 const RECEDED_SCALE = 0.92;
 const RECEDED_RADIUS = 28;
-const SHEET_CORNER_RADIUS = 32;
+export const SHEET_CORNER_RADIUS = 32;
 
 type SheetRecedeProps = PropsWithChildren<{
     backgroundColor: ColorValue;

@@ -14,6 +14,8 @@ import Animated, {
 
 import { RaisedPressable } from "@/components/elevated/raised";
 import { RiseIn } from "@/components/elevated/rise-in";
+import { type Currency, currencyPrefix } from "@/features/currency/currencies";
+import { withTallDollar } from "@/features/currency/currency-text";
 import { useI18n } from "@/features/i18n/i18n";
 import { appHaptics } from "@/features/haptics/haptics";
 
@@ -34,6 +36,7 @@ function formatLandingDate(timestamp: number, now: Date, locale: string) {
 
 export function SourceRow({
     source,
+    currency,
     index,
     now,
     earned,
@@ -43,6 +46,7 @@ export function SourceRow({
     transferDelay,
 }: {
     source: PaymentSource;
+    currency: Currency;
     index: number;
     now: Date;
     earned: number;
@@ -132,7 +136,7 @@ export function SourceRow({
                     <View ref={setValueNode} collapsable={false} testID={`source-value-${source.id}`}>
                         <Animated.View style={launchStyle}>
                             <Text className={`font-sans text-[17px] font-semibold ${active || source.frequency === "once" ? "text-ink" : "text-muted"}`}>
-                                ${formatMoney(earned)}
+                                {withTallDollar(`${currencyPrefix(currency)}${formatMoney(earned)}`, 17)}
                             </Text>
                         </Animated.View>
                     </View>

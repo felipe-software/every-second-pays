@@ -103,6 +103,24 @@ test("one-time payments remember when they landed", async () => {
     expect(store.getState().sources[0].paidAt).toBeGreaterThanOrEqual(saved.paidAt);
 });
 
+test("sources keep their currency, and legacy ones adopt one", async () => {
+    await store.getState().load();
+    await store.getState().save({ ...draft, currency: "EUR" });
+    // Saved before currencies existed.
+    sqlite.query("INSERT INTO payment_sources (payload) VALUES (?)").run(JSON.stringify({ ...draft, amount: 100 }));
+    resetMemory();
+    await store.getState().load();
+    expect(store.getState().sources.map((source) => source.currency)).toEqual(["EUR", undefined]);
+    await expect(store.getState().save({ ...draft, currency: " " })).rejects.toThrow();
+    await expect(store.getState().save({ ...draft, currency: "1234567" })).rejects.toThrow();
+
+    await store.getState().adoptCurrency("BRL");
+    expect(store.getState().sources.map((source) => source.currency)).toEqual(["EUR", "BRL"]);
+    resetMemory();
+    await store.getState().load();
+    expect(store.getState().sources.map((source) => source.currency)).toEqual(["EUR", "BRL"]);
+});
+
 test("read failure is retryable and blocks writes", async () => {
     failRead = true;
     await store.getState().load();
