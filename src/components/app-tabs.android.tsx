@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { TabList, Tabs, TabTrigger, useTabTrigger } from "expo-router/ui";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { type ColorValue, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -8,6 +8,7 @@ import {
     type TabsIconProps,
     type TabsItem,
 } from "react-native-jelly-tabs";
+import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
 
 import { RaisedPressable } from "@/components/elevated/raised";
@@ -18,9 +19,14 @@ import { useI18n } from "@/features/i18n/i18n";
 import {
     AndroidTabPager,
     useAndroidTabPagerProgress,
+    useIsTabSubpage,
 } from "./android-tab-pager";
 
 type TabIconProps = { color: ColorValue; size: number };
+
+const DOCK_HIDE_OFFSET = 24;
+const DOCK_TIMING = { duration: 220, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System };
+
 
 function PaidIcon({ color, size }: TabIconProps) {
     return (
@@ -47,12 +53,22 @@ function SettingsJellyIcon({ color, size }: TabsIconProps) {
 }
 
 function AndroidTabBar() {
-    const { colors } = useEarningsTheme();
+    const { colors, isDark } = useEarningsTheme();
     const { t } = useI18n();
     const insets = useSafeAreaInsets();
     const indexTab = useTabTrigger({ name: "index" });
     const settingsTab = useTabTrigger({ name: "settings" });
     const progress = useAndroidTabPagerProgress();
+    const onSubpage = useIsTabSubpage();
+    const hidden = useSharedValue(onSubpage ? 1 : 0);
+    const dockStyle = useAnimatedStyle(() => ({
+        opacity: 1 - hidden.get(),
+        transform: [{ translateY: hidden.get() * DOCK_HIDE_OFFSET }],
+    }));
+
+    useEffect(() => {
+        hidden.set(withTiming(onSubpage ? 1 : 0, DOCK_TIMING));
+    }, [hidden, onSubpage]);
     const requestNewSource = usePaymentComposerStore((state) => state.requestNewSource);
     const items = useMemo<TabsItem[]>(() => [
         {
@@ -89,17 +105,24 @@ function AndroidTabBar() {
     };
 
     return (
-        <View pointerEvents="box-none" className="pb-2" style={styles.dock}>
+        <Animated.View
+            pointerEvents={onSubpage ? "none" : "box-none"}
+            accessibilityElementsHidden={onSubpage}
+            importantForAccessibility={onSubpage ? "no-hide-descendants" : "auto"}
+            className="pb-2"
+            style={[styles.dock, dockStyle]}
+        >
             <View
                 pointerEvents="box-none"
                 style={[styles.dockContent, { paddingBottom: Math.max(insets.bottom, 20) }]}
             >
                 <View pointerEvents="box-none" style={styles.jellyTrack}>
                     <JellyTabBarHeadless
+                        backdrop={<View style={[styles.trackFace, { backgroundColor: colors.cardFace, borderColor: colors.cardOutline }]} />}
                         colors={{
-                            surface: colors.row,
+                            surface: "transparent",
                             selectedSurface: colors.accent,
-                            activeContent: colors.canvas,
+                            activeContent: isDark ? colors.canvas : "#FFFFFF",
                             inactiveContent: colors.muted,
                         }}
                         config={{
@@ -122,7 +145,7 @@ function AndroidTabBar() {
                     accessibilityRole="button"
                     accessibilityLabel={t("tabs.addSource")}
                     onPress={openPaymentComposer}
-                    surface="row"
+                    surface="card"
                     depth={4}
                     radius={32}
                     style={styles.actionButton}
@@ -132,7 +155,7 @@ function AndroidTabBar() {
                     </Svg>
                 </RaisedPressable>
             </View>
-        </View>
+        </Animated.View>
     );
 }
 
@@ -168,7 +191,7 @@ const styles = StyleSheet.create({
         width: "100%",
         maxWidth: 430,
         flexDirection: "row",
-        alignItems: "center",
+        alignItems: "flex-start",
         justifyContent: "space-between",
         paddingHorizontal: 20,
         paddingTop: 12,
@@ -176,6 +199,11 @@ const styles = StyleSheet.create({
     jellyTrack: {
         width: 188,
         height: 64,
+    },
+    trackFace: {
+        ...StyleSheet.absoluteFill,
+        borderRadius: 32,
+        borderWidth: 1,
     },
     actionButton: {
         width: 64,

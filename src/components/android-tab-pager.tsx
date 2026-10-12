@@ -1,3 +1,4 @@
+import { usePathname } from "expo-router";
 import {
     TabSlot,
     type TabsDescriptor,
@@ -69,6 +70,10 @@ function PagerScene({ children, index, isFocused, pageWidth, position }: PagerSc
     );
 }
 
+export function useIsTabSubpage() {
+    return usePathname().split("/").filter(Boolean).length > 1;
+}
+
 export function useAndroidTabPagerProgress() {
     const context = useContext(AndroidTabPagerContext);
 
@@ -83,6 +88,7 @@ export function AndroidTabPager({ backgroundColor, children }: AndroidTabPagerPr
     const indexTab = useTabTrigger({ name: "index" });
     const settingsTab = useTabTrigger({ name: "settings" });
     const selectedIndex = settingsTab.trigger?.isFocused ? 1 : 0;
+    const onSubpage = useIsTabSubpage();
     const pageWidth = useSharedValue(0);
     const position = useSharedValue(selectedIndex);
     const gestureStartPosition = useSharedValue(selectedIndex);
@@ -107,6 +113,7 @@ export function AndroidTabPager({ backgroundColor, children }: AndroidTabPagerPr
     }, [pageWidth]);
 
     const pan = Gesture.Pan()
+        .enabled(!onSubpage)
         .activeOffsetX([-16, 16])
         .failOffsetY([-12, 12])
         .averageTouches(true)

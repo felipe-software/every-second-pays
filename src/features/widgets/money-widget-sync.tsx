@@ -3,6 +3,7 @@ import { AppState, Platform } from "react-native";
 import { Noti } from "react-native-noti";
 
 import { useAppearanceStore } from "@/features/appearance/store";
+import { useMainCurrencySources } from "@/features/currency/use-main-currency-sources";
 import { usePeriodStore } from "@/features/earnings/period-store";
 import { useEarningsStore } from "@/features/earnings/store";
 import { useI18n } from "@/features/i18n/i18n";
@@ -12,7 +13,7 @@ import { useWidgetStore } from "./widget-store";
 
 function AndroidMoneyWidgetSync() {
     const { t, locale, firstDayOfWeek, decimalSeparator } = useI18n();
-    const sources = useEarningsStore((state) => state.sources);
+    const { main: currency, converted: sources } = useMainCurrencySources(useEarningsStore((state) => state.sources));
     const ready = useEarningsStore((state) => state.ready);
     const period = usePeriodStore((state) => state.period);
     const appearance = useAppearanceStore((state) => state.appearance);
@@ -38,13 +39,13 @@ function AndroidMoneyWidgetSync() {
         if (!supported || !ready) return;
         // Coalesces bursts of changes, like a theme switch updating several stores.
         const timer = setTimeout(() => {
-            const data = buildWidgetData({ sources, appPeriod: period, appearance, firstDayOfWeek, locale, decimalSeparator, t });
+            const data = buildWidgetData({ sources, currency, appPeriod: period, appearance, firstDayOfWeek, locale, decimalSeparator, t });
             Noti.moneyWidgets.setData(data)
                 .then(() => useWidgetStore.getState().published())
                 .catch(() => {});
         }, 250);
         return () => clearTimeout(timer);
-    }, [appearance, decimalSeparator, firstDayOfWeek, foregrounds, locale, period, ready, sources, supported, t]);
+    }, [appearance, currency, decimalSeparator, firstDayOfWeek, foregrounds, locale, period, ready, sources, supported, t]);
 
     return null;
 }

@@ -1,4 +1,4 @@
-import { Children, Fragment, type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import Animated, {
     Easing,
@@ -7,131 +7,337 @@ import Animated, {
     useSharedValue,
     withTiming,
 } from "react-native-reanimated";
+import Svg, { Rect } from "react-native-svg";
 
 import { CheckIcon } from "@/components/check-icon";
 import { PopIn } from "@/components/elevated/pop-in";
-import { Raised, usePressSink } from "@/components/elevated/raised";
-import { useSquash } from "@/components/elevated/use-squash";
+import { Raised, RaisedPressable, usePressSink } from "@/components/elevated/raised";
+import { LineIcon } from "@/components/line-icon";
+import { CardDivider, IconTile, usePressHighlight } from "@/components/settings-card";
 import { edgeColor, useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
 
-type Option<T extends string> = { value: T; label: string };
+export type Option<T extends string> = { value: T; label: string; icon?: ReactNode };
 
-export function SettingsCard({ title, children }: { title: string; children: ReactNode }) {
-    const rows = Children.toArray(children).filter(Boolean);
+const EXPAND_TIMING = { duration: 240, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System };
+const SWITCH_TIMING = { duration: 180, easing: Easing.bezier(0.2, 0.8, 0.3, 1), reduceMotion: ReduceMotion.System };
+
+function choose<T extends string>(value: T, next: T, onChange: (value: T) => void) {
+    if (next === value) return;
+    appHaptics.selection();
+    onChange(next);
+}
+
+export function CollapsibleCard({
+    icon,
+    title,
+    testID,
+    children,
+}: {
+    icon: string;
+    title: string;
+    testID?: string;
+    children: ReactNode;
+}) {
+    const { colors } = useEarningsTheme();
+    const [open, setOpen] = useState(false);
+    const highlight = usePressHighlight();
+    const progress = useSharedValue(0);
+    const contentHeight = useSharedValue(0);
+    const chevronStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${progress.get() * 180}deg` }] }));
+    const bodyStyle = useAnimatedStyle(() => ({
+        height: contentHeight.get() * progress.get(),
+        opacity: progress.get(),
+    }));
+
+    useEffect(() => {
+        progress.set(withTiming(open ? 1 : 0, EXPAND_TIMING));
+    }, [open, progress]);
+
     return (
-        <View className="mt-7">
-            <Text className="mb-2.5 ml-1 font-sans text-[13px] font-semibold text-muted">{title}</Text>
-            <Raised surface="row" depth={3} radius={20} className="overflow-hidden">
-                {rows.map((row, index) => (
-                    <Fragment key={index}>
-                        {index > 0 ? <View className="mx-4 h-px bg-track opacity-40" /> : null}
-                        {row}
-                    </Fragment>
-                ))}
+        <View className="mt-3">
+            <Raised surface="card" depth={3} radius={20} className="overflow-hidden">
+                <Pressable
+                    testID={testID}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: open }}
+                    onPress={() => {
+                        appHaptics.selection();
+                        setOpen((value) => !value);
+                    }}
+                    onPressIn={highlight.onPressIn}
+                    onPressOut={highlight.onPressOut}
+                    className="min-h-[60px] flex-row items-center gap-3 px-4"
+                    style={highlight.style}
+                >
+                    <IconTile>
+                        <LineIcon d={icon} color={colors.accentDeep} />
+                    </IconTile>
+                    <Text className="flex-1 font-sans text-[16px] font-semibold tracking-[-0.2px] text-ink">{title}</Text>
+                    <Animated.View style={[{ opacity: 0.6 }, chevronStyle]}>
+                        <LineIcon d="m6 9 6 6 6-6" color={colors.ink} size={18} strokeWidth={2.2} />
+                    </Animated.View>
+                </Pressable>
+                <Animated.View
+                    pointerEvents={open ? "auto" : "none"}
+                    importantForAccessibility={open ? "auto" : "no-hide-descendants"}
+                    accessibilityElementsHidden={!open}
+                    className="overflow-hidden"
+                    style={bodyStyle}
+                >
+                    <View
+                        className="absolute inset-x-0 top-0"
+                        onLayout={(event) => contentHeight.set(event.nativeEvent.layout.height)}
+                    >
+                        {children}
+                    </View>
+                </Animated.View>
             </Raised>
         </View>
     );
 }
 
-function Segment({
-    label,
-    selected,
-    onPress,
-    onPressIn,
-    onPressOut,
-}: {
-    label: string;
-    selected: boolean;
-    onPress: () => void;
-    onPressIn: () => void;
-    onPressOut: () => void;
-}) {
-    const { colors } = useEarningsTheme();
-    const squashStyle = useSquash(selected);
+export function OptionGroup({ label, children }: { label: string; children: ReactNode }) {
     return (
-        <Pressable
+        <>
+            <CardDivider />
+            <View className="px-4 pt-3.5 pb-4">
+                <Text className="mb-3 font-sans text-[15.5px] font-medium text-ink">{label}</Text>
+                {children}
+            </View>
+        </>
+    );
+}
+
+function Chip({ label, icon, selected, onPress }: { label: string; icon?: ReactNode; selected: boolean; onPress: () => void }) {
+    const { colors } = useEarningsTheme();
+    return (
+        <RaisedPressable
             accessibilityRole="radio"
             accessibilityLabel={label}
             accessibilityState={{ checked: selected }}
             onPress={onPress}
-            onPressIn={onPressIn}
-            onPressOut={onPressOut}
-            className="flex-1 p-[3px]"
+            surface={selected
+                ? { face: colors.chipSelected, edge: colors.edgeChip, outline: colors.chipSelectedBorder }
+                : { face: colors.canvas, edge: colors.edgeCanvas, outline: colors.canvas }}
+            depth={2}
+            radius={20}
+            selected={selected}
+            className="h-10 flex-row items-center gap-[7px] pr-3.5 pl-3"
         >
-            <Animated.View
-                className="flex-1 items-center justify-center rounded-full"
-                style={[{ backgroundColor: selected ? colors.accent : "transparent" }, squashStyle]}
-            >
-                <Text className="font-sans text-[13px] font-semibold" style={{ color: selected ? colors.ink : colors.muted }}>
-                    {label}
-                </Text>
-            </Animated.View>
-        </Pressable>
+            {icon}
+            <Text className="font-sans text-[14px] font-semibold" style={{ color: selected ? colors.ink : colors.muted }}>{label}</Text>
+        </RaisedPressable>
     );
 }
 
-export function CompactSegments<T extends string>({
+export function OptionChips<T extends string>({
+    label,
     options,
     value,
     onChange,
     testID,
 }: {
+    label: string;
     options: readonly Option<T>[];
     value: T;
     onChange: (value: T) => void;
     testID?: string;
 }) {
-    const sink = usePressSink();
     return (
-        <View testID={testID} accessibilityRole="radiogroup">
-            <Raised surface="row" depth={2} radius={18} pressed={sink.pressed} className="h-9 w-[228px] flex-row">
-                {options.map((option) => (
-                    <Segment
-                        key={option.value}
-                        label={option.label}
-                        selected={option.value === value}
-                        onPress={() => {
-                            if (option.value === value) return;
-                            appHaptics.selection();
-                            onChange(option.value);
-                        }}
-                        onPressIn={sink.onPressIn}
-                        onPressOut={sink.onPressOut}
-                    />
-                ))}
-            </Raised>
+        <View testID={testID} accessibilityRole="radiogroup" accessibilityLabel={label} className="flex-row flex-wrap gap-2">
+            {options.map((option) => (
+                <Chip
+                    key={option.value}
+                    label={option.label}
+                    icon={option.icon}
+                    selected={option.value === value}
+                    onPress={() => choose(value, option.value, onChange)}
+                />
+            ))}
         </View>
     );
 }
 
-function Swatch({ label, color, selected, onPress, children }: { label: string; color: string; selected: boolean; onPress: () => void; children?: ReactNode }) {
+export function ChipIcon({ d, children, selected }: { d?: string; children?: ReactNode; selected: boolean }) {
+    const { colors } = useEarningsTheme();
+    return <LineIcon d={d} color={selected ? colors.ink : colors.muted} size={16} strokeWidth={2}>{children}</LineIcon>;
+}
+
+function Segment({
+    label,
+    icon,
+    selected,
+    onPress,
+}: {
+    label: string;
+    icon: ReactNode;
+    selected: boolean;
+    onPress: () => void;
+}) {
+    const { colors } = useEarningsTheme();
     return (
         <Pressable
             accessibilityRole="radio"
             accessibilityLabel={label}
             accessibilityState={{ checked: selected }}
             onPress={onPress}
-            hitSlop={4}
-            className="h-9 w-9 items-center justify-center rounded-full"
-            style={{ borderColor: selected ? color : "transparent", borderWidth: 2 }}
+            className="flex-1"
         >
-            <View
-                className="h-7 w-7 items-center justify-center overflow-hidden rounded-full"
-                style={{ backgroundColor: color, borderColor: edgeColor(color, { accent: true }), borderWidth: 1 }}
+            <Raised
+                surface={selected
+                    ? { face: colors.chipSelected, edge: colors.edgeChip, outline: colors.chipSelectedBorder }
+                    : { face: colors.canvas, edge: colors.canvas, outline: colors.canvas }}
+                flat={!selected}
+                depth={2}
+                radius={19}
+                selected={selected}
+                className="h-9 flex-row items-center justify-center gap-1.5"
             >
-                {children}
-                <View className="absolute">
-                    <PopIn visible={selected}>
-                        <CheckIcon size={14} color="#FFFFFF" />
-                    </PopIn>
-                </View>
-            </View>
+                {icon}
+                <Text className="font-sans text-[13px] font-semibold" style={{ color: selected ? colors.ink : colors.muted }}>{label}</Text>
+            </Raised>
         </Pressable>
     );
 }
 
-export function ColorRow<T extends string>({
+export function SizeSegments<T extends string>({
+    label,
+    options,
+    value,
+    onChange,
+}: {
+    label: string;
+    options: readonly (Option<T> & { glyph: { width: number; height: number } })[];
+    value: T;
+    onChange: (value: T) => void;
+}) {
+    const { colors } = useEarningsTheme();
+    return (
+        <View testID="widget-preview-size" accessibilityRole="radiogroup" accessibilityLabel={label}>
+            <Raised surface="canvas" depth={2} radius={23} className="flex-row gap-0.5 p-[2px]">
+                {options.map((option) => {
+                    const selected = option.value === value;
+                    const { width, height } = option.glyph;
+                    return (
+                        <Segment
+                            key={option.value}
+                            label={option.label}
+                            selected={selected}
+                            onPress={() => choose(value, option.value, onChange)}
+                            icon={
+                                <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+                                    <Rect
+                                        x={1}
+                                        y={1}
+                                        width={width - 2}
+                                        height={height - 2}
+                                        rx={2.5}
+                                        fill="none"
+                                        stroke={selected ? colors.ink : colors.muted}
+                                        strokeWidth={1.6}
+                                    />
+                                </Svg>
+                            }
+                        />
+                    );
+                })}
+            </Raised>
+        </View>
+    );
+}
+
+export function PickerTiles<T extends string>({
+    label,
+    options,
+    value,
+    onChange,
+    height,
+    testID,
+}: {
+    label: string;
+    options: readonly (Option<T> & { art: ReactNode })[];
+    value: T;
+    onChange: (value: T) => void;
+    height: number;
+    testID?: string;
+}) {
+    const { colors } = useEarningsTheme();
+    return (
+        <View testID={testID} accessibilityRole="radiogroup" accessibilityLabel={label} className="flex-row gap-2.5">
+            {options.map((option) => {
+                const selected = option.value === value;
+                return (
+                    <Pressable
+                        key={option.value}
+                        testID={testID ? `${testID}-${option.value}` : undefined}
+                        accessibilityRole="radio"
+                        accessibilityLabel={option.label}
+                        accessibilityState={{ checked: selected }}
+                        onPress={() => choose(value, option.value, onChange)}
+                        className="min-w-0 flex-1 gap-2"
+                    >
+                        <Raised
+                            surface={{
+                                face: colors.canvas,
+                                edge: selected ? colors.edgeChip : colors.edgeCanvas,
+                                outline: selected ? colors.chipSelectedBorder : colors.canvas,
+                            }}
+                            depth={2}
+                            radius={14}
+                            selected={selected}
+                            className="overflow-hidden"
+                            style={{ height, borderWidth: 2 }}
+                        >
+                            {option.art}
+                        </Raised>
+                        <Text
+                            numberOfLines={1}
+                            className="text-center font-sans text-[13px] font-semibold"
+                            style={{ color: selected ? colors.ink : colors.muted }}
+                        >
+                            {option.label}
+                        </Text>
+                    </Pressable>
+                );
+            })}
+        </View>
+    );
+}
+
+function Swatch({ label, color, selected, onPress, children }: { label: string; color: string; selected: boolean; onPress: () => void; children?: ReactNode }) {
+    const sink = usePressSink();
+    return (
+        <Pressable
+            accessibilityRole="radio"
+            accessibilityLabel={label}
+            accessibilityState={{ checked: selected }}
+            onPress={onPress}
+            onPressIn={sink.onPressIn}
+            onPressOut={sink.onPressOut}
+            className="h-[46px] w-[46px] items-center justify-center rounded-full"
+            style={{ borderColor: selected ? color : "transparent", borderWidth: 2 }}
+        >
+            <Raised
+                surface={{ face: color, edge: edgeColor(color, { accent: true }) }}
+                depth={3}
+                radius={17}
+                selected={selected}
+                pressed={sink.pressed}
+                className="h-[34px] w-[34px] items-center justify-center overflow-hidden"
+            >
+                {children}
+                <View className="absolute">
+                    <PopIn visible={selected}>
+                        <CheckIcon size={16} color="#FFFFFF" />
+                    </PopIn>
+                </View>
+            </Raised>
+        </Pressable>
+    );
+}
+
+export function SwatchRow<T extends string>({
     label,
     appValue,
     appLabel,
@@ -148,41 +354,39 @@ export function ColorRow<T extends string>({
     value: T;
     onChange: (value: T) => void;
 }) {
-    const choose = (next: T) => {
-        if (next === value) return;
-        appHaptics.selection();
-        onChange(next);
-    };
-    const current = value === appValue ? appLabel : swatches.find((swatch) => swatch.value === value)?.label;
     return (
-        <View className="px-4 pt-3.5 pb-3">
-            <View className="flex-row items-center">
-                <Text className="flex-1 font-sans text-[15.5px] font-medium text-ink">{label}</Text>
-                <Text className="font-sans text-[14px] text-muted">{current}</Text>
-            </View>
-            <View className="mt-2.5 flex-row justify-between" accessibilityRole="radiogroup">
-                <Swatch label={appLabel} color={appColor} selected={value === appValue} onPress={() => choose(appValue)}>
-                    <View className="absolute right-0 h-full w-1/2" style={{ backgroundColor: "#00000033" }} />
-                </Swatch>
-                {swatches.map((swatch) => (
-                    <Swatch
-                        key={swatch.value}
-                        label={swatch.label}
-                        color={swatch.color}
-                        selected={swatch.value === value}
-                        onPress={() => choose(swatch.value)}
-                    />
-                ))}
-            </View>
+        <View className="flex-row justify-between" accessibilityRole="radiogroup" accessibilityLabel={label}>
+            <Swatch label={appLabel} color={appColor} selected={value === appValue} onPress={() => choose(value, appValue, onChange)}>
+                <View className="absolute top-0 right-0 h-full w-1/2" style={{ backgroundColor: "#00000038" }} />
+            </Swatch>
+            {swatches.map((swatch) => (
+                <Swatch
+                    key={swatch.value}
+                    label={swatch.label}
+                    color={swatch.color}
+                    selected={swatch.value === value}
+                    onPress={() => choose(value, swatch.value, onChange)}
+                />
+            ))}
         </View>
     );
 }
 
-const SWITCH_TIMING = { duration: 180, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System };
-
-export function ToggleRow({ label, value, onChange, testID }: { label: string; value: boolean; onChange: (value: boolean) => void; testID?: string }) {
+export function SwitchRow({
+    label,
+    value,
+    onChange,
+    disabled = false,
+    testID,
+}: {
+    label: string;
+    value: boolean;
+    onChange: (value: boolean) => void;
+    disabled?: boolean;
+    testID?: string;
+}) {
     const { colors } = useEarningsTheme();
-    const sink = usePressSink();
+    const highlight = usePressHighlight();
     const progress = useSharedValue(value ? 1 : 0);
     const knobStyle = useAnimatedStyle(() => ({ transform: [{ translateX: progress.get() * 18 }] }));
 
@@ -191,32 +395,31 @@ export function ToggleRow({ label, value, onChange, testID }: { label: string; v
     }, [progress, value]);
 
     return (
-        <Pressable
-            testID={testID}
-            accessibilityRole="switch"
-            accessibilityLabel={label}
-            accessibilityState={{ checked: value }}
-            onPress={() => {
-                appHaptics.selection();
-                onChange(!value);
-            }}
-            onPressIn={sink.onPressIn}
-            onPressOut={sink.onPressOut}
-            className="min-h-[54px] flex-row items-center justify-between px-4"
-        >
-            <Text className="font-sans text-[15.5px] font-medium text-ink">{label}</Text>
-            <Raised
-                surface={value ? "accent" : "fill"}
-                depth={2}
-                radius={14}
-                pressed={sink.pressed}
-                className="h-7 w-[46px] justify-center px-[3px]"
+        <>
+            <CardDivider />
+            <Pressable
+                testID={testID}
+                accessibilityRole="switch"
+                accessibilityLabel={label}
+                accessibilityState={{ checked: value, disabled }}
+                disabled={disabled}
+                onPress={() => {
+                    appHaptics.selection();
+                    onChange(!value);
+                }}
+                onPressIn={highlight.onPressIn}
+                onPressOut={highlight.onPressOut}
+                className="min-h-[54px] flex-row items-center gap-3 px-4"
+                style={[highlight.style, { opacity: disabled ? 0.5 : 1 }]}
             >
-                <Animated.View
-                    className="h-[20px] w-[20px] rounded-full"
-                    style={[{ backgroundColor: value ? colors.canvas : colors.muted }, knobStyle]}
-                />
-            </Raised>
-        </Pressable>
+                <Text className="flex-1 font-sans text-[15.5px] font-medium text-ink">{label}</Text>
+                <View className="h-7 w-[46px] justify-center rounded-[14px] px-[3px]" style={{ backgroundColor: value ? colors.accent : colors.track }}>
+                    <Animated.View
+                        className="h-[22px] w-[22px] rounded-full bg-white"
+                        style={[{ boxShadow: "0 1px 3px rgba(0, 0, 0, 0.25)" }, knobStyle]}
+                    />
+                </View>
+            </Pressable>
+        </>
     );
 }

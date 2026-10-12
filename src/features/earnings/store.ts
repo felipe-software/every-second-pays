@@ -1,5 +1,7 @@
 import { create } from "zustand";
 
+import { type Currency, isCurrency } from "@/features/currency/currencies";
+
 import { deletePaymentSource, loadPaymentSources, writePaymentSource } from "./database";
 import type { PaymentDraft, PaymentSource } from "./model";
 
@@ -12,6 +14,7 @@ type EarningsState = {
     load: () => Promise<void>;
     save: (draft: PaymentDraft, id?: number) => Promise<void>;
     remove: (id: number) => Promise<void>;
+    adoptCurrency: (currency: Currency) => Promise<void>;
 };
 
 export const useEarningsStore = create<EarningsState>((set, get) => ({
@@ -37,6 +40,7 @@ export const useEarningsStore = create<EarningsState>((set, get) => ({
         if (!draft.name.trim() || !Number.isFinite(amount) || amount <= 0) {
             throw new Error("Enter a name and a positive amount.");
         }
+        if (draft.currency != null && !isCurrency(draft.currency)) throw new Error("Unknown currency.");
         const previous = id == null ? undefined : get().sources.find((source) => source.id === id);
         const landed = (source?: Pick<PaymentSource, "frequency" | "when">) => source?.frequency === "once" && source.when === "today";
         const paidAt = landed(draft) ? (landed(previous) ? previous?.paidAt : Date.now()) : undefined;
@@ -65,6 +69,20 @@ export const useEarningsStore = create<EarningsState>((set, get) => ({
         try {
             await deletePaymentSource(id);
             set(({ sources }) => ({ sources: sources.filter((source) => source.id !== id) }));
+        } finally {
+            set({ saving: false });
+        }
+    },
+    adoptCurrency: async (currency) => {
+        if (!get().ready || get().saving) throw new Error("Storage is busy.");
+        const missing = get().sources.filter((source) => source.currency == null);
+        if (!missing.length) return;
+        set({ saving: true });
+        try {
+            for (const { id, ...source } of missing) {
+                const record = await writePaymentSource({ ...source, currency }, id);
+                set(({ sources }) => ({ sources: sources.map((item) => item.id === id ? record : item) }));
+            }
         } finally {
             set({ saving: false });
         }

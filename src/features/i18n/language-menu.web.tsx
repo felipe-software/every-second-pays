@@ -8,23 +8,20 @@ import { useEarningsTheme } from "@/features/earnings/theme";
 
 import { useI18n } from "./i18n";
 import { LANGUAGE_OPTIONS, type LanguageMenuProps } from "./language-options";
+import { LanguageTriggerContent } from "./language-trigger";
 
 export function LanguageMenu({ preference, disabled, onOpen, onPressIn, onPressOut, onChange }: LanguageMenuProps) {
     const { t } = useI18n();
     const { colors } = useEarningsTheme();
     const [open, setOpen] = useState(false);
-    const selected = LANGUAGE_OPTIONS.find((option) => option.value === preference)!;
     const openMenu = () => {
         onOpen();
         setOpen(true);
     };
     return (
         <>
-            <Pressable testID="language-menu" accessibilityRole="button" accessibilityState={{ disabled, expanded: open }} disabled={disabled} onPress={openMenu} onPressIn={onPressIn} onPressOut={onPressOut} className="min-h-[58px] flex-row items-center gap-2.5 px-4">
-                <Text className="flex-1 font-sans text-[16px] font-medium text-ink">{t("settings.language")}</Text>
-                {selected.flag ? <Image source={selected.flag} style={{ width: 24, height: 24 }} /> : <SymbolView name="globe" size={22} tintColor={colors.muted} />}
-                <Text className="font-sans text-[14px] text-muted">{selected.label ?? t("settings.languageSystem")}</Text>
-                <Text className="text-muted">⌄</Text>
+            <Pressable testID="language-menu" accessibilityRole="button" accessibilityState={{ disabled, expanded: open }} disabled={disabled} onPress={openMenu} onPressIn={onPressIn} onPressOut={onPressOut} className="min-h-[56px] flex-row items-center gap-3 px-4">
+                <LanguageTriggerContent preference={preference} />
             </Pressable>
             <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
                 <Pressable accessibilityLabel={t("common.close")} onPress={() => setOpen(false)} className="flex-1 items-center justify-center bg-black/20 px-8">

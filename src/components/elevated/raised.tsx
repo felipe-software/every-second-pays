@@ -18,7 +18,7 @@ const PRESS_DURATION = 80;
 
 export const RAISED_OUTLINE = 1;
 
-export type RaisedTone = "row" | "active" | "fill" | "canvas" | "raised" | "chip" | "danger" | "accent";
+export type RaisedTone = "row" | "active" | "fill" | "canvas" | "raised" | "card" | "chip" | "danger" | "accent";
 
 const FACE_TOKENS = {
     row: "row",
@@ -26,6 +26,7 @@ const FACE_TOKENS = {
     fill: "fill",
     canvas: "canvas",
     raised: "raised",
+    card: "cardFace",
     chip: "chipSelected",
     danger: "dangerFace",
     accent: "accent",
@@ -37,6 +38,7 @@ const EDGE_TOKENS = {
     fill: "edgeFill",
     canvas: "edgeCanvas",
     raised: "edgeRaised",
+    card: "edgeRow",
     chip: "edgeChip",
     danger: "edgeDanger",
     accent: "edgeAccent",
@@ -46,7 +48,7 @@ export type RaisedDepth = 2 | 3 | 4;
 
 type RaisedProps = {
     /** Faces must be opaque: the edge sits right behind them. */
-    surface: RaisedTone | { face: string; edge: string };
+    surface: RaisedTone | { face: string; edge: string; outline?: string };
     depth?: RaisedDepth;
     flat?: boolean;
     radius: number;
@@ -73,6 +75,9 @@ export function Raised({
     const { colors } = useEarningsTheme();
     const face = typeof surface === "string" ? colors[FACE_TOKENS[surface]] : surface.face;
     const edge = typeof surface === "string" ? colors[EDGE_TOKENS[surface]] : surface.edge;
+    const outline = typeof surface === "string"
+        ? surface === "card" ? colors.cardOutline : edge
+        : surface.outline ?? edge;
     const squashStyle = useSquash(selected, squashKey);
     const sinkStyle = useAnimatedStyle(() => ({
         transform: [{ translateY: flat ? 0 : (pressed?.get() ?? 0) * depth }],
@@ -101,7 +106,7 @@ export function Raised({
                         borderRadius: radius,
                         borderWidth: RAISED_OUTLINE,
                         // A flat face keeps an invisible outline so its content doesn't shift when it becomes raised.
-                        borderColor: flat ? face : edge,
+                        borderColor: flat ? face : outline,
                         backgroundColor: face,
                     },
                     style,

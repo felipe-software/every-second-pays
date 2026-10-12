@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Platform, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useMainCurrencySources } from "@/features/currency/use-main-currency-sources";
 import { EarningsBackground } from "@/features/earnings/earnings-background";
 import { EarningsHeader } from "@/features/earnings/earnings-header";
 import { MONEY_IMPACT_DELAY, type MoneyTransfer } from "@/features/earnings/money-counter-celebration";
@@ -64,13 +65,14 @@ export default function EarningsScreen() {
     }, [load]);
 
     const editingSource = sources.find((source) => source.id === editingId);
+    const { main: mainCurrency, converted, unconverted, custom } = useMainCurrencySources(sources);
     const earnedBySource = useMemo(
         () => new Map(sources.map((source) => [source.id, earnedInPeriod(source, period, now, firstDayOfWeek)])),
         [firstDayOfWeek, now, period, sources],
     );
     const calculatedTotal = useMemo(
-        () => [...earnedBySource.values()].reduce((sum, earned) => sum + earned, 0),
-        [earnedBySource],
+        () => converted.reduce((sum, source) => sum + earnedInPeriod(source, period, now, firstDayOfWeek), 0),
+        [converted, firstDayOfWeek, now, period],
     );
     const [displayedTotal, setDisplayedTotal] = useState(0);
     const [moneyTransfer, setMoneyTransfer] = useState<MoneyTransfer | null>(null);
@@ -151,7 +153,7 @@ export default function EarningsScreen() {
 
         if (updateTimers.current.length || Date.now() - lastTransferAt.current < MIN_TRANSFER_INTERVAL) return;
 
-        const activeSources = sources.filter((source) => currentShift(source, now));
+        const activeSources = converted.filter((source) => currentShift(source, now));
         if (!activeSources.length) {
             syncDisplayedTotal(calculatedCents);
             return;
@@ -205,7 +207,7 @@ export default function EarningsScreen() {
             }, MONEY_IMPACT_DELAY + origin.delay);
             return timer;
         });
-    }, [calculatedTotal, clearUpdateTimers, isFocused, now, period, ready, sheetOpen, sources, syncDisplayedTotal, updateDisplayedTotal]);
+    }, [calculatedTotal, clearUpdateTimers, converted, isFocused, now, period, ready, sheetOpen, syncDisplayedTotal, updateDisplayedTotal]);
 
     useEffect(() => () => {
         clearUpdateTimers();
@@ -260,6 +262,7 @@ export default function EarningsScreen() {
                 <View className="flex-1" style={{ paddingTop: insets.top }}>
                     <EarningsHeader
                         total={displayedTotal}
+                        currency={mainCurrency}
                         ready={ready}
                         loadError={loadError}
                         moneyTransfer={moneyTransfer}
@@ -283,6 +286,7 @@ export default function EarningsScreen() {
                             <SourceRow
                                 key={source.id}
                                 source={source}
+                                currency={source.currency ?? mainCurrency}
                                 index={index}
                                 now={now}
                                 earned={earnedBySource.get(source.id) ?? 0}
@@ -297,6 +301,11 @@ export default function EarningsScreen() {
                                 transferDelay={moneyTransfer?.origins.find((origin) => origin.sourceId === source.id)?.delay ?? 0}
                             />
                         ))}
+                        {ready && unconverted.length ? (
+                            <Text accessibilityLiveRegion="polite" className="px-2 pt-1 text-center font-sans text-[12.5px] leading-[17px] text-muted">
+                                {t(custom ? "home.notConvertible" : "home.ratesMissing")}
+                            </Text>
+                        ) : null}
                     </ScrollView>
 
                     {ready && sources.length === 0 && !loadError && !sheetOpen ? (

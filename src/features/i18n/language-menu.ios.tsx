@@ -1,5 +1,5 @@
 import { Host, HStack, Image, Label, Menu, Picker, Spacer, Text } from "@expo/ui/swift-ui";
-import { buttonStyle, disabled, font, foregroundStyle, frame, menuOrder, onTapGesture, padding, pickerStyle, resizable, tag } from "@expo/ui/swift-ui/modifiers";
+import { background, buttonStyle, clipShape, disabled, font, foregroundStyle, frame, menuOrder, onTapGesture, padding, pickerStyle, resizable, tag } from "@expo/ui/swift-ui/modifiers";
 import { useAssets } from "expo-asset";
 
 import { useEarningsTheme } from "@/features/earnings/theme";
@@ -19,12 +19,13 @@ export function LanguageMenu({ preference, disabled: isDisabled, onOpen, onPress
     const [assets] = useAssets(FLAG_ASSETS);
     const selectedIndex = LANGUAGE_OPTIONS.findIndex((option) => option.value === preference);
     const selected = LANGUAGE_OPTIONS[selectedIndex];
-    const flag = (index: number) => index > 0 && assets?.[index - 1]?.localUri
-        ? <Image uiImage={assets[index - 1].localUri!} modifiers={[resizable(), frame({ width: 24, height: 24 })]} />
-        : <Image systemName="globe" size={22} color={colors.muted} />;
+    const flagImage = (index: number, size: number) => index > 0 && assets?.[index - 1]?.localUri
+        ? <Image uiImage={assets[index - 1].localUri!} modifiers={[resizable(), frame({ width: size, height: size })]} />
+        : null;
+    const flag = (index: number) => flagImage(index, 24) ?? <Image systemName="globe" size={22} color={colors.muted} />;
 
     return (
-        <Host style={{ height: 58 }} colorScheme={isDark ? "dark" : "light"} ignoreSafeArea="all">
+        <Host style={{ height: 56 }} colorScheme={isDark ? "dark" : "light"} ignoreSafeArea="all">
             <Menu
                 testID="language-menu"
                 modifiers={[
@@ -39,10 +40,16 @@ export function LanguageMenu({ preference, disabled: isDisabled, onOpen, onPress
                     }),
                 ]}
                 label={
-                    <HStack spacing={10} modifiers={[padding({ horizontal: 16 }), frame({ minHeight: 58, maxWidth: Infinity })]}>
-                        <Text modifiers={[font({ size: 16, weight: "medium" }), foregroundStyle(colors.ink)]}>{t("settings.language")}</Text>
+                    <HStack spacing={12} modifiers={[padding({ horizontal: 16 }), frame({ minHeight: 56, maxWidth: Infinity })]}>
+                        <Image
+                            systemName="globe"
+                            size={17}
+                            color={colors.accentDeep}
+                            modifiers={[frame({ width: 32, height: 32 }), background(colors.active), clipShape("roundedRectangle", 10)]}
+                        />
+                        <Text modifiers={[font({ size: 15.5, weight: "medium" }), foregroundStyle(colors.ink)]}>{t("settings.language")}</Text>
                         <Spacer />
-                        {flag(selectedIndex)}
+                        {flagImage(selectedIndex, 22)}
                         <Text modifiers={[font({ size: 14 }), foregroundStyle(colors.muted)]}>{selected.label ?? t("settings.languageSystem")}</Text>
                         <Image systemName="chevron.up.chevron.down" size={11} color={colors.muted} />
                     </HStack>

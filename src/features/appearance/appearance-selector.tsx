@@ -3,6 +3,9 @@ import { Pressable, Text, View } from "react-native";
 import { CheckIcon } from "@/components/check-icon";
 import { PopIn } from "@/components/elevated/pop-in";
 import { Raised, usePressSink } from "@/components/elevated/raised";
+import { currencyPrefix } from "@/features/currency/currencies";
+import { withTallDollar } from "@/features/currency/currency-text";
+import { useCurrencyStore } from "@/features/currency/store";
 import { useI18n } from "@/features/i18n/i18n";
 import type { TranslationKey } from "@/features/i18n/translations";
 
@@ -31,6 +34,7 @@ function AppearancePreview({
     onPress: (origin: ThemeTransitionOrigin) => void;
 }) {
     const { t, formatMoney } = useI18n();
+    const mainCurrency = useCurrencyStore((state) => state.main);
     const label = t(MODE_KEYS[mode]);
     const light = getThemeColors(palette, false);
     const dark = getThemeColors(palette, true);
@@ -58,9 +62,9 @@ function AppearancePreview({
                 radius={16}
                 selected={active}
                 pressed={sink.pressed}
-                className="h-[116px]"
+                className="h-[108px]"
             >
-                <View className="flex-1 overflow-hidden rounded-[15px] border-[3px] p-2" style={{ borderColor: border }}>
+                <View className="flex-1 overflow-hidden rounded-[15px] border-[3px] p-[7px]" style={{ borderColor: border }}>
                     {followsDevice ? (
                         <View
                             pointerEvents="none"
@@ -69,7 +73,7 @@ function AppearancePreview({
                         />
                     ) : null}
                     <View
-                        className="mb-2.5 h-1 w-6 self-center rounded-full"
+                        className="mb-2 h-1 w-6 self-center rounded-full"
                         style={{ backgroundColor: followsDevice ? preview.accent : preview.track }}
                     />
                     <View className="items-center">
@@ -83,21 +87,21 @@ function AppearancePreview({
                             className="mt-0.5 font-sans text-[15px] font-bold tracking-[-0.8px]"
                             style={{ color: followsDevice ? preview.accent : preview.ink }}
                         >
-                            ${formatMoney(124.8)}
+                            {withTallDollar(`${currencyPrefix(mainCurrency)}${formatMoney(124.8)}`, 15)}
                         </Text>
                     </View>
-                    <View className="mt-2.5 gap-1">
+                    <View className="mt-2 gap-1">
                         <View
-                            className="h-[17px] rounded-[6px]"
+                            className="h-[15px] rounded-[6px]"
                             style={{ backgroundColor: followsDevice ? preview.accent : preview.row, opacity: followsDevice ? 0.28 : 1 }}
                         />
                         <View
-                            className="h-[17px] rounded-[6px]"
+                            className="h-[15px] rounded-[6px]"
                             style={{ backgroundColor: followsDevice ? preview.accent : preview.active, opacity: followsDevice ? 0.5 : 1 }}
                         />
                     </View>
                     <View
-                        className="absolute bottom-2 self-center h-1.5 w-7 rounded-full"
+                        className="absolute bottom-[7px] self-center h-1.5 w-7 rounded-full"
                         style={{ backgroundColor: preview.accent }}
                     />
                 </View>
@@ -131,7 +135,7 @@ export function AppearanceSelector({
     onChange: (mode: ThemeMode, origin: ThemeTransitionOrigin) => void;
 }) {
     return (
-        <View className="flex-row gap-2" accessibilityRole="radiogroup">
+        <View className="flex-row gap-2 px-3.5 pt-3.5 pb-3" accessibilityRole="radiogroup">
             {MODES.map((mode) => (
                 <AppearancePreview
                     key={mode}

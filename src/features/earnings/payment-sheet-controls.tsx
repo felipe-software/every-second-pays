@@ -1,7 +1,9 @@
-import { Text, TextInput } from "react-native";
+import type { ReactNode } from "react";
+import { Text, TextInput, View } from "react-native";
 
 import { RaisedPressable } from "@/components/elevated/raised";
 import { appHaptics } from "@/features/haptics/haptics";
+import { useI18n } from "@/features/i18n/i18n";
 
 import { useEarningsTheme } from "./theme";
 
@@ -85,19 +87,42 @@ export function PrimaryButton({
     );
 }
 
+export function FieldLabel({ label, required = false }: { label: string; required?: boolean }) {
+    const { colors } = useEarningsTheme();
+    const { t } = useI18n();
+
+    return (
+        <View accessible accessibilityLabel={required ? `${label}, ${t("payment.required")}` : label}>
+            <Text className="font-sans text-[10.5px] font-semibold tracking-[1.25px] text-muted uppercase">
+                {label}
+                {required ? <Text style={{ color: colors.danger }}> *</Text> : null}
+            </Text>
+        </View>
+    );
+}
+
 export function TokenButton({
     active,
     children,
+    reserve,
+    missing = false,
+    format,
     onPress,
 }: {
     active: boolean;
     children: string;
+    reserve?: readonly string[];
+    missing?: boolean;
+    format?: (text: string) => ReactNode;
     onPress: () => void;
 }) {
+    const { colors } = useEarningsTheme();
+    const { t } = useI18n();
+
     return (
         <RaisedPressable
             accessibilityRole="button"
-            accessibilityLabel={children}
+            accessibilityLabel={missing ? `${children}, ${t("payment.required")}` : children}
             accessibilityState={{ selected: active }}
             onPress={() => {
                 appHaptics.selection();
@@ -110,7 +135,20 @@ export function TokenButton({
             selected={active}
             className="items-center px-2 pb-px"
         >
-            <Text numberOfLines={1} className="font-sans text-[24px] leading-[27px] font-semibold text-ink tabular-nums">{children}</Text>
+            {reserve?.map((value) => (
+                <Text
+                    key={value}
+                    aria-hidden
+                    numberOfLines={1}
+                    className="h-0 font-sans text-[24px] font-semibold opacity-0"
+                >
+                    {value}
+                </Text>
+            ))}
+            <Text numberOfLines={1} className="font-sans text-[24px] leading-[27px] font-semibold text-ink tabular-nums">
+                {format ? format(children) : children}
+                {missing ? <Text style={{ color: colors.danger }}>*</Text> : null}
+            </Text>
         </RaisedPressable>
     );
 }

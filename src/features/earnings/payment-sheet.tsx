@@ -5,6 +5,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { RiseIn } from "@/components/elevated/rise-in";
 import { RecedingSheet, SHEET_RECEDE_ENABLED } from "@/components/sheet-recede";
+import { DEFAULT_CURRENCY } from "@/features/currency/currencies";
+import { CurrencySheet } from "@/features/currency/currency-sheet";
+import { useCurrencyStore } from "@/features/currency/store";
 import { useI18n } from "@/features/i18n/i18n";
 import { appHaptics } from "@/features/haptics/haptics";
 
@@ -45,14 +48,18 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
     const { colors, isDark } = useEarningsTheme();
     const { t } = useI18n();
     const sheetRef = useRef<TrueSheet>(null);
-    const [draft, setDraft] = useState<PaymentDraft>(() => source ? sourceToDraft(source) : cloneEmptyDraft());
+    const [draft, setDraft] = useState<PaymentDraft>(() => ({
+        ...(source ? sourceToDraft(source) : cloneEmptyDraft()),
+        currency: source?.currency ?? useCurrencyStore.getState().main,
+    }));
     const [token, setToken] = useState<PaymentToken>("name");
+    const [currencyOpen, setCurrencyOpen] = useState(false);
     const [footerHeight, setFooterHeight] = useState(0);
 
     const amount = parseAmount(draft.amount);
     const recurring = draft.frequency !== "once";
-    const valid = draft.name.trim().length > 0
-        && amount > 0
+    const missingRequired = !draft.name.trim() || !(amount > 0);
+    const valid = !missingRequired
         && (!recurring || (draft.days.length > 0 && hoursPerDay(draft) > 0));
 
     const dismiss = () => {
@@ -140,6 +147,11 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
                     className="px-6 pt-3.5"
                     style={{ paddingBottom: 12 + (Platform.OS === "android" ? insets.bottom : 0) }}
                 >
+                    {missingRequired ? (
+                        <Text accessibilityLiveRegion="polite" className="mb-3 text-center font-sans text-[12.5px] leading-[17px] text-muted">
+                            {t("payment.requiredHint")}
+                        </Text>
+                    ) : null}
                     <PrimaryButton
                         label={submitLabel}
                         disabled={!valid || saving}
@@ -163,9 +175,17 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
                         token={token}
                         onTokenChange={setToken}
                         onPatch={(patch) => setDraft((current) => ({ ...current, ...patch }))}
+                        onOpenCurrency={() => setCurrencyOpen(true)}
                     />
                 </RiseIn>
             </ScrollView>
+            {currencyOpen ? (
+                <CurrencySheet
+                    value={draft.currency ?? DEFAULT_CURRENCY}
+                    onChange={(currency) => setDraft((current) => ({ ...current, currency }))}
+                    onDismiss={() => setCurrencyOpen(false)}
+                />
+            ) : null}
         </RecedingSheet>
     );
 }

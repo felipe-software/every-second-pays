@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { Platform, Text, View } from "react-native";
 
 import { RaisedPressable } from "@/components/elevated/raised";
+import { SectionLabel } from "@/components/settings-card";
 import { useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
@@ -19,7 +20,7 @@ export function WidgetsSettingsRow() {
 
     return (
         <View>
-            <Text className="mt-8 mb-3 ml-1 font-sans text-[13px] font-semibold text-muted">{t("settings.widgets")}</Text>
+            <SectionLabel>{t("settings.widgets")}</SectionLabel>
             <RaisedPressable
                 testID="settings-widgets"
                 accessibilityRole="button"
@@ -28,9 +29,9 @@ export function WidgetsSettingsRow() {
                     appHaptics.secondaryAction();
                     router.push("/settings/widgets");
                 }}
-                surface="row"
+                surface="card"
                 depth={3}
-                radius={18}
+                radius={20}
                 className="min-h-[68px] flex-row items-center gap-3.5 px-4 py-3"
             >
                 <View className="h-11 w-11 items-center justify-center rounded-[14px] bg-active">

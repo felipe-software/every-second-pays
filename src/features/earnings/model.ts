@@ -1,3 +1,5 @@
+import type { Currency } from "@/features/currency/currencies";
+
 export type Frequency = "hour" | "week" | "month" | "year" | "second" | "once";
 
 export type Shift = { start: number; end: number };
@@ -7,6 +9,7 @@ export type PaymentSource = {
     name: string;
     frequency: Frequency;
     amount: number;
+    currency?: Currency;
     days: number[];
     shifts: Shift[];
     when?: "today" | "later";

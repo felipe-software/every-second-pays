@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Text, View } from "react-native";
 
 import { RaisedPressable } from "@/components/elevated/raised";
+import { useDeveloperMenuVisible } from "@/features/developer/store";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 import { useOnboardingStore } from "@/features/onboarding/store";
@@ -36,10 +37,11 @@ export function DevJobControls() {
     const earningsSaving = useEarningsStore((state) => state.saving);
     const [adding, setAdding] = useState(false);
     const [addError, setAddError] = useState(false);
+    const visible = useDeveloperMenuVisible();
     const disabled = adding || earningsSaving;
     const replayOnboarding = useOnboardingStore((state) => state.replay);
 
-    if (!__DEV__) return null;
+    if (!visible) return null;
 
     const addJob = async (active: boolean) => {
         if (disabled) return;
