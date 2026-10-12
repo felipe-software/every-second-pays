@@ -24,7 +24,7 @@ import { useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 import { LanguageRow, useLanguageSetting } from "@/features/i18n/language-selector";
-import { WidgetsSettingsRow } from "@/features/widgets/widgets-settings-row";
+import { useWidgetsRowVisible, WidgetsSettingsRow } from "@/features/widgets/widgets-settings-row";
 
 const LIST_ICON_INSET = 60;
 
@@ -46,6 +46,7 @@ export default function SettingsScreen() {
     const reduceMotion = useReduceMotion();
     const [saveError, setSaveError] = useState(false);
     const [currencyOpen, setCurrencyOpen] = useState(false);
+    const widgetsVisible = useWidgetsRowVisible();
     const disabled = saving || loading || loadError;
 
     useEffect(() => {
@@ -87,10 +88,11 @@ export default function SettingsScreen() {
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ paddingBottom: insets.bottom + 112 }}
                 >
-                    <SectionLabel>{t("settings.appearance")}</SectionLabel>
+                    <SectionLabel>{t("settings.customization")}</SectionLabel>
                     <SettingsCard>
                         <AppearanceSelector appearance={appearance} disabled={disabled} onChange={changeMode} />
                         <AccentColorPicker appearance={appearance} disabled={disabled} onChange={changePalette} />
+                        {widgetsVisible ? <WidgetsSettingsRow /> : null}
                     </SettingsCard>
                     {loadError || saveError ? <ErrorNote message={t(loadError ? "settings.loadError" : "settings.saveError")} /> : null}
                     {loadError ? <TryAgainButton onPress={() => void load()} className="mt-3" /> : null}
@@ -104,8 +106,6 @@ export default function SettingsScreen() {
                         <ErrorNote message={t(language.loadError ? "settings.loadError" : "settings.saveError")} />
                     ) : null}
                     {language.loadError ? <TryAgainButton onPress={() => void language.load()} className="mt-3" /> : null}
-
-                    <WidgetsSettingsRow />
 
                     <DevJobControls />
                 </LargeTitleScrollView>

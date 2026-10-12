@@ -1,50 +1,50 @@
 import { router } from "expo-router";
-import { Platform, Text, View } from "react-native";
+import { Platform, Text } from "react-native";
+import { Rect } from "react-native-svg";
 
-import { RaisedPressable } from "@/components/elevated/raised";
-import { SectionLabel } from "@/components/settings-card";
+import { LineIcon } from "@/components/line-icon";
+import { IconTile, SettingsRow } from "@/components/settings-card";
 import { useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 
-import { ForwardChevron, WidgetsIcon } from "./widget-glyphs";
+import { ForwardChevron } from "./widget-glyphs";
 import { useWidgetStore } from "./widget-store";
+
+export function useWidgetsRowVisible() {
+    const supported = useWidgetStore((state) => state.supported);
+    return Platform.OS === "android" && supported !== false;
+}
+
+function WidgetsIcon({ color }: { color: string }) {
+    return (
+        <LineIcon color={color}>
+            <Rect x={3.5} y={3.5} width={17} height={7} rx={2.5} />
+            <Rect x={3.5} y={13.5} width={7} height={7} rx={2.5} />
+            <Rect x={13.5} y={13.5} width={7} height={7} rx={2.5} />
+        </LineIcon>
+    );
+}
 
 export function WidgetsSettingsRow() {
     const { colors } = useEarningsTheme();
     const { t } = useI18n();
-    const supported = useWidgetStore((state) => state.supported);
-    const count = useWidgetStore((state) => state.widgets.length);
-
-    if (Platform.OS !== "android" || supported === false) return null;
 
     return (
-        <View>
-            <SectionLabel>{t("settings.widgets")}</SectionLabel>
-            <RaisedPressable
-                testID="settings-widgets"
-                accessibilityRole="button"
-                accessibilityHint={t("settings.widgetsRowHint")}
-                onPress={() => {
-                    appHaptics.secondaryAction();
-                    router.push("/settings/widgets");
-                }}
-                surface="card"
-                depth={3}
-                radius={20}
-                className="min-h-[68px] flex-row items-center gap-3.5 px-4 py-3"
-            >
-                <View className="h-11 w-11 items-center justify-center rounded-[14px] bg-active">
-                    <WidgetsIcon accent={colors.accent} ink={colors.ink} />
-                </View>
-                <View className="min-w-0 flex-1">
-                    <Text className="font-sans text-[16px] font-semibold tracking-[-0.2px] text-ink">{t("settings.widgetsRow")}</Text>
-                    <Text numberOfLines={2} className="mt-0.5 font-sans text-[12.5px] leading-[17px] text-muted">
-                        {count ? t("settings.widgetsCount", { count }) : t("settings.widgetsRowHint")}
-                    </Text>
-                </View>
-                <ForwardChevron color={colors.ink} />
-            </RaisedPressable>
-        </View>
+        <SettingsRow
+            testID="settings-widgets"
+            accessibilityRole="button"
+            accessibilityHint={t("settings.widgetsRowHint")}
+            onPress={() => {
+                appHaptics.secondaryAction();
+                router.push("/settings/widgets");
+            }}
+        >
+            <IconTile>
+                <WidgetsIcon color={colors.accentDeep} />
+            </IconTile>
+            <Text className="flex-1 font-sans text-[15.5px] font-medium text-ink">{t("settings.widgetsRow")}</Text>
+            <ForwardChevron color={colors.ink} />
+        </SettingsRow>
     );
 }

@@ -134,18 +134,22 @@ export function AppearanceSelector({
     disabled: boolean;
     onChange: (mode: ThemeMode, origin: ThemeTransitionOrigin) => void;
 }) {
+    const { t } = useI18n();
     return (
-        <View className="flex-row gap-2 px-3.5 pt-3.5 pb-3" accessibilityRole="radiogroup">
-            {MODES.map((mode) => (
-                <AppearancePreview
-                    key={mode}
-                    mode={mode}
-                    active={appearance.mode === mode}
-                    palette={appearance.palette}
-                    disabled={disabled}
-                    onPress={(origin) => onChange(mode, origin)}
-                />
-            ))}
+        <View className="pt-3.5 pb-3">
+            <Text className="mb-2.5 px-4 font-sans text-[15.5px] font-medium text-ink">{t("settings.theme")}</Text>
+            <View className="flex-row gap-2 px-3.5" accessibilityRole="radiogroup">
+                {MODES.map((mode) => (
+                    <AppearancePreview
+                        key={mode}
+                        mode={mode}
+                        active={appearance.mode === mode}
+                        palette={appearance.palette}
+                        disabled={disabled}
+                        onPress={(origin) => onChange(mode, origin)}
+                    />
+                ))}
+            </View>
         </View>
     );
 }
