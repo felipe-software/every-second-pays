@@ -14,6 +14,8 @@ function deriveColors(base: ThemeColors, isDark: boolean) {
     const card = isDark ? mixColors(base.canvas, base.ink, 0.07) : mixColors(base.canvas, "#FFFFFF", 0.78);
     const raised = isDark ? mixColors(fill, base.ink, 0.12) : card;
     const chipSelected = mixColors(card, base.accent, 0.28);
+    const chipSelectedBorder = mixColors(card, base.accent, isDark ? 0.62 : 0.6);
+    const cardFace = isDark ? base.row : raised;
     const dangerFace = mixColors(base.canvas, base.danger, 0.1);
 
     return {
@@ -22,7 +24,10 @@ function deriveColors(base: ThemeColors, isDark: boolean) {
         card,
         raised,
         chipSelected,
+        chipSelectedBorder,
         dangerFace,
+        cardFace,
+        cardOutline: isDark ? edgeColor(base.row) : base.track,
         edgeRow: edgeColor(base.row),
         edgeActive: edgeColor(base.active),
         edgeFill: edgeColor(fill),

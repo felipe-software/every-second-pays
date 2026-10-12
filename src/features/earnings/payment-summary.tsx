@@ -4,6 +4,9 @@ import { type LayoutChangeEvent, Text, View } from "react-native";
 import { useI18n } from "@/features/i18n/i18n";
 import type { TranslationKey } from "@/features/i18n/translations";
 
+import { currencyPrefix, DEFAULT_CURRENCY } from "@/features/currency/currencies";
+import { withTallDollar } from "@/features/currency/currency-text";
+
 import type { Frequency, PaymentDraft } from "./model";
 import type { PaymentToken } from "./payment-editor";
 import { TokenButton } from "./payment-sheet-controls";
@@ -51,12 +54,12 @@ export function PaymentSummary({
             className="flex-row flex-wrap items-center gap-y-1 px-6 pt-1 pb-5"
             style={{ minHeight }}
         >
-            <TokenButton active={token === "name"} onPress={() => onTokenChange("name")}>
+            <TokenButton active={token === "name"} missing={!draft.name.trim()} onPress={() => onTokenChange("name")}>
                 {draft.name.trim() || t("payment.someone")}
             </TokenButton>
             <Connector>{t(recurring ? "payment.summary.paysMe" : "payment.summary.paidMe")}</Connector>
-            <TokenButton active={token === "amount"} onPress={() => onTokenChange("amount")}>
-                {amount ? `$${formatMoney(amount, 0)}` : "$0"}
+            <TokenButton active={token === "amount"} missing={!amount} format={(text) => withTallDollar(text, 24)} onPress={() => onTokenChange("amount")}>
+                {`${currencyPrefix(draft.currency ?? DEFAULT_CURRENCY)}${amount ? formatMoney(amount, 0) : "0"}`}
             </TokenButton>
             <Connector> </Connector>
             <TokenButton active={token === "frequency"} onPress={() => onTokenChange("frequency")}>

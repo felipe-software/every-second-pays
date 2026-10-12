@@ -2,7 +2,7 @@ import { type ScrollHeaderProps, ScrollViewWithHeaders } from "@codeherence/reac
 import MaskedView from "@react-native-masked-view/masked-view";
 import { BlurView } from "expo-blur";
 import { type ComponentProps, type ReactNode } from "react";
-import { Platform, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import Animated, { Extrapolation, interpolate, useAnimatedStyle } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -27,12 +27,14 @@ type LargeTitleScrollViewProps = Omit<
     title: string;
     headerLeft?: ReactNode;
     background?: ReactNode;
+    onTitlePress?: () => void;
 };
 
 export function LargeTitleScrollView({
     title,
     headerLeft,
     background,
+    onTitlePress,
     contentContainerStyle,
     children,
     ...rest
@@ -51,9 +53,11 @@ export function LargeTitleScrollView({
                     <TitleBar title={title} headerLeft={headerLeft} background={background} showNavBar={showNavBar} scrollY={scrollY} />
                 )}
                 LargeHeaderComponent={() => (
-                    <Text accessibilityRole="header" className="pb-1 font-sans text-[38px] font-bold tracking-[-1.4px] text-ink">
-                        {title}
-                    </Text>
+                    <Pressable accessible={false} disabled={!onTitlePress} onPress={onTitlePress} className="self-start">
+                        <Text accessibilityRole="header" className="pb-1 font-sans text-[38px] font-bold tracking-[-1.4px] text-ink">
+                            {title}
+                        </Text>
+                    </Pressable>
                 )}
             >
                 {children}

@@ -1,8 +1,24 @@
+diff --git a/node_modules/@lodev09/react-native-true-sheet/.bun-tag-5014c44e29ebc9b9 b/.bun-tag-5014c44e29ebc9b9
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/@lodev09/react-native-true-sheet/.bun-tag-a0f6456fcdf6d646 b/.bun-tag-a0f6456fcdf6d646
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/android/src/main/java/com/lodev09/truesheet/TrueSheetView.kt b/android/src/main/java/com/lodev09/truesheet/TrueSheetView.kt
-index 16412b06f2df620ec62aede70bf62daace88ad59..63dc8acc2bd5e9ae1789267569e104521aa4dc9a 100644
+index 16412b06f2df620ec62aede70bf62daace88ad59..4fec15794b8b3630d1ce5c45217e4b09bee3adaf 100644
 --- a/android/src/main/java/com/lodev09/truesheet/TrueSheetView.kt
 +++ b/android/src/main/java/com/lodev09/truesheet/TrueSheetView.kt
-@@ -243,6 +243,11 @@ class TrueSheetView(private val reactContext: ThemedReactContext) :
+@@ -23,6 +23,9 @@ import com.lodev09.truesheet.core.TrueSheetStackManager
+ import com.lodev09.truesheet.events.*
+ import com.lodev09.truesheet.utils.KeyboardUtils
+ 
++private const val STACKED_PARENT_PEEK_DP = 22f
++private const val STACKED_PARENT_DROP_DP = 12f
++
+ /**
+  * Main TrueSheet host view that manages the sheet and dispatches events to JavaScript.
+  * This view is hidden (GONE) and delegates all rendering to TrueSheetViewController
+@@ -243,6 +246,11 @@ class TrueSheetView(private val reactContext: ThemedReactContext) :
      viewController.sheetCornerRadius = radius
    }
  
@@ -14,8 +30,20 @@ index 16412b06f2df620ec62aede70bf62daace88ad59..63dc8acc2bd5e9ae1789267569e10452
    fun setSheetBackgroundColor(color: Int?) {
      if (viewController.sheetBackgroundColor == color) return
      viewController.sheetBackgroundColor = color
+@@ -467,7 +475,10 @@ class TrueSheetView(private val reactContext: ThemedReactContext) :
+     viewController.sheetView?.behavior?.isDraggable = false
+ 
+     val mySheetTop = viewController.detentCalculator.getSheetTopForDetentIndex(viewController.currentDetentIndex)
+-    val newTranslation = maxOf(0, childSheetTop - mySheetTop)
++    // Drop only a little so the parent's top edge stays visible above the child, like a card stack.
++    val peek = STACKED_PARENT_PEEK_DP.dpToPx().toInt()
++    val maxDrop = STACKED_PARENT_DROP_DP.dpToPx().toInt()
++    val newTranslation = (childSheetTop - mySheetTop - peek).coerceIn(0, maxDrop)
+     val additionalTranslation = newTranslation - viewController.currentTranslationY
+ 
+     viewController.translateSheet(newTranslation)
 diff --git a/android/src/main/java/com/lodev09/truesheet/TrueSheetViewController.kt b/android/src/main/java/com/lodev09/truesheet/TrueSheetViewController.kt
-index 044b82b525dcd906cbf31a486c797146ec5ace10..5d7fa9406170afa4ba8bbe4e72ed1c878f41fdf4 100644
+index 044b82b525dcd906cbf31a486c797146ec5ace10..868b62487ceae65bc24d744997b64b98d002da2e 100644
 --- a/android/src/main/java/com/lodev09/truesheet/TrueSheetViewController.kt
 +++ b/android/src/main/java/com/lodev09/truesheet/TrueSheetViewController.kt
 @@ -214,6 +214,12 @@ class TrueSheetViewController(private val reactContext: ThemedReactContext) :
@@ -31,22 +59,38 @@ index 044b82b525dcd906cbf31a486c797146ec5ace10..5d7fa9406170afa4ba8bbe4e72ed1c87
    var dimmedDetentIndex = 0
    override var grabber: Boolean = true
    override var grabberOptions: GrabberOptions? = null
-@@ -950,6 +956,7 @@ class TrueSheetViewController(private val reactContext: ThemedReactContext) :
+@@ -945,28 +951,14 @@ class TrueSheetViewController(private val reactContext: ThemedReactContext) :
+     }
+ 
+     if (dimmed) {
+-      val parentDimVisible = (parentSheetView?.viewController?.dimView?.alpha ?: 0f) > 0f
+-
        if (dimView == null) {
          dimView = TrueSheetDimView(reactContext).apply {
            delegate = this@TrueSheetViewController
 +          setDimColor(dimmedColor)
          }
        }
-       if (!parentDimVisible) {
-@@ -963,6 +970,7 @@ class TrueSheetViewController(private val reactContext: ThemedReactContext) :
-         if (parentDimView == null) {
-           parentDimView = TrueSheetDimView(reactContext).apply {
-             delegate = this@TrueSheetViewController
-+            setDimColor(dimmedColor)
-           }
-         }
-         parentDimView?.attach(parentBottomSheet, parentController.sheetCornerRadius)
+-      if (!parentDimVisible) {
+-        dimView?.attachToCoordinator(coordinator)
+-      }
+-
+-      // Attach dim view to parent sheet if stacked
+-      val parentController = parentSheetView?.viewController
+-      val parentBottomSheet = parentController?.sheetView
+-      if (parentBottomSheet != null) {
+-        if (parentDimView == null) {
+-          parentDimView = TrueSheetDimView(reactContext).apply {
+-            delegate = this@TrueSheetViewController
+-          }
+-        }
+-        parentDimView?.attach(parentBottomSheet, parentController.sheetCornerRadius)
+-      }
++      // Stacked sheets dim the whole screen, parent sheets included, instead of only the parent sheet.
++      dimView?.attachToCoordinator(coordinator)
+     } else {
+       dimView?.detach()
+       dimView = null
 diff --git a/android/src/main/java/com/lodev09/truesheet/TrueSheetViewManager.kt b/android/src/main/java/com/lodev09/truesheet/TrueSheetViewManager.kt
 index e224fbf774c1d164a862e48932051a05bf2e7796..2065a8ebe558aee0af0c303811eec640d9fb87e3 100644
 --- a/android/src/main/java/com/lodev09/truesheet/TrueSheetViewManager.kt

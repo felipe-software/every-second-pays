@@ -1,5 +1,6 @@
 import type { MoneyWidgetData, MoneyPaletteColors } from "react-native-noti";
 
+import { type Currency, currencyPrefix } from "@/features/currency/currencies";
 import { getThemeColors, PALETTES, type Appearance } from "@/features/appearance/palettes";
 import { type EarningsPeriod, type PaymentSource, PERIODS } from "@/features/earnings/model";
 import type { TranslationKey } from "@/features/i18n/translations";
@@ -24,6 +25,7 @@ function groupSeparator(locale: string) {
 
 export function buildWidgetData({
     sources,
+    currency,
     appPeriod,
     appearance,
     firstDayOfWeek,
@@ -33,6 +35,7 @@ export function buildWidgetData({
     now = new Date(),
 }: {
     sources: readonly PaymentSource[];
+    currency: Currency;
     appPeriod: EarningsPeriod;
     appearance: Appearance;
     firstDayOfWeek: number;
@@ -54,7 +57,7 @@ export function buildWidgetData({
         schedules,
         appearance,
         palettes,
-        format: { currency: "$", decimal: decimalSeparator, group: groupSeparator(locale), groupSize: 3 },
+        format: { currency: currencyPrefix(currency).trim(), decimal: decimalSeparator, group: groupSeparator(locale), groupSize: 3 },
         labels: {
             ...Object.fromEntries(PERIODS.map((period) => [period, t(PERIOD_KEYS[period])])),
             rate: t("widgets.rateCaption"),

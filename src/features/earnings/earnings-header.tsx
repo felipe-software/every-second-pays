@@ -3,6 +3,8 @@ import { useRef } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
+import { type Currency, currencyPrefix } from "@/features/currency/currencies";
+import { withTallDollar } from "@/features/currency/currency-text";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 
@@ -34,11 +36,13 @@ function splitChangedWhole(formattedValue: string, changedDigitIndex: number) {
 
 export function EarningsHeader({
     total,
+    currency,
     ready,
     loadError,
     moneyTransfer,
 }: {
     total: number;
+    currency: Currency;
     ready: boolean;
     loadError: boolean;
     moneyTransfer: MoneyTransfer | null;
@@ -91,7 +95,7 @@ export function EarningsHeader({
                         centsTargetRef={centsTargetRef}
                         size={wholeSize}
                     >
-                        <Text className="mr-1 font-sans text-[32px] font-medium text-muted">$</Text>
+                        <Text className="mr-1 font-sans text-[32px] font-medium text-muted">{withTallDollar(currencyPrefix(currency).trim(), 32)}</Text>
                         <View collapsable={false}>
                             <NumberFlow
                                 value={whole}

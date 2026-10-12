@@ -12,17 +12,15 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-import { useEarningsTheme } from "@/features/earnings/theme";
+import { PAGE_GUTTER } from "@/components/large-title-scroll-view";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
-import type { TranslationKey } from "@/features/i18n/translations";
 
 import type { MoneyWidgetConfig } from "./widget-config";
-import { CompactSegments } from "./widget-options";
 
 export type PreviewSize = "small" | "wide" | "large";
-const PREVIEW_SIZES: readonly PreviewSize[] = ["small", "wide", "large"];
-const PREVIEW_HEIGHT: Record<PreviewSize, number> = { small: 150, wide: 150, large: 236 };
+export const PREVIEW_SIZES: readonly PreviewSize[] = ["small", "wide", "large"];
+const PREVIEW_HEIGHT: Record<PreviewSize, number> = { small: 168, wide: 150, large: 236 };
 const STAGE_PADDING = 16;
 const STAGE_HEIGHTS = PREVIEW_SIZES.map((size) => PREVIEW_HEIGHT[size] + STAGE_PADDING * 2);
 
@@ -39,7 +37,6 @@ export function WidgetPreviewPager({
     size: PreviewSize;
     onSizeChange: (size: PreviewSize) => void;
 }) {
-    const { colors } = useEarningsTheme();
     const { t } = useI18n();
     const page = PREVIEW_SIZES.indexOf(size);
     const pager = useAnimatedRef<Animated.ScrollView>();
@@ -85,9 +82,7 @@ export function WidgetPreviewPager({
     }, [pager, shown, width]);
 
     return (
-        <Animated.View className="overflow-hidden rounded-[26px]" style={[{ backgroundColor: colors.row }, stageStyle]}>
-            <View className="absolute -left-16 -top-20 h-56 w-56 rounded-full bg-accent" style={{ opacity: 0.16 }} />
-            <View className="absolute -right-10 -bottom-24 h-60 w-60 rounded-full" style={{ backgroundColor: colors.accentDeep, opacity: 0.12 }} />
+        <Animated.View className="overflow-hidden" style={[{ marginHorizontal: -PAGE_GUTTER }, stageStyle]}>
             <GestureDetector gesture={native}>
                 <Animated.ScrollView
                     ref={pager}
@@ -112,24 +107,12 @@ export function WidgetPreviewPager({
                                 accessibilityLabel={t("widgets.previewAccessibility")}
                                 config={config}
                                 revision={revision}
-                                style={{ width: item === "small" ? 160 : width - 32, height: PREVIEW_HEIGHT[item] }}
+                                style={{ width: item === "small" ? 168 : width - PAGE_GUTTER * 2, height: PREVIEW_HEIGHT[item] }}
                             />
                         </View>
                     ))}
                 </Animated.ScrollView>
             </GestureDetector>
         </Animated.View>
-    );
-}
-
-export function WidgetSizeSelector({ value, onChange }: { value: PreviewSize; onChange: (size: PreviewSize) => void }) {
-    const { t } = useI18n();
-    return (
-        <CompactSegments
-            testID="widget-preview-size"
-            options={PREVIEW_SIZES.map((size) => ({ value: size, label: t(`widgets.size.${size}` as TranslationKey) }))}
-            value={value}
-            onChange={onChange}
-        />
     );
 }

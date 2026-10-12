@@ -21,6 +21,7 @@ import {
     SheetRecede,
     useSheetReceded,
 } from "@/components/sheet-recede";
+import { useCurrencyStore } from "@/features/currency/store";
 import { useAppearanceSync } from "@/features/appearance/use-appearance-sync";
 import { usePeriodStore } from "@/features/earnings/period-store";
 import { useEarningsTheme } from "@/features/earnings/theme";
@@ -54,6 +55,8 @@ export default function RootLayout() {
     // Wait for the saved period so the Earnings screen never flashes "Today" first.
     const periodReady = usePeriodStore((state) => state.hydrated);
     const loadPeriod = usePeriodStore((state) => state.load);
+    const currencyReady = useCurrencyStore((state) => state.hydrated);
+    const loadCurrency = useCurrencyStore((state) => state.load);
     const onboarding = useOnboardingStore((state) => state.status);
     const appRevealed = useOnboardingStore((state) => state.revealed);
     const loadOnboarding = useOnboardingStore((state) => state.load);
@@ -66,9 +69,11 @@ export default function RootLayout() {
 
     useEffect(() => { void loadLanguage(); }, [loadLanguage]);
     useEffect(() => { void loadPeriod(); }, [loadPeriod]);
+    useEffect(() => { void loadCurrency(); }, [loadCurrency]);
     useEffect(() => { void loadOnboarding(); }, [loadOnboarding]);
 
-    const ready = fontsLoaded && appearanceReady && languageReady && periodReady && onboarding !== "unknown";
+    const ready =
+        fontsLoaded && appearanceReady && languageReady && periodReady && currencyReady && onboarding !== "unknown";
 
     useEffect(() => {
         if (ready) SplashScreen.hideAsync();
