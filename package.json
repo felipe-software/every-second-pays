@@ -12,6 +12,11 @@
       }
     }
   },
+  "reanimated": {
+    "staticFeatureFlags": {
+      "ANDROID_SYNCHRONOUSLY_UPDATE_UI_PROPS": true
+    }
+  },
   "dependencies": {
     "@codeherence/react-native-header": "^1.0.1",
     "@expo-google-fonts/archivo": "^0.4.2",
