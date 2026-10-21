@@ -1,5 +1,5 @@
 {
   "denyList": {
-    "android": ["react-native-keyboard-controller"]
+    "android": ["react-native-keyboard-controller", "react-native-reanimated", "react-native-worklets"]
   }
 }
