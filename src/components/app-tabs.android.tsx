@@ -3,15 +3,15 @@ import { TabList, Tabs, TabTrigger, useTabTrigger } from "expo-router/ui";
 import { useCallback, useEffect, useMemo } from "react";
 import { type ColorValue, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-    JellyTabBarHeadless,
-    type TabsIconProps,
-    type TabsItem,
-} from "react-native-jelly-tabs";
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
 
 import { RaisedPressable } from "@/components/elevated/raised";
+import {
+    JellyTabBarHeadless,
+    type TabsIconProps,
+    type TabsItem,
+} from "@/components/jelly-tabs";
 import { usePaymentComposerStore } from "@/features/earnings/payment-composer-store";
 import { useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
