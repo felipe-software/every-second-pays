@@ -43,6 +43,65 @@ function interpolate(value: string, replacements?: Replacements) {
     );
 }
 
+// Hermes builds a native ICU formatter for every Intl constructor and every `toLocaleString`
+// with a locale, which costs about a millisecond each on Android; reuse them.
+const numberFormats = new Map<string, Intl.NumberFormat>();
+
+function numberFormat(locale: string, options?: Intl.NumberFormatOptions) {
+    const key = options ? `${locale}|${JSON.stringify(options)}` : locale;
+    let format = numberFormats.get(key);
+    if (!format) {
+        format = new Intl.NumberFormat(locale, options);
+        numberFormats.set(key, format);
+    }
+    return format;
+}
+
+function memoize<Key, Value>(compute: (key: Key) => Value) {
+    const results = new Map<Key, Value>();
+    return (key: Key) => {
+        if (results.has(key)) return results.get(key)!;
+        const value = compute(key);
+        results.set(key, value);
+        return value;
+    };
+}
+
+const clockFormats = new Map<string, (minutes: number) => Intl.DateTimeFormatPart[]>();
+
+function clockParts(locale: string, twentyFourHour: boolean, withMinutes: boolean) {
+    const key = `${locale}|${twentyFourHour}|${withMinutes}`;
+    let parts = clockFormats.get(key);
+    if (!parts) {
+        const formatter = new Intl.DateTimeFormat(locale, {
+            hour: twentyFourHour && withMinutes ? "2-digit" : "numeric",
+            ...(withMinutes ? { minute: "2-digit" as const } : {}),
+            ...(twentyFourHour ? { hourCycle: "h23" as const } : { hour12: true }),
+        });
+        parts = memoize((minutes: number) => {
+            const date = new Date(2024, 0, 1, Math.floor(minutes / 60), minutes % 60);
+            return typeof formatter.formatToParts === "function"
+                ? formatter.formatToParts(date)
+                : [{ type: "literal" as const, value: formatter.format(date) }];
+        });
+        clockFormats.set(key, parts);
+    }
+    return parts;
+}
+
+const weekdayFormats = new Map<string, (day: number) => string>();
+
+function weekdayNames(locale: string, width: "long" | "short" | "narrow") {
+    const key = `${locale}|${width}`;
+    let names = weekdayFormats.get(key);
+    if (!names) {
+        const formatter = new Intl.DateTimeFormat(locale, { weekday: width });
+        names = memoize((day: number) => formatter.format(new Date(2024, 0, 7 + day)));
+        weekdayFormats.set(key, names);
+    }
+    return names;
+}
+
 export function I18nProvider({ children }: { children: ReactNode }) {
     const locales = useLocales();
     const calendars = useCalendars();
@@ -66,7 +125,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         [language],
     );
     const formatNumber = useCallback(
-        (value: number, options?: Intl.NumberFormatOptions) => value.toLocaleString(locale, options),
+        (value: number, options?: Intl.NumberFormatOptions) => numberFormat(locale, options).format(value),
         [locale],
     );
     const formatMoney = useCallback(
@@ -78,18 +137,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         [locale, uses24HourClock],
     );
     const timeParts = useCallback(
-        (totalMinutes: number, withMinutes = true) => {
-            const minutes = ((totalMinutes % 1440) + 1440) % 1440;
-            const date = new Date(2024, 0, 1, Math.floor(minutes / 60), minutes % 60);
-            const formatter = new Intl.DateTimeFormat(locale, {
-                hour: twentyFourHour && withMinutes ? "2-digit" : "numeric",
-                ...(withMinutes ? { minute: "2-digit" as const } : {}),
-                ...(twentyFourHour ? { hourCycle: "h23" as const } : { hour12: true }),
-            });
-            return typeof formatter.formatToParts === "function"
-                ? formatter.formatToParts(date)
-                : [{ type: "literal" as const, value: formatter.format(date) }];
-        },
+        (totalMinutes: number, withMinutes = true) =>
+            clockParts(locale, twentyFourHour, withMinutes)(((totalMinutes % 1440) + 1440) % 1440),
         [locale, twentyFourHour],
     );
     const formatTime = useCallback(
@@ -118,8 +167,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         [formatTimeRangeParts],
     );
     const weekdayName = useCallback(
-        (day: number, width: "long" | "short" | "narrow" = "short") =>
-            new Intl.DateTimeFormat(locale, { weekday: width }).format(new Date(2024, 0, 7 + day)),
+        (day: number, width: "long" | "short" | "narrow" = "short") => weekdayNames(locale, width)(day),
         [locale],
     );
     const formatDays = useCallback(

@@ -12,6 +12,7 @@ import { NavigationBar } from "expo-navigation-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import AppTabs from "@/components/app-tabs";
@@ -58,7 +59,7 @@ export default function RootLayout() {
     const currencyReady = useCurrencyStore((state) => state.hydrated);
     const loadCurrency = useCurrencyStore((state) => state.load);
     const onboarding = useOnboardingStore((state) => state.status);
-    const appRevealed = useOnboardingStore((state) => state.revealed);
+    const covered = useOnboardingStore((state) => state.covering);
     const loadOnboarding = useOnboardingStore((state) => state.load);
     const [fontsLoaded] = useFonts({
         Archivo: Archivo_400Regular,
@@ -75,9 +76,11 @@ export default function RootLayout() {
     const ready =
         fontsLoaded && appearanceReady && languageReady && periodReady && currencyReady && onboarding !== "unknown";
 
+    // The onboarding hides it itself, once its first illustration is ready to play.
+    const splashDone = ready && onboarding !== "pending";
     useEffect(() => {
-        if (ready) SplashScreen.hideAsync();
-    }, [ready]);
+        if (splashDone) SplashScreen.hideAsync();
+    }, [splashDone]);
 
     if (!ready) return null;
 
@@ -90,8 +93,15 @@ export default function RootLayout() {
                 <ReanimatedTrueSheetProvider>
                     <SystemBars />
                     <KeyboardProvider>
+                        {/* Mounted from the start, under the onboarding: mounting it while the onboarding plays stalls its animations. */}
                         <SheetRecede backgroundColor={colors.canvas}>
-                            {appRevealed ? <AppTabs /> : null}
+                            <View
+                                accessibilityElementsHidden={covered}
+                                importantForAccessibility={covered ? "no-hide-descendants" : "auto"}
+                                style={[styles.app, covered && styles.covered]}
+                            >
+                                <AppTabs />
+                            </View>
                         </SheetRecede>
                     </KeyboardProvider>
                     {onboarding === "pending" ? <Onboarding /> : null}
@@ -100,3 +110,12 @@ export default function RootLayout() {
         </I18nProvider>
     );
 }
+
+const styles = StyleSheet.create({
+    app: {
+        flex: 1,
+    },
+    covered: {
+        opacity: 0,
+    },
+});

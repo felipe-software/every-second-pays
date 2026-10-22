@@ -13,6 +13,7 @@ import Animated, {
     useSharedValue,
     withTiming,
 } from "react-native-reanimated";
+import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
@@ -105,6 +106,7 @@ export function Onboarding() {
     const reduced = useReducedMotion();
     const playHaptic = useOnboardingHaptics();
     const complete = useOnboardingStore((state) => state.complete);
+    const uncover = useOnboardingStore((state) => state.uncover);
     const reveal = useOnboardingStore((state) => state.reveal);
 
     const [step, setStep] = useState(0);
@@ -161,6 +163,7 @@ export function Onboarding() {
         if (exiting) return;
         setExiting(true);
         reveal();
+        uncover();
         setTimeout(complete, REVEAL_DELAY + REVEAL_DURATION);
     };
 
@@ -263,6 +266,7 @@ export function Onboarding() {
                         setIntroDone(true);
                         reveal();
                     }}
+                    onArtReady={() => SplashScreen.hideAsync()}
                 />
             );
         }
