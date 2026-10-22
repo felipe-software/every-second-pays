@@ -31,7 +31,10 @@ export function useMainCurrencySetting() {
             // Sources saved before currencies existed count in the old main currency; pin them so switching converts them.
             const earnings = useEarningsStore.getState();
             if (!earnings.ready) await earnings.load();
-            if (!useEarningsStore.getState().ready) throw new Error("Payment sources unavailable.");
+            if (!useEarningsStore.getState().ready) {
+                setSaveError(true);
+                return;
+            }
             await useEarningsStore.getState().adoptCurrency(main);
             await useCurrencyStore.getState().update(value);
         } catch {

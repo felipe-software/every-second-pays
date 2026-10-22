@@ -9,13 +9,13 @@ const COMPLETED = "done";
 type OnboardingState = {
     /** `unknown` until loaded; the app waits on it so the first frame is the right one. */
     status: "unknown" | "pending" | "done";
-    /**
-     * Whether the app is mounted under the onboarding. It waits for the intro animation to
-     * finish so it doesn't compete with it, and stays mounted once shown.
-     */
+    // The app underneath isn't drawn while the onboarding covers all of it.
+    covering: boolean;
+    // The app's own entrance (its first-source hint) waits for the intro to end, or for an early exit.
     revealed: boolean;
     load: () => Promise<void>;
     reveal: () => void;
+    uncover: () => void;
     complete: () => void;
     /** Shows the onboarding again; for the developer controls. */
     replay: () => void;
@@ -31,6 +31,7 @@ async function hasSavedSources() {
 
 export const useOnboardingStore = create<OnboardingState>((set, get) => ({
     status: "unknown",
+    covering: false,
     revealed: false,
     load: async () => {
         if (get().status !== "unknown") return;
@@ -45,16 +46,17 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
                 void Storage.setItem(STORAGE_KEY, COMPLETED).catch(() => undefined);
                 return;
             }
-            set({ status: "pending" });
+            set({ status: "pending", covering: true });
         } catch {
             // A storage failure shouldn't keep anyone out of the app.
             set({ status: "done", revealed: true });
         }
     },
     reveal: () => set({ revealed: true }),
+    uncover: () => set({ covering: false }),
     complete: () => {
-        set({ status: "done", revealed: true });
+        set({ status: "done", covering: false, revealed: true });
         void Storage.setItem(STORAGE_KEY, COMPLETED).catch(() => undefined);
     },
-    replay: () => set({ status: "pending" }),
+    replay: () => set({ status: "pending", covering: true }),
 }));
