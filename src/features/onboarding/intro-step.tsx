@@ -62,6 +62,14 @@ type IntroState = {
 
 const START: IntroState = { stage: 0, landed: null, lifted: false, copyIn: false, done: false };
 
+// Every 0.4 s of the story, so each of its effects has been drawn once before it plays.
+const PRIME_STEP = 24;
+
+function storyFrames([start, end]: [number, number]) {
+    const frames = Array.from({ length: Math.floor((end - start) / PRIME_STEP) + 1 }, (_, index) => start + index * PRIME_STEP);
+    return [...frames, end];
+}
+
 /** The end of the intro without the build-up: a year's pile of cash, for reduced motion. */
 const SETTLED: IntroState = { stage: 4, landed: "year", lifted: true, copyIn: true, done: true };
 
@@ -84,6 +92,7 @@ export function IntroStep({
     onLift,
     onReplay,
     onDone,
+    onArtReady,
 }: {
     index: number;
     /** On screen, so the illustration runs. */
@@ -97,6 +106,7 @@ export function IntroStep({
     onReplay: () => void;
     /** The story has played and the promise is in; again after each replay. */
     onDone: () => void;
+    onArtReady: () => Promise<unknown> | void;
 }) {
     const { t, language, formatNumber } = useI18n();
     const art = ONBOARDING_ART.intro();
@@ -161,17 +171,19 @@ export function IntroStep({
         <>
             <PageLayer index={index} depth={DEPTH.art} zIndex={1} passThrough>
                 <Animated.View style={[StyleSheet.absoluteFill, introDrop(state.lifted)]}>
+                    {/* No `ambient` loop: that segment is the story's last frame held still, and looping it would redraw it every vsync. */}
                     <StepArt
                         source={art}
                         overlays={[counter, words]}
                         intro="story"
-                        loop="ambient"
                         playing={playing}
                         reduced={reduced}
                         replay={replays}
                         frame={frame}
                         cues={cues}
                         onCue={(name, late) => play(INTRO_BEATS[Number(name)][1], late)}
+                        prime={storyFrames(art.segments.story)}
+                        onReady={onArtReady}
                     />
                     <IntroLabels stage={state.stage} shift={artShifted} />
                     <View

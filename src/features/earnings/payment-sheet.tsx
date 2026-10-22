@@ -67,8 +67,9 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
 
     const saveAndDismiss = async () => {
         if (!valid || saving) return;
+        const id = source?.id;
         try {
-            await onSave(draft, source?.id);
+            await onSave(draft, id);
             dismiss();
         } catch {
             // The parent shows the error.

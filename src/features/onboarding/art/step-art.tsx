@@ -1,5 +1,5 @@
 import { Canvas, Skottie } from "@shopify/react-native-skia";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { StyleSheet } from "react-native";
 import {
     cancelAnimation,
@@ -16,6 +16,7 @@ import { scheduleOnRN } from "react-native-worklets";
 import { useI18n } from "@/features/i18n/i18n";
 
 import { useOnboardingTheme } from "../look";
+import { afterFramesSettle, primeArt } from "./prime";
 import { type Cue, type OnboardingAnimation, onboardingSkottie } from "./skottie";
 
 /** The frame rate every onboarding animation is exported at. */
@@ -49,6 +50,8 @@ export function StepArt({
     frame: sharedFrame,
     cues,
     onCue,
+    prime,
+    onReady,
 }: {
     source: OnboardingAnimation;
     /** Animations of the same timeline drawn over `source` (the intro's total and its period). */
@@ -62,6 +65,8 @@ export function StepArt({
     /** Moments to act on (haptics), by frame. */
     cues?: Cue[];
     onCue?: (name: string, late: number) => void;
+    prime?: readonly number[];
+    onReady?: () => Promise<unknown> | void;
 }) {
     const { artLook: look } = useOnboardingTheme();
     const variants = useArtVariants();
@@ -78,13 +83,28 @@ export function StepArt({
 
     const replayed = useRef(replay);
 
+    const priming = !reduced && Boolean(prime?.length);
+    const [primed, setPrimed] = useState(!priming);
+    const getReady = useEffectEvent(() => {
+        const ready = () => Promise.resolve(onReady?.());
+        if (!priming) {
+            void ready();
+            return;
+        }
+        // Primed once the screen is mounted, and played once its first draw is over.
+        afterFramesSettle(() => primeArt([animation, ...overlaid], prime ?? [], () => {
+            void ready().finally(() => afterFramesSettle(() => setPrimed(true)));
+        }));
+    });
+    useEffect(() => getReady(), []);
+
     useEffect(() => {
         if (reduced) {
             cancelAnimation(frame);
             frame.set(settled);
             return;
         }
-        if (!playing) {
+        if (!playing || !primed) {
             cancelAnimation(frame);
             return;
         }
@@ -100,7 +120,7 @@ export function StepArt({
         if (now < introEnd) frame.set(repeat ? withSequence(toEnd, repeat) : toEnd);
         else if (loopSpan && repeat) frame.set(now < loopSpan[1] ? withSequence(runTo(now, loopSpan[1]), repeat) : repeat);
         return () => cancelAnimation(frame);
-    }, [frame, introEnd, introStart, loopSpan, playing, reduced, replay, settled]);
+    }, [frame, introEnd, introStart, loopSpan, playing, primed, reduced, replay, settled]);
 
     const [loopStart, loopEnd] = loopSpan ?? [introEnd, introEnd];
     // Both threads' `performance.now()` read the same clock.

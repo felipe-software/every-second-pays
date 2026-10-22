@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { type GestureResponderEvent, Platform, Text, useWindowDimensions, View } from "react-native";
+import { type GestureResponderEvent, Platform, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import Animated, {
     Easing,
     ReduceMotion,
@@ -225,7 +225,8 @@ export function DayArc({
     const [dragFirst, setDragFirst] = useState<number | null>(null);
     const touch = useRef<TouchState>(IDLE_TOUCH);
 
-    const geometry = arcGeometry(width, dragFirst ?? firstArcMinute(shifts));
+    const first = dragFirst ?? firstArcMinute(shifts);
+    const geometry = arcGeometry(width, first);
     const dragging = dragFirst != null;
     const selected = shifts[selectedIndex];
 
@@ -308,6 +309,8 @@ export function DayArc({
                 accessibilityLabel={`${startText}${to}${endText}, ${detail}`}
                 pointerEvents="none"
             >
+                {/* Android's SVG view repaints all its shapes in software on any change, so the
+                    shapes a drag never touches get their own view underneath. */}
                 <Svg width={geometry.width} height={geometry.height}>
                     <HourTicks geometry={geometry} color={mixColors(colors.card, colors.muted, 0.7)} />
                     <Path
@@ -317,6 +320,11 @@ export function DayArc({
                         strokeLinecap="round"
                         fill="none"
                     />
+                    {ends.map((end) => (
+                        <EndIcon key={end.minutes} x={end.x} y={geometry.endY + ICON_DROP} kind={end.icon} color={colors.ink} />
+                    ))}
+                </Svg>
+                <Svg width={geometry.width} height={geometry.height} style={StyleSheet.absoluteFill}>
                     {shifts.map((shift, index) => index === selectedIndex ? null : (
                         <ShiftArc key={index} geometry={geometry} shift={shift} color={`${colors.accent}73`} instant={false} />
                     ))}
@@ -345,9 +353,6 @@ export function DayArc({
                         stroke={colors.accentDeep}
                         instant={dragging}
                     />
-                    {ends.map((end) => (
-                        <EndIcon key={end.minutes} x={end.x} y={geometry.endY + ICON_DROP} kind={end.icon} color={colors.ink} />
-                    ))}
                 </Svg>
             </View>
 

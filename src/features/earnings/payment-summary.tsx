@@ -72,7 +72,7 @@ export function PaymentSummary({
                         {formatDays(draft.days)}
                     </TokenButton>
                     {draft.shifts.map((shift, index) => (
-                        <Fragment key={`${shift.start}-${shift.end}-${index}`}>
+                        <Fragment key={index}>
                             <Connector>{t(index === 0 ? "payment.summary.from" : "payment.summary.andFrom")}</Connector>
                             <TokenButton active={token === "hours"} onPress={() => onTokenChange("hours")}>
                                 {formatTime(shift.start)}

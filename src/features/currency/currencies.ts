@@ -77,11 +77,18 @@ export function currencyPrefix(currency: Currency) {
     return symbol.length > 1 && /[A-Za-zÀ-ž]$/.test(symbol) ? `${symbol} ` : symbol;
 }
 
+const displayNames = new Map<string, Intl.DisplayNames>();
+
 export function currencyName(currency: Currency, locale: string) {
     if (!isCurrencyCode(currency)) return currency;
     try {
         if (typeof Intl.DisplayNames === "function") {
-            const name = new Intl.DisplayNames([locale], { type: "currency" }).of(currency);
+            let names = displayNames.get(locale);
+            if (!names) {
+                names = new Intl.DisplayNames([locale], { type: "currency" });
+                displayNames.set(locale, names);
+            }
+            const name = names.of(currency);
             if (name && name !== currency) return name;
         }
     } catch {
