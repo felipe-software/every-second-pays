@@ -154,6 +154,8 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
             </ScrollView>
             {currencyOpen ? (
                 <CurrencySheet
+                    title={t("payment.currency")}
+                    closeTestID="close-currency-sheet"
                     value={draft.currency ?? DEFAULT_CURRENCY}
                     onChange={(currency) => setDraft((current) => ({ ...current, currency }))}
                     onDismiss={() => setCurrencyOpen(false)}
