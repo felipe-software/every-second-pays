@@ -67,8 +67,10 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
 
     const saveAndDismiss = async () => {
         if (!valid || saving) return;
+        // React Compiler bails out on optional chaining inside try/catch.
+        const sourceId = source?.id;
         try {
-            await onSave(draft, source?.id);
+            await onSave(draft, sourceId);
             dismiss();
         } catch {
             // The parent shows the error.
@@ -100,6 +102,8 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
             closeTestID="close-payment-sheet"
             dismissible={!saving}
             onDidDismiss={onDismiss}
+            // Android's IME inset already includes the navigation bar that the footer pads for.
+            footerOptions={Platform.OS === "android" ? { keyboardOffset: -insets.bottom } : undefined}
             headerActions={source ? (
                 <SheetHeaderButton
                     accessibilityLabel={t("payment.deleteAccessibility")}
