@@ -43,12 +43,13 @@ export const TabItem = ({
     iconSize,
     inactiveColor = "#afafaf",
     inactiveOpacity = 1,
-    itemHeight = TABBAR_LAYOUT.itemHeight * displayScale,
+    itemHeight: itemHeightProp,
     labelStyle,
     text,
     isActive = false,
     animatedStyle,
 }: TabItemProps) => {
+    const itemHeight = itemHeightProp ?? TABBAR_LAYOUT.itemHeight * displayScale;
     const color = isActive ? activeColor : inactiveColor;
     const opacity = isActive ? activeOpacity : inactiveOpacity;
     const Icon = isActive ? activeIcon : inactiveIcon;
