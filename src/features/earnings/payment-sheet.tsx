@@ -67,10 +67,9 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
 
     const saveAndDismiss = async () => {
         if (!valid || saving) return;
-        // React Compiler bails out on optional chaining inside try/catch.
-        const sourceId = source?.id;
+        const id = source?.id;
         try {
-            await onSave(draft, sourceId);
+            await onSave(draft, id);
             dismiss();
         } catch {
             // The parent shows the error.
@@ -157,6 +156,8 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
             </ScrollView>
             {currencyOpen ? (
                 <CurrencySheet
+                    title={t("payment.currency")}
+                    closeTestID="close-currency-sheet"
                     value={draft.currency ?? DEFAULT_CURRENCY}
                     onChange={(currency) => setDraft((current) => ({ ...current, currency }))}
                     onDismiss={() => setCurrencyOpen(false)}

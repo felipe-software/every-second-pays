@@ -15,6 +15,7 @@ import { usePeriodStore } from "@/features/earnings/period-store";
 import { SourceRow } from "@/features/earnings/source-row";
 import { useEarningsStore } from "@/features/earnings/store";
 import { useI18n } from "@/features/i18n/i18n";
+import { useOnboardingStore } from "@/features/onboarding/store";
 
 function useLiveClock() {
     const [now, setNow] = useState(() => new Date());
@@ -56,6 +57,7 @@ export default function EarningsScreen() {
     const save = useEarningsStore((state) => state.save);
     const remove = useEarningsStore((state) => state.remove);
     const newSourceRequest = usePaymentComposerStore((state) => state.newSourceRequest);
+    const revealed = useOnboardingStore((state) => state.revealed);
     const handledNewSourceRequest = useRef(0);
     const [sheetOpen, setSheetOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -308,7 +310,7 @@ export default function EarningsScreen() {
                         ) : null}
                     </ScrollView>
 
-                    {ready && sources.length === 0 && !loadError && !sheetOpen ? (
+                    {ready && revealed && sources.length === 0 && !loadError && !sheetOpen ? (
                         <EmptySourcesCallout bottomInset={insets.bottom} />
                     ) : null}
                 </View>

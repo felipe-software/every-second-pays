@@ -25,13 +25,18 @@ import { type PaymentSource, currentShift, isSameDay } from "./model";
 const ROW_STAGGER = 60;
 const MAX_ROW_DELAY = 480;
 
+const landingDateFormats = new Map<string, Intl.DateTimeFormat>();
+
 function formatLandingDate(timestamp: number, now: Date, locale: string) {
     const date = new Date(timestamp);
-    return date.toLocaleDateString(locale, {
-        month: "short",
-        day: "numeric",
-        ...(date.getFullYear() === now.getFullYear() ? {} : { year: "numeric" as const }),
-    });
+    const withYear = date.getFullYear() !== now.getFullYear();
+    const key = `${locale}|${withYear}`;
+    let format = landingDateFormats.get(key);
+    if (!format) {
+        format = new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", ...(withYear ? { year: "numeric" as const } : {}) });
+        landingDateFormats.set(key, format);
+    }
+    return format.format(date);
 }
 
 export function SourceRow({
