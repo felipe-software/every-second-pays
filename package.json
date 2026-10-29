@@ -63,6 +63,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@napi-rs/canvas": "^1.0.11",
     "@types/react": "~19.2.2",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.2",
@@ -75,9 +76,9 @@
     "ios": "APP_VARIANT=development expo run:ios",
     "web": "expo start --web",
     "goldie:build:android": "bunx eas-cli build --platform android --profile screenshots --local --output goldie/build/every-second-pays-release.apk",
-    "goldie:capture": "PATH=\"$PWD/goldie/bin:$PATH\" GOLDIE_CONFIG=goldie/goldie.config.ts GOLDIE_ARGENT_BIN=\"$PWD/goldie/bin/argent\" sh -c 'goldie capture && goldie frame && goldie manifest && goldie verify'",
+    "goldie:capture": "PATH=\"$PWD/goldie/bin:$PATH\" GOLDIE_CONFIG=goldie/goldie.config.ts GOLDIE_ARGENT_BIN=\"$PWD/goldie/bin/argent\" sh -c 'goldie capture && bun goldie/art/render.ts'",
     "goldie:doctor": "PATH=\"$PWD/goldie/bin:$PATH\" GOLDIE_CONFIG=goldie/goldie.config.ts GOLDIE_ARGENT_BIN=\"$PWD/goldie/bin/argent\" goldie doctor",
-    "goldie:frame": "GOLDIE_CONFIG=goldie/goldie.config.ts sh -c 'goldie frame && goldie manifest && goldie verify'",
+    "goldie:art": "bun goldie/art/render.ts",
     "goldie:studio": "GOLDIE_CONFIG=goldie/goldie.config.ts goldie studio",
     "lint": "expo lint",
     "era": "APP_VARIANT=development expo run:android",
