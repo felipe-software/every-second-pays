@@ -1,11 +1,5 @@
-diff --git a/node_modules/@lodev09/react-native-true-sheet/.bun-tag-5014c44e29ebc9b9 b/.bun-tag-5014c44e29ebc9b9
-new file mode 100644
-index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
-diff --git a/node_modules/@lodev09/react-native-true-sheet/.bun-tag-a0f6456fcdf6d646 b/.bun-tag-a0f6456fcdf6d646
-new file mode 100644
-index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/android/src/main/java/com/lodev09/truesheet/TrueSheetView.kt b/android/src/main/java/com/lodev09/truesheet/TrueSheetView.kt
-index 16412b06f2df620ec62aede70bf62daace88ad59..4fec15794b8b3630d1ce5c45217e4b09bee3adaf 100644
+index 16412b0..4fec157 100644
 --- a/android/src/main/java/com/lodev09/truesheet/TrueSheetView.kt
 +++ b/android/src/main/java/com/lodev09/truesheet/TrueSheetView.kt
 @@ -23,6 +23,9 @@ import com.lodev09.truesheet.core.TrueSheetStackManager
@@ -43,7 +37,7 @@ index 16412b06f2df620ec62aede70bf62daace88ad59..4fec15794b8b3630d1ce5c45217e4b09
  
      viewController.translateSheet(newTranslation)
 diff --git a/android/src/main/java/com/lodev09/truesheet/TrueSheetViewController.kt b/android/src/main/java/com/lodev09/truesheet/TrueSheetViewController.kt
-index 044b82b525dcd906cbf31a486c797146ec5ace10..868b62487ceae65bc24d744997b64b98d002da2e 100644
+index 044b82b..f0fe48f 100644
 --- a/android/src/main/java/com/lodev09/truesheet/TrueSheetViewController.kt
 +++ b/android/src/main/java/com/lodev09/truesheet/TrueSheetViewController.kt
 @@ -214,6 +214,12 @@ class TrueSheetViewController(private val reactContext: ThemedReactContext) :
@@ -59,7 +53,15 @@ index 044b82b525dcd906cbf31a486c797146ec5ace10..868b62487ceae65bc24d744997b64b98
    var dimmedDetentIndex = 0
    override var grabber: Boolean = true
    override var grabberOptions: GrabberOptions? = null
-@@ -945,28 +951,14 @@ class TrueSheetViewController(private val reactContext: ThemedReactContext) :
+@@ -767,6 +773,7 @@ class TrueSheetViewController(private val reactContext: ThemedReactContext) :
+     behavior.isHideable = true
+     behavior.isDraggable = draggable
+     behavior.scrollingExpandsSheet = scrollableOptions?.scrollingExpandsSheet ?: true
++    behavior.restingTop = { detentCalculator.getSheetTopForDetentIndex(0) }
+     behavior.state = BottomSheetBehavior.STATE_HIDDEN
+     behavior.addBottomSheetCallback(sheetCallback)
+ 
+@@ -945,28 +952,14 @@ class TrueSheetViewController(private val reactContext: ThemedReactContext) :
      }
  
      if (dimmed) {
@@ -92,7 +94,7 @@ index 044b82b525dcd906cbf31a486c797146ec5ace10..868b62487ceae65bc24d744997b64b98
        dimView?.detach()
        dimView = null
 diff --git a/android/src/main/java/com/lodev09/truesheet/TrueSheetViewManager.kt b/android/src/main/java/com/lodev09/truesheet/TrueSheetViewManager.kt
-index e224fbf774c1d164a862e48932051a05bf2e7796..2065a8ebe558aee0af0c303811eec640d9fb87e3 100644
+index e224fbf..2065a8e 100644
 --- a/android/src/main/java/com/lodev09/truesheet/TrueSheetViewManager.kt
 +++ b/android/src/main/java/com/lodev09/truesheet/TrueSheetViewManager.kt
 @@ -118,6 +118,11 @@ class TrueSheetViewManager :
@@ -107,8 +109,283 @@ index e224fbf774c1d164a862e48932051a05bf2e7796..2065a8ebe558aee0af0c303811eec640
    @ReactProp(name = "cornerRadius", defaultDouble = -1.0)
    override fun setCornerRadius(view: TrueSheetView, radius: Double) {
      view.setCornerRadius(radius.dpToPx())
+diff --git a/android/src/main/java/com/lodev09/truesheet/core/TrueSheetBottomSheetBehavior.kt b/android/src/main/java/com/lodev09/truesheet/core/TrueSheetBottomSheetBehavior.kt
+index 0685087..20e8444 100644
+--- a/android/src/main/java/com/lodev09/truesheet/core/TrueSheetBottomSheetBehavior.kt
++++ b/android/src/main/java/com/lodev09/truesheet/core/TrueSheetBottomSheetBehavior.kt
+@@ -1,12 +1,131 @@
+ package com.lodev09.truesheet.core
+ 
++import android.content.Context
++import android.os.Build
++import android.os.VibrationAttributes
++import android.os.VibrationEffect
++import android.os.Vibrator
++import android.os.VibratorManager
++import android.view.HapticFeedbackConstants
++import android.view.MotionEvent
++import android.view.VelocityTracker
+ import android.view.View
+ import androidx.coordinatorlayout.widget.CoordinatorLayout
++import androidx.core.view.ViewCompat
++import com.facebook.react.uimanager.PixelUtil.dpToPx
+ import com.google.android.material.bottomsheet.BottomSheetBehavior
++import kotlin.math.roundToInt
++
++private const val PULL_LIMIT_DP = 360f
++private const val PULL_STIFFNESS = 0.55f
++private const val PULL_DISMISS_DP = 100f
++private const val PULL_DISARM_GAP_DP = 12f
++private const val PULL_FLING_DP_PER_S = 1000f
++private const val ARMED_HAPTIC_SCALE = 1f
++private const val DISARMED_HAPTIC_SCALE = 0.6f
+ 
+ class TrueSheetBottomSheetBehavior<V : View> : BottomSheetBehavior<V>() {
+   var scrollingExpandsSheet: Boolean = true
+ 
++  var restingTop: (() -> Int)? = null
++
++  // Where the sheet top would be if it followed the finger 1:1; the sheet sits at its stretched position.
++  private var pullTop = Float.NaN
++  private var armed = false
++
++  private var touchPointerId = MotionEvent.INVALID_POINTER_ID
++  private var lastTouchY = 0f
++  private var touchOffsetY = 0f
++  private var touchVelocity: VelocityTracker? = null
++  private var lastTrackedEventTime = -1L
++
++  private var nestedScrolling = false
++  private var nestedPulled = false
++  private var nestedReleaseVelocity = 0f
++
++  private var cachedVibrator: Vibrator? = null
++
++  private val canPull: Boolean
++    get() = isHideable && isDraggable
++
++  override fun onInterceptTouchEvent(parent: CoordinatorLayout, child: V, event: MotionEvent): Boolean =
++    handlePullTouch(child, event) { super.onInterceptTouchEvent(parent, child, it) }
++
++  override fun onTouchEvent(parent: CoordinatorLayout, child: V, event: MotionEvent): Boolean =
++    handlePullTouch(child, event) { super.onTouchEvent(parent, child, it) }
++
++  // ViewDragHelper moves the sheet by the finger's delta, so report the finger where the rubber band lets the sheet go.
++  private inline fun handlePullTouch(child: V, event: MotionEvent, handle: (MotionEvent) -> Boolean): Boolean {
++    val resting = restingTop?.invoke()
++    if (resting == null || !canPull) return handle(event)
++
++    val action = event.actionMasked
++    trackTouchVelocity(event)
++    if (action == MotionEvent.ACTION_DOWN) {
++      resetPull()
++      touchOffsetY = 0f
++      touchPointerId = event.getPointerId(0)
++      lastTouchY = event.getY(0)
++      return handle(event)
++    }
++
++    val dragging = state == STATE_DRAGGING && !nestedScrolling
++
++    if (action == MotionEvent.ACTION_MOVE) {
++      val index = event.findPointerIndex(touchPointerId)
++      if (index < 0) {
++        touchPointerId = event.getPointerId(0)
++        lastTouchY = event.getY(0)
++      } else {
++        val y = event.getY(index)
++        val fingerDelta = y - lastTouchY
++        lastTouchY = y
++        if (dragging) {
++          val sheetDelta = pullBy(child, resting, fingerDelta)
++          touchOffsetY += sheetDelta - fingerDelta
++        }
++      }
++    }
++
++    val released = action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL
++    if (released && dragging && child.top > resting) {
++      val dismiss = shouldDismiss(releaseVelocity())
++      // Cancelling releases the drag without a fling, so BottomSheetBehavior can't pick a target of its own.
++      val cancel = MotionEvent.obtain(event).apply {
++        setAction(MotionEvent.ACTION_CANCEL)
++        offsetLocation(0f, touchOffsetY)
++      }
++      val handled = handle(cancel)
++      cancel.recycle()
++      settlePull(child, dismiss)
++      return handled
++    }
++
++    if (touchOffsetY == 0f) return handle(event)
++
++    val shifted = MotionEvent.obtain(event).apply { offsetLocation(0f, touchOffsetY) }
++    val handled = handle(shifted)
++    shifted.recycle()
++    return handled
++  }
++
++  override fun onStartNestedScroll(
++    coordinatorLayout: CoordinatorLayout,
++    child: V,
++    directTargetChild: View,
++    target: View,
++    axes: Int,
++    type: Int
++  ): Boolean {
++    if (type == ViewCompat.TYPE_TOUCH) {
++      nestedScrolling = true
++      nestedPulled = false
++      nestedReleaseVelocity = 0f
++      resetPull()
++    }
++    return super.onStartNestedScroll(coordinatorLayout, child, directTargetChild, target, axes, type)
++  }
++
+   override fun onNestedPreScroll(
+     coordinatorLayout: CoordinatorLayout,
+     child: V,
+@@ -19,9 +138,37 @@ class TrueSheetBottomSheetBehavior<V : View> : BottomSheetBehavior<V>() {
+     // dy > 0 = user swiping up = sheet expanding
+     // Block expansion from scroll, but allow if sheet is already being dragged
+     if (!scrollingExpandsSheet && dy > 0 && state != STATE_DRAGGING) return
++
++    val resting = restingTop?.invoke()
++    if (type == ViewCompat.TYPE_TOUCH && resting != null && canPull) {
++      val pullingDown = dy < 0 && !target.canScrollVertically(-1) && child.top - dy > resting
++      val easingUp = dy > 0 && child.top > resting
++      if (pullingDown || easingUp) {
++        nestedPulled = true
++        val sheetDelta = pullBy(child, resting, -dy.toFloat())
++        super.onNestedPreScroll(coordinatorLayout, child, target, dx, -sheetDelta, consumed, type)
++        if (sheetDelta == 0 || consumed[1] != 0) consumed[1] = dy
++        return
++      }
++    }
++
+     super.onNestedPreScroll(coordinatorLayout, child, target, dx, dy, consumed, type)
+   }
+ 
++  override fun onStopNestedScroll(coordinatorLayout: CoordinatorLayout, child: V, target: View, type: Int) {
++    if (type == ViewCompat.TYPE_TOUCH) {
++      nestedScrolling = false
++      val resting = restingTop?.invoke()
++      val pulled = nestedPulled && resting != null && child.top > resting
++      nestedPulled = false
++      if (pulled) {
++        settlePull(child, shouldDismiss(nestedReleaseVelocity))
++        return
++      }
++    }
++    super.onStopNestedScroll(coordinatorLayout, child, target, type)
++  }
++
+   override fun onNestedPreFling(
+     coordinatorLayout: CoordinatorLayout,
+     child: V,
+@@ -29,8 +176,100 @@ class TrueSheetBottomSheetBehavior<V : View> : BottomSheetBehavior<V>() {
+     velocityX: Float,
+     velocityY: Float
+   ): Boolean {
++    // The scrolling child reports its fling here, before it stops the nested scroll.
++    nestedReleaseVelocity = -velocityY
+     // Don't consume flings — let the ScrollView decelerate naturally
+     if (!scrollingExpandsSheet) return false
+     return super.onNestedPreFling(coordinatorLayout, child, target, velocityX, velocityY)
+   }
++
++  private fun pullBy(child: View, resting: Int, fingerDelta: Float): Int {
++    val base = if (child.top < resting || pullTop.isNaN()) unstretchedTop(child.top, resting) else pullTop
++    pullTop = base + fingerDelta
++    updateArmed(child, pullTop - resting)
++    return stretchedTop(pullTop, resting).roundToInt() - child.top
++  }
++
++  private fun stretchedTop(top: Float, resting: Int): Float {
++    if (top <= resting) return top
++    val limit = PULL_LIMIT_DP.dpToPx()
++    val overshoot = top - resting
++    return resting + (1f - 1f / (overshoot * PULL_STIFFNESS / limit + 1f)) * limit
++  }
++
++  private fun unstretchedTop(top: Int, resting: Int): Float {
++    if (top <= resting) return top.toFloat()
++    val limit = PULL_LIMIT_DP.dpToPx()
++    val stretched = (top - resting).toFloat().coerceAtMost(limit * 0.99f)
++    return resting + stretched * limit / ((limit - stretched) * PULL_STIFFNESS)
++  }
++
++  private fun updateArmed(view: View, overshoot: Float) {
++    val threshold = if (armed) (PULL_DISMISS_DP - PULL_DISARM_GAP_DP).dpToPx() else PULL_DISMISS_DP.dpToPx()
++    val next = overshoot >= threshold
++    if (next == armed) return
++    armed = next
++    playThresholdHaptic(view, next)
++  }
++
++  private fun shouldDismiss(velocity: Float): Boolean {
++    val fling = PULL_FLING_DP_PER_S.dpToPx()
++    return if (armed) velocity > -fling else velocity >= fling
++  }
++
++  private fun settlePull(view: View, dismiss: Boolean) {
++    if (dismiss && !armed) playThresholdHaptic(view, true)
++    resetPull()
++    state = if (dismiss) STATE_HIDDEN else STATE_COLLAPSED
++  }
++
++  private fun resetPull() {
++    pullTop = Float.NaN
++    armed = false
++  }
++
++  private fun trackTouchVelocity(event: MotionEvent) {
++    if (event.actionMasked == MotionEvent.ACTION_DOWN) {
++      touchVelocity?.clear()
++      lastTrackedEventTime = -1L
++    }
++    // CoordinatorLayout can hand the same event to a behavior twice.
++    if (event.eventTime == lastTrackedEventTime) return
++    lastTrackedEventTime = event.eventTime
++    val tracker = touchVelocity ?: VelocityTracker.obtain().also { touchVelocity = it }
++    tracker.addMovement(event)
++  }
++
++  private fun releaseVelocity(): Float {
++    val tracker = touchVelocity ?: return 0f
++    tracker.computeCurrentVelocity(1000)
++    return tracker.getYVelocity(touchPointerId)
++  }
++
++  private fun playThresholdHaptic(view: View, activate: Boolean) {
++    val vibrator = cachedVibrator ?: findVibrator(view.context).also { cachedVibrator = it }
++    val primitive = if (activate) VibrationEffect.Composition.PRIMITIVE_CLICK else VibrationEffect.Composition.PRIMITIVE_TICK
++    if (vibrator != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && vibrator.areAllPrimitivesSupported(primitive)) {
++      val effect = VibrationEffect.startComposition()
++        .addPrimitive(primitive, if (activate) ARMED_HAPTIC_SCALE else DISARMED_HAPTIC_SCALE)
++        .compose()
++      try {
++        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
++          vibrator.vibrate(effect, VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH))
++        } else {
++          vibrator.vibrate(effect)
++        }
++        return
++      } catch (_: SecurityException) {}
++    }
++    view.performHapticFeedback(if (activate) HapticFeedbackConstants.CONTEXT_CLICK else HapticFeedbackConstants.CLOCK_TICK)
++  }
++
++  private fun findVibrator(context: Context): Vibrator? =
++    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
++      context.getSystemService(VibratorManager::class.java)?.defaultVibrator
++    } else {
++      @Suppress("DEPRECATION")
++      context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
++    }
+ }
 diff --git a/android/src/main/java/com/lodev09/truesheet/core/TrueSheetDimView.kt b/android/src/main/java/com/lodev09/truesheet/core/TrueSheetDimView.kt
-index 14ebb91cbbb63c704bce58160dfefe4a855b5509..1244710f0fce4d8a992152f7f65fa63fcbf94ca4 100644
+index 14ebb91..1244710 100644
 --- a/android/src/main/java/com/lodev09/truesheet/core/TrueSheetDimView.kt
 +++ b/android/src/main/java/com/lodev09/truesheet/core/TrueSheetDimView.kt
 @@ -64,6 +64,10 @@ class TrueSheetDimView(private val reactContext: ThemedReactContext) :
@@ -123,7 +400,7 @@ index 14ebb91cbbb63c704bce58160dfefe4a855b5509..1244710f0fce4d8a992152f7f65fa63f
    // MARK: - Attachment
    // =============================================================================
 diff --git a/lib/module/TrueSheet.js b/lib/module/TrueSheet.js
-index 30c24077b9219d3f62d0f0906c9c64bfae171146..278718b94055e2f69db831d5e7cda03ada58f528 100644
+index 30c2407..278718b 100644
 --- a/lib/module/TrueSheet.js
 +++ b/lib/module/TrueSheet.js
 @@ -367,6 +367,7 @@ export class TrueSheet extends PureComponent {
@@ -143,7 +420,7 @@ index 30c24077b9219d3f62d0f0906c9c64bfae171146..278718b94055e2f69db831d5e7cda03a
        initialDetentAnimated: initialDetentAnimated,
        dismissible: dismissible,
 diff --git a/lib/module/fabric/TrueSheetViewNativeComponent.ts b/lib/module/fabric/TrueSheetViewNativeComponent.ts
-index cf7ff4f8013fcbef317835957ad314d4ed2bbf29..e61e07b4a15c3e0d879712d125f3069c7f0c216d 100644
+index cf7ff4f..e61e07b 100644
 --- a/lib/module/fabric/TrueSheetViewNativeComponent.ts
 +++ b/lib/module/fabric/TrueSheetViewNativeComponent.ts
 @@ -70,6 +70,7 @@ export interface NativeProps extends ViewProps {
@@ -155,7 +432,7 @@ index cf7ff4f8013fcbef317835957ad314d4ed2bbf29..e61e07b4a15c3e0d879712d125f3069c
    dimmedDetentIndex?: WithDefault<Int32, 0>;
  
 diff --git a/lib/typescript/src/TrueSheet.types.d.ts b/lib/typescript/src/TrueSheet.types.d.ts
-index 6f77a239b2290994750b08af85c7056894961605..d66d6397ab9072e5c4ca516cfc5e2196e22abf7a 100644
+index 6f77a23..d66d639 100644
 --- a/lib/typescript/src/TrueSheet.types.d.ts
 +++ b/lib/typescript/src/TrueSheet.types.d.ts
 @@ -323,6 +323,13 @@ export interface TrueSheetProps extends ViewProps {
@@ -173,7 +450,7 @@ index 6f77a239b2290994750b08af85c7056894961605..d66d6397ab9072e5c4ca516cfc5e2196
       * Prevents interactive dismissal of the Sheet.
       *
 diff --git a/lib/typescript/src/fabric/TrueSheetViewNativeComponent.d.ts b/lib/typescript/src/fabric/TrueSheetViewNativeComponent.d.ts
-index c4a42d5341d904eaf72cee53b048e2b14942bbcd..d40d3cd0ffc6616d2e7f4b43f51c3bd887f1dc3a 100644
+index c4a42d5..d40d3cd 100644
 --- a/lib/typescript/src/fabric/TrueSheetViewNativeComponent.d.ts
 +++ b/lib/typescript/src/fabric/TrueSheetViewNativeComponent.d.ts
 @@ -50,6 +50,7 @@ export interface NativeProps extends ViewProps {
@@ -185,7 +462,7 @@ index c4a42d5341d904eaf72cee53b048e2b14942bbcd..d40d3cd0ffc6616d2e7f4b43f51c3bd8
      dimmedDetentIndex?: WithDefault<Int32, 0>;
      backgroundBlur?: WithDefault<'none' | 'light' | 'dark' | 'default' | 'extra-light' | 'regular' | 'prominent' | 'system-ultra-thin-material' | 'system-thin-material' | 'system-material' | 'system-thick-material' | 'system-chrome-material' | 'system-ultra-thin-material-light' | 'system-thin-material-light' | 'system-material-light' | 'system-thick-material-light' | 'system-chrome-material-light' | 'system-ultra-thin-material-dark' | 'system-thin-material-dark' | 'system-material-dark' | 'system-thick-material-dark' | 'system-chrome-material-dark', 'none'>;
 diff --git a/src/TrueSheet.tsx b/src/TrueSheet.tsx
-index 30bb7de231726e841d207d5df540e239d199733a..bc74334afe751d6614595cdb168b942de76b6769 100644
+index 30bb7de..bc74334 100644
 --- a/src/TrueSheet.tsx
 +++ b/src/TrueSheet.tsx
 @@ -474,6 +474,7 @@ export class TrueSheet
@@ -205,7 +482,7 @@ index 30bb7de231726e841d207d5df540e239d199733a..bc74334afe751d6614595cdb168b942d
          initialDetentAnimated={initialDetentAnimated}
          dismissible={dismissible}
 diff --git a/src/TrueSheet.types.ts b/src/TrueSheet.types.ts
-index 6c8d08e5c55ee3775411d719d3aa51bb73e9294e..5bf300aae0df4a11306690898c048cba3de2f051 100644
+index 6c8d08e..5bf300a 100644
 --- a/src/TrueSheet.types.ts
 +++ b/src/TrueSheet.types.ts
 @@ -373,6 +373,14 @@ export interface TrueSheetProps extends ViewProps {
@@ -224,7 +501,7 @@ index 6c8d08e5c55ee3775411d719d3aa51bb73e9294e..5bf300aae0df4a11306690898c048cba
     * Prevents interactive dismissal of the Sheet.
     *
 diff --git a/src/fabric/TrueSheetViewNativeComponent.ts b/src/fabric/TrueSheetViewNativeComponent.ts
-index cf7ff4f8013fcbef317835957ad314d4ed2bbf29..e61e07b4a15c3e0d879712d125f3069c7f0c216d 100644
+index cf7ff4f..e61e07b 100644
 --- a/src/fabric/TrueSheetViewNativeComponent.ts
 +++ b/src/fabric/TrueSheetViewNativeComponent.ts
 @@ -70,6 +70,7 @@ export interface NativeProps extends ViewProps {
