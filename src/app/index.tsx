@@ -166,7 +166,7 @@ export default function EarningsScreen() {
             return node ? [{
                 delay: Math.min(index * SOURCE_TRANSFER_STAGGER, MAX_SOURCE_TRANSFER_STAGGER),
                 node,
-                rate: ratePerSecond(source),
+                rate: ratePerSecond(source, now),
                 sourceId: source.id,
             }] : [];
         });
