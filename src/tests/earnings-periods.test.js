@@ -136,6 +136,39 @@ describe("earnedInPeriod", () => {
         expect(earnedInPeriod(weekdayJob, "week", afterFall, MONDAY)).toBeCloseTo(3 * DAY_PAY, 6);
     });
 
+    describe("monthly sources", () => {
+        const salary = { ...weekdayJob, frequency: "month", amount: 10_000 };
+        const schedules = [[1, 2, 3, 4, 5], [0, 6], [0, 1, 2, 3, 4, 5, 6], [3]];
+
+        test("earn exactly their amount in every month", () => {
+            for (const days of schedules) {
+                for (let month = 0; month < 12; month += 1) {
+                    const lastMoment = new Date(2026, month + 1, 0, 23, 59);
+                    expect(earnedInPeriod({ ...salary, days }, "month", lastMoment, MONDAY)).toBeCloseTo(10_000, 6);
+                }
+            }
+        });
+
+        test("add up to twelve amounts over a year", () => {
+            const lastMoment = new Date(2026, 11, 31, 23, 59);
+            for (const days of schedules) {
+                expect(earnedInPeriod({ ...salary, days }, "year", lastMoment, MONDAY)).toBeCloseTo(120_000, 6);
+            }
+        });
+
+        test("use each month's own rate in a week that spans two months", () => {
+            // April 2026 has 22 weekdays and May 21; this week's Friday is May 1.
+            const saturday = new Date(2026, 4, 2, 12);
+            expect(earnedInPeriod(salary, "week", saturday, MONDAY)).toBeCloseTo((4 * 10_000) / 22 + 10_000 / 21, 6);
+        });
+
+        test("keep their schedule's share of the amount partway through the month", () => {
+            // October 2026 has 22 weekdays; the 1st, 2nd, 5th and 6th are done before the 7th.
+            const midday = new Date(2026, 9, 7, 13);
+            expect(earnedInPeriod(salary, "month", midday, MONDAY)).toBeCloseTo(((4 + 0.5) * 10_000) / 22, 6);
+        });
+    });
+
     test("one-time payments count in periods that include when they landed", () => {
         const now = new Date(2026, 9, 7, 12, 30);
         const bonus = { id: 2, name: "Bonus", frequency: "once", amount: 500, when: "today", days: [], shifts: [] };

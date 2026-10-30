@@ -60,7 +60,7 @@ export function hoursPerDay(source: { shifts: readonly Shift[] }) {
     );
 }
 
-export function ratePerSecond(source: Pick<PaymentSource, "amount" | "frequency" | "days" | "shifts">) {
+export function ratePerSecond(source: Pick<PaymentSource, "amount" | "frequency" | "days" | "shifts">, at: Date) {
     if (source.frequency === "once") return 0;
     if (source.frequency === "second") return source.amount;
     if (source.frequency === "hour") return source.amount / 3600;
@@ -69,7 +69,7 @@ export function ratePerSecond(source: Pick<PaymentSource, "amount" | "frequency"
     if (!weeklyHours) return 0;
     if (source.frequency === "week") return source.amount / (weeklyHours * 3600);
     if (source.frequency === "year") return source.amount / (weeklyHours * 3600 * 52);
-    return source.amount / ((weeklyHours * 3600 * 52) / 12);
+    return source.amount / (hoursPerDay(source) * 3600 * workingDaysInMonth(source.days, at));
 }
 
 export function currentShift(source: Pick<PaymentSource, "frequency" | "days" | "shifts">, now: Date) {
@@ -88,7 +88,7 @@ export function earnedToday(source: PaymentSource, now: Date) {
             total + Math.min(Math.max(minute - shift.start, 0), Math.max(0, shift.end - shift.start)) * 60,
         0,
     );
-    return elapsedSeconds * ratePerSecond(source);
+    return elapsedSeconds * ratePerSecond(source, now);
 }
 
 export function periodStart(period: EarningsPeriod, now: Date, firstDayOfWeek: number) {
@@ -114,6 +114,27 @@ export function countWeekdays(days: readonly number[], firstDay: number, count: 
     return total;
 }
 
+function workingDaysInMonth(days: readonly number[], at: Date) {
+    const firstDay = new Date(at.getFullYear(), at.getMonth(), 1).getDay();
+    const dayCount = new Date(at.getFullYear(), at.getMonth() + 1, 0).getDate();
+    return countWeekdays(days, firstDay, dayCount);
+}
+
+// Walks month by month because a monthly source's rate differs between months.
+function earnedOnPastDays(source: PaymentSource, from: Date, until: Date) {
+    const secondsPerDay = hoursPerDay(source) * 3600;
+    let total = 0;
+    let cursor = from;
+    while (cursor < until) {
+        const nextMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+        const end = nextMonth < until ? nextMonth : until;
+        const workedDays = countWeekdays(source.days, cursor.getDay(), daysBetween(cursor, end));
+        total += workedDays * secondsPerDay * ratePerSecond(source, cursor);
+        cursor = end;
+    }
+    return total;
+}
+
 export function earnedInPeriod(source: PaymentSource, period: EarningsPeriod, now: Date, firstDayOfWeek: number) {
     const start = periodStart(period, now, firstDayOfWeek);
     if (source.frequency === "once") {
@@ -122,8 +143,7 @@ export function earnedInPeriod(source: PaymentSource, period: EarningsPeriod, no
     }
 
     const today = periodStart("today", now, firstDayOfWeek);
-    const pastDays = countWeekdays(source.days, start.getDay(), daysBetween(start, today));
-    return pastDays * hoursPerDay(source) * 3600 * ratePerSecond(source) + earnedToday(source, now);
+    return earnedOnPastDays(source, start, today) + earnedToday(source, now);
 }
 
 export function isSameDay(timestamp: number, now: Date) {
