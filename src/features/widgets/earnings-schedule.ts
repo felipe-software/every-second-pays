@@ -50,7 +50,7 @@ export function buildEarningsSchedule(
         const total = sources.reduce((sum, source) => sum + earnedInPeriod(source, period, at, firstDayOfWeek), 0);
         const last = index === instants.length - 1;
         const rate = last ? 0 : sources.reduce(
-            (sum, source) => sum + (currentShift(source, at) ? ratePerSecond(source) : 0),
+            (sum, source) => sum + (currentShift(source, at) ? ratePerSecond(source, at) : 0),
             0,
         );
         const point: Breakpoint = [time, total * 100, (rate * 100) / 1000];
