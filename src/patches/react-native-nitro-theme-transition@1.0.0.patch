@@ -1,7 +1,8 @@
 diff --git a/android/src/main/java/com/margelo/nitro/nitrothemetransition/HybridThemeTransition.kt b/android/src/main/java/com/margelo/nitro/nitrothemetransition/HybridThemeTransition.kt
+index 8357a15..9b22f29 100644
 --- a/android/src/main/java/com/margelo/nitro/nitrothemetransition/HybridThemeTransition.kt
 +++ b/android/src/main/java/com/margelo/nitro/nitrothemetransition/HybridThemeTransition.kt
-@@ -13,7 +13,9 @@ import android.view.ViewAnimationUtils
+@@ -14,7 +14,9 @@ import android.view.ViewAnimationUtils
  import android.view.ViewGroup
  import android.view.animation.PathInterpolator
  import android.widget.FrameLayout
@@ -20,3 +21,26 @@ diff --git a/android/src/main/java/com/margelo/nitro/nitrothemetransition/Hybrid
  class HybridThemeTransition : HybridThemeTransitionSpec() {
  
    /** One in-flight transition: the snapshot and whatever is animating it. */
+diff --git a/android/src/main/java/com/margelo/nitro/nitrothemetransition/SnapshotView.kt b/android/src/main/java/com/margelo/nitro/nitrothemetransition/SnapshotView.kt
+index da7f348..e83c411 100644
+--- a/android/src/main/java/com/margelo/nitro/nitrothemetransition/SnapshotView.kt
++++ b/android/src/main/java/com/margelo/nitro/nitrothemetransition/SnapshotView.kt
+@@ -362,6 +362,8 @@ internal class SnapshotView(context: Context) : View(context) {
+     // few milliseconds of GPU wait, against a full-screen software
+     // rasterization on the alternative path.
+     lease.renderer.createRenderRequest().setWaitForPresent(true).syncAndDraw()
++    // Running RenderNodeAnimators (ripples) in the capture attach to this renderer; ticking them would block RenderThread on the reader's only slot.
++    lease.renderer.stop()
+ 
+     val image = lease.reader.acquireNextImage()
+     if (image == null) {
+@@ -902,7 +904,8 @@ internal object SurfacePool {
+     }
+   }
+ 
+-  private const val MAX_IDLE = 2
++  // A stopped renderer can't be reused: start() would re-post its frame callback.
++  private const val MAX_IDLE = 0
+   private const val TRIM_DELAY_MS = 3_000L
+ 
+   /** Roughly a quarter of a 1080p screen — below this, allocation is not the cost. */
