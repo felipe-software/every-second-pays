@@ -3,6 +3,7 @@ package expo.modules.notificationmotion.money
 import android.annotation.SuppressLint
 import android.appwidget.AppWidgetHostView
 import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProviderInfo
 import android.content.ComponentName
 import android.content.Context
 import android.os.Build
@@ -13,6 +14,7 @@ import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import expo.modules.kotlin.AppContext
 import expo.modules.kotlin.views.ExpoView
+import java.util.concurrent.Executors
 
 @SuppressLint("ViewConstructor")
 class MoneyWidgetPreviewView(context: Context, appContext: AppContext) : ExpoView(context, appContext) {
@@ -29,22 +31,20 @@ class MoneyWidgetPreviewView(context: Context, appContext: AppContext) : ExpoVie
   private val host = AppWidgetHostView(context)
   private val handler = Handler(Looper.getMainLooper())
   private var config: String? = null
+  private var active = false
   private var widthDp = 0f
   private var heightDp = 0f
   private var timeline: MoneyTimeline? = null
   private var ambientSnapshots: String? = null
   private val refresh = Runnable { render() }
   private val renderSoon = Runnable { render() }
+  @Volatile private var latestRender = 0
 
   init {
     clipChildren = false
     addView(host, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-    if (Build.VERSION.SDK_INT >= 31) {
-      val manager = AppWidgetManager.getInstance(context)
-      val provider = ComponentName(context, MoneyWidgetProvider::class.java)
-      manager.installedProviders.firstOrNull { it.provider == provider }?.let { host.setAppWidget(0, it) }
-    }
-    host.setPadding(0, 0, 0, 0)
+    if (Build.VERSION.SDK_INT >= 31) host.setExecutor(renderExecutor)
+    host.alpha = 0f
   }
 
   fun setConfig(value: String) {
@@ -54,6 +54,12 @@ class MoneyWidgetPreviewView(context: Context, appContext: AppContext) : ExpoVie
   }
 
   fun setRevision(@Suppress("UNUSED_PARAMETER") value: Int) {
+    scheduleRender()
+  }
+
+  fun setActive(value: Boolean) {
+    if (value == active) return
+    active = value
     scheduleRender()
   }
 
@@ -90,34 +96,70 @@ class MoneyWidgetPreviewView(context: Context, appContext: AppContext) : ExpoVie
     viewTreeObserver.removeOnPreDrawListener(layoutBeforeDraw)
     handler.removeCallbacks(refresh)
     handler.removeCallbacks(renderSoon)
+    latestRender++
   }
 
   private fun render() {
     handler.removeCallbacks(refresh)
     if (Build.VERSION.SDK_INT < 31 || !isAttachedToWindow || widthDp < 40 || heightDp < 40) return
     val serialized = config ?: return
-    try {
-      val widgets = MoneyWidgets.get(context)
-      val now = System.currentTimeMillis()
-      val result = MoneyWidgetRenderer(context).render(
-        config = MoneyConfig.parse(serialized),
-        data = widgets.data(),
-        size = MoneyWidgetRenderer.Size(widthDp, heightDp),
-        now = now,
-        previousCents = timeline?.shownAt(now),
-        click = null,
-        clickTemplate = null,
-        // A host view can't merge partial updates, so the preview always renders in full.
-        previousSignature = null,
-        ambientSnapshots = ambientSnapshots,
-        maxFrames = 90,
-      )
-      host.updateAppWidget(result.views)
-      timeline = result.timeline
-      ambientSnapshots = result.ambientSnapshots
-      handler.postDelayed(refresh, (result.timeline.nextSyncAt - now).coerceIn(5_000, 60_000))
-    } catch (error: Exception) {
-      Log.e("MoneyWidgetPreview", "Couldn't render the preview", error)
+    val size = MoneyWidgetRenderer.Size(widthDp, heightDp)
+    val now = System.currentTimeMillis()
+    val previousCents = timeline?.shownAt(now)
+    val previousSnapshots = ambientSnapshots
+    val frames = if (active) ACTIVE_FRAMES else INACTIVE_FRAMES
+    val request = ++latestRender
+    renderExecutor.execute {
+      if (request != latestRender) return@execute
+      try {
+        val info = providerInfo(context)
+        val result = MoneyWidgetRenderer(context).render(
+          config = MoneyConfig.parse(serialized),
+          data = MoneyWidgets.get(context).data(),
+          size = size,
+          now = now,
+          previousCents = previousCents,
+          click = null,
+          clickTemplate = null,
+          // A host view can't merge partial updates, so the preview always renders in full.
+          previousSignature = null,
+          ambientSnapshots = previousSnapshots,
+          maxFrames = frames,
+        )
+        handler.post {
+          if (request == latestRender) show(result, info, now)
+        }
+      } catch (error: Exception) {
+        Log.e("MoneyWidgetPreview", "Couldn't render the preview", error)
+      }
+    }
+  }
+
+  private fun show(result: MoneyWidgetRenderer.Result, info: AppWidgetProviderInfo?, renderedAt: Long) {
+    if (host.appWidgetInfo == null && info != null) {
+      host.setAppWidget(0, info)
+      host.setPadding(0, 0, 0, 0)
+    }
+    host.updateAppWidget(result.views)
+    if (host.alpha < 1f) host.animate().alpha(1f).setDuration(FADE_IN_MS)
+    timeline = result.timeline
+    ambientSnapshots = result.ambientSnapshots
+    handler.postDelayed(refresh, (result.timeline.nextSyncAt - renderedAt).coerceIn(5_000, 60_000))
+  }
+
+  private companion object {
+    const val ACTIVE_FRAMES = 90
+    const val INACTIVE_FRAMES = 1
+    const val FADE_IN_MS = 160L
+    val renderExecutor = Executors.newSingleThreadExecutor { Thread(it, "MoneyWidgetPreview") }
+
+    @Volatile private var cachedProviderInfo: AppWidgetProviderInfo? = null
+
+    fun providerInfo(context: Context): AppWidgetProviderInfo? = cachedProviderInfo ?: run {
+      val provider = ComponentName(context, MoneyWidgetProvider::class.java)
+      AppWidgetManager.getInstance(context).installedProviders
+        .firstOrNull { it.provider == provider }
+        ?.also { cachedProviderInfo = it }
     }
   }
 }

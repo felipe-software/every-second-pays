@@ -49,6 +49,7 @@ class NotificationMotionModule : Module() {
     View(MoneyWidgetPreviewView::class) {
       Prop("config") { view: MoneyWidgetPreviewView, config: String -> view.setConfig(config) }
       Prop("revision") { view: MoneyWidgetPreviewView, revision: Int -> view.setRevision(revision) }
+      Prop("active") { view: MoneyWidgetPreviewView, active: Boolean -> view.setActive(active) }
     }
 
     OnCreate { active = this@NotificationMotionModule }
