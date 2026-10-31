@@ -41,6 +41,7 @@ export function CollapsibleCard({
 }) {
     const { colors } = useEarningsTheme();
     const [open, setOpen] = useState(false);
+    const [opened, setOpened] = useState(false);
     const highlight = usePressHighlight();
     const progress = useSharedValue(0);
     const contentHeight = useSharedValue(0);
@@ -63,6 +64,7 @@ export function CollapsibleCard({
                     accessibilityState={{ expanded: open }}
                     onPress={() => {
                         appHaptics.selection();
+                        setOpened(true);
                         setOpen((value) => !value);
                     }}
                     onPressIn={highlight.onPressIn}
@@ -89,7 +91,7 @@ export function CollapsibleCard({
                         className="absolute inset-x-0 top-0"
                         onLayout={(event) => contentHeight.set(event.nativeEvent.layout.height)}
                     >
-                        {children}
+                        {opened ? children : null}
                     </View>
                 </Animated.View>
             </Raised>

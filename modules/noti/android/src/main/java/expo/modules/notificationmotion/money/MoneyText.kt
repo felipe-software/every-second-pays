@@ -170,7 +170,7 @@ internal class MoneyTimeline(
         return MoneyTimeline(now, TICK, longArrayOf(CounterText.cents(schedule.valueAt(now))), sync, 0.0)
       }
       val tick = TICK
-      val count = maxFrames.coerceAtLeast(2)
+      val count = maxFrames.coerceAtLeast(1)
       val cents = LongArray(count) { CounterText.cents(schedule.valueAt(now + it * tick)) }
       // Re-sync well before the last frame: the launcher's flipper loops back to frame 0.
       val window = tick * (count - 1)

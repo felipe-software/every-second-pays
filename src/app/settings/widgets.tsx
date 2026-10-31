@@ -221,21 +221,22 @@ export default function WidgetsScreen() {
                     testID="widgets-screen"
                     title={t("widgets.title")}
                     headerLeft={<BackButton label={t("widgets.back")} color={colors.ink} />}
+                    stickyHeader={available ? (
+                        <View className="mt-0.5">
+                            <WidgetPreviewPager
+                                config={config}
+                                revision={revision}
+                                width={Math.min(windowWidth, 430)}
+                                size={previewSize}
+                                onSizeChange={setPreviewSize}
+                            />
+                        </View>
+                    ) : undefined}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
                 >
                     {available ? (
                         <>
-                            <View className="mt-0.5">
-                                <WidgetPreviewPager
-                                    config={config}
-                                    revision={revision}
-                                    width={Math.min(windowWidth, 430)}
-                                    size={previewSize}
-                                    onSizeChange={setPreviewSize}
-                                />
-                            </View>
-
                             <SectionLabel>{t("widgets.section.layout")}</SectionLabel>
                             <Raised surface="card" depth={3} radius={20} className="gap-3.5 p-3">
                                 <SizeSegments

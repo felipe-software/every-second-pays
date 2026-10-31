@@ -1,4 +1,5 @@
-import { useEffect, useMemo } from "react";
+import { type NativeStackNavigationProp, useNavigation } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { MoneyWidgetPreview } from "react-native-noti";
@@ -24,6 +25,17 @@ const PREVIEW_HEIGHT: Record<PreviewSize, number> = { small: 168, wide: 150, lar
 const STAGE_PADDING = 16;
 const STAGE_HEIGHTS = PREVIEW_SIZES.map((size) => PREVIEW_HEIGHT[size] + STAGE_PADDING * 2);
 
+function useTransitionFinished() {
+    const navigation = useNavigation<NativeStackNavigationProp<Record<string, object | undefined>>>();
+    const [finished, setFinished] = useState(false);
+
+    useEffect(() => navigation.addListener("transitionEnd", (event) => {
+        if (!event.data.closing) setFinished(true);
+    }), [navigation]);
+
+    return finished;
+}
+
 export function WidgetPreviewPager({
     config,
     revision,
@@ -38,6 +50,7 @@ export function WidgetPreviewPager({
     onSizeChange: (size: PreviewSize) => void;
 }) {
     const { t } = useI18n();
+    const transitionFinished = useTransitionFinished();
     const page = PREVIEW_SIZES.indexOf(size);
     const pager = useAnimatedRef<Animated.ScrollView>();
     const offset = useSharedValue(page * width);
@@ -102,13 +115,16 @@ export function WidgetPreviewPager({
                             importantForAccessibility={item === size ? "auto" : "no-hide-descendants"}
                             style={{ width, paddingTop: STAGE_PADDING }}
                         >
-                            <MoneyWidgetPreview
-                                testID={`widget-preview-${item}`}
-                                accessibilityLabel={t("widgets.previewAccessibility")}
-                                config={config}
-                                revision={revision}
-                                style={{ width: item === "small" ? 168 : width - PAGE_GUTTER * 2, height: PREVIEW_HEIGHT[item] }}
-                            />
+                            {transitionFinished ? (
+                                <MoneyWidgetPreview
+                                    testID={`widget-preview-${item}`}
+                                    accessibilityLabel={t("widgets.previewAccessibility")}
+                                    config={config}
+                                    revision={revision}
+                                    active={item === size}
+                                    style={{ width: item === "small" ? 168 : width - PAGE_GUTTER * 2, height: PREVIEW_HEIGHT[item] }}
+                                />
+                            ) : null}
                         </View>
                     ))}
                 </Animated.ScrollView>

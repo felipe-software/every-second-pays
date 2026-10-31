@@ -1,9 +1,13 @@
-import { type ScrollHeaderProps, ScrollViewWithHeaders } from "@codeherence/react-native-header";
+import {
+    type ScrollHeaderProps,
+    type ScrollLargeHeaderSubtitleProps,
+    ScrollViewWithHeaders,
+} from "@codeherence/react-native-header";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { BlurView } from "expo-blur";
 import { type ComponentProps, type ReactNode } from "react";
 import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import Animated, { Extrapolation, interpolate, useAnimatedStyle } from "react-native-reanimated";
+import Animated, { Extrapolation, interpolate, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useEarningsTheme } from "@/features/earnings/theme";
@@ -16,17 +20,21 @@ const BACKDROP_SOLID_BAR_FRACTION = 0.7;
 const BACKDROP_FADE_IN_SCROLL = 20;
 const COMPACT_TITLE_RISE = 8;
 const BLUR_INTENSITY = 30;
+const STICKY_BAR_GAP = BACKDROP_FADE_HEIGHT / 2;
+const STICKY_FADE_HEIGHT = 24;
+const STICKY_FADE_IN_SCROLL = 24;
 // Android has no blur behind the bar, so its background stays denser to keep content legible.
 const BLUR_MASK_STOPS = "rgba(0, 0, 0, 0.85) 75%, transparent 100%";
 const BACKGROUND_MASK_STOPS = `rgba(0, 0, 0, ${IS_IOS ? 0.35 : 0.6}) 70%, transparent 100%`;
 
 type LargeTitleScrollViewProps = Omit<
     ComponentProps<typeof ScrollViewWithHeaders>,
-    "HeaderComponent" | "LargeHeaderComponent" | "absoluteHeader" | "initialAbsoluteHeaderHeight"
+    "HeaderComponent" | "LargeHeaderComponent" | "LargeHeaderSubtitleComponent" | "absoluteHeader" | "initialAbsoluteHeaderHeight"
 > & {
     title: string;
     headerLeft?: ReactNode;
     background?: ReactNode;
+    stickyHeader?: ReactNode;
     onTitlePress?: () => void;
 };
 
@@ -34,6 +42,7 @@ export function LargeTitleScrollView({
     title,
     headerLeft,
     background,
+    stickyHeader,
     onTitlePress,
     contentContainerStyle,
     children,
@@ -59,10 +68,36 @@ export function LargeTitleScrollView({
                         </Text>
                     </Pressable>
                 )}
+                LargeHeaderSubtitleComponent={stickyHeader
+                    ? ({ scrollY }) => <StickyHeader scrollY={scrollY}>{stickyHeader}</StickyHeader>
+                    : undefined}
             >
                 {children}
             </ScrollViewWithHeaders>
         </>
+    );
+}
+
+function StickyHeader({ scrollY, children }: Pick<ScrollLargeHeaderSubtitleProps, "scrollY"> & { children: ReactNode }) {
+    const insets = useSafeAreaInsets();
+    const { colors } = useEarningsTheme();
+    const stuckTop = insets.top + BAR_HEIGHT + STICKY_BAR_GAP;
+    const contentTop = useSharedValue(Number.POSITIVE_INFINITY);
+    const stickStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: Math.max(0, scrollY.get() - contentTop.get() + stuckTop) }],
+    }));
+    const backdropStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(scrollY.get() - contentTop.get() + stuckTop, [-STICKY_FADE_IN_SCROLL, 0], [0, 1], Extrapolation.CLAMP),
+    }));
+
+    return (
+        <Animated.View onLayout={(event) => contentTop.set(event.nativeEvent.layout.y)} style={[styles.sticky, stickStyle]}>
+            <Animated.View pointerEvents="none" style={[styles.stickyBackdrop, { top: -stuckTop }, backdropStyle]}>
+                <View style={[styles.stickyFill, { backgroundColor: colors.canvas }]} />
+                <View style={[styles.stickyFade, { experimental_backgroundImage: `linear-gradient(180deg, ${colors.canvas} 0%, ${colors.canvas}00 100%)` }]} />
+            </Animated.View>
+            {children}
+        </Animated.View>
     );
 }
 
@@ -143,6 +178,27 @@ function FadeMask({ solidUntil, stops }: { solidUntil: number; stops: string }) 
 }
 
 const styles = StyleSheet.create({
+    sticky: {
+        zIndex: 1,
+        marginHorizontal: -PAGE_GUTTER,
+        paddingHorizontal: PAGE_GUTTER,
+    },
+    stickyBackdrop: {
+        position: "absolute",
+        right: 0,
+        bottom: 0,
+        left: 0,
+    },
+    stickyFill: {
+        flex: 1,
+    },
+    stickyFade: {
+        position: "absolute",
+        top: "100%",
+        right: 0,
+        left: 0,
+        height: STICKY_FADE_HEIGHT,
+    },
     backdrop: {
         position: "absolute",
         top: 0,
