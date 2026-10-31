@@ -1,5 +1,34 @@
+diff --git a/android/src/main/java/expo/modules/blur/ExpoBlurTargetView.kt b/android/src/main/java/expo/modules/blur/ExpoBlurTargetView.kt
+index 7089679..8b73517 100644
+--- a/android/src/main/java/expo/modules/blur/ExpoBlurTargetView.kt
++++ b/android/src/main/java/expo/modules/blur/ExpoBlurTargetView.kt
+@@ -109,6 +109,24 @@ class ExpoBlurTargetView(context: Context, appContext: AppContext) : ExpoView(co
+     return blurTargetView.indexOfChild(child)
+   }
+ 
++  // react-native-screens retains a popped screen's children through these; without forwarding, the
++  // target is emptied as the pop starts and the blur draws an empty frame.
++  override fun startViewTransition(view: View?) {
++    if (view === blurTargetView) {
++      super.startViewTransition(view)
++      return
++    }
++    blurTargetView.startViewTransition(view)
++  }
++
++  override fun endViewTransition(view: View?) {
++    if (view === blurTargetView) {
++      super.endViewTransition(view)
++      return
++    }
++    blurTargetView.endViewTransition(view)
++  }
++
+   override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+     val width = MeasureSpec.getSize(widthMeasureSpec)
+     val height = MeasureSpec.getSize(heightMeasureSpec)
 diff --git a/android/src/main/java/expo/modules/blur/ExpoBlurView.kt b/android/src/main/java/expo/modules/blur/ExpoBlurView.kt
-index 71344c8df533c25facea5fe7f5ed91528d15c1ed..17eba61aa71ecdfb19dbdebd0327d789e6ce6677 100644
+index 71344c8..17eba61 100644
 --- a/android/src/main/java/expo/modules/blur/ExpoBlurView.kt
 +++ b/android/src/main/java/expo/modules/blur/ExpoBlurView.kt
 @@ -4,6 +4,7 @@ import android.annotation.SuppressLint

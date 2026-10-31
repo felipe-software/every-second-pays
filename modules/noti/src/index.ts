@@ -169,14 +169,15 @@ const moneyWidgets = {
 export type MoneyWidgetPreviewProps = ViewProps & {
     config: MoneyWidgetConfig;
     revision?: number;
+    active?: boolean;
 };
 
-let previewComponent: ComponentType<ViewProps & { config: string; revision: number }> | null = null;
+let previewComponent: ComponentType<ViewProps & { config: string; revision: number; active: boolean }> | null = null;
 
-export function MoneyWidgetPreview({ config, revision = 0, ...props }: MoneyWidgetPreviewProps) {
+export function MoneyWidgetPreview({ config, revision = 0, active = true, ...props }: MoneyWidgetPreviewProps) {
     if (!supported()) return null;
     previewComponent ??= requireNativeView('NotificationMotion');
-    return createElement(previewComponent, { ...props, config: JSON.stringify(config), revision });
+    return createElement(previewComponent, { ...props, config: JSON.stringify(config), revision, active });
 }
 
 const lifecycle = {
