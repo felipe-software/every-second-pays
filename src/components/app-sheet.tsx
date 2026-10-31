@@ -15,7 +15,7 @@ const TRANSPARENT = { backgroundColor: "transparent" };
 
 const SheetDepth = createContext(0);
 
-type AppSheetProps = Pick<TrueSheetProps, "children" | "footer" | "onDidDismiss"> & {
+type AppSheetProps = Pick<TrueSheetProps, "children" | "footer" | "footerOptions" | "onDidDismiss"> & {
     sheetRef: RefObject<TrueSheet | null>;
     title: string;
     closeTestID: string;
@@ -32,6 +32,7 @@ export function AppSheet({
     headerActions,
     headerAccessory,
     footer,
+    footerOptions,
     onDidDismiss,
     children,
 }: AppSheetProps) {
@@ -58,6 +59,7 @@ export function AppSheet({
         headerStyle: TRANSPARENT,
         footerStyle: TRANSPARENT,
         footer,
+        footerOptions,
         header: (
             <View>
                 <View className={`flex-row items-center gap-3 px-[22px] pt-6 ${headerAccessory ? "pb-3.5" : "pb-4"}`}>
