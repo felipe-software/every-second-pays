@@ -10,6 +10,7 @@ import { useState } from "react";
 import { Pressable, useWindowDimensions, View } from "react-native";
 
 import { RAISED_OUTLINE } from "@/components/elevated/raised";
+import { rippleConfig } from "@/components/elevated/ripple";
 import { useEarningsTheme } from "@/features/earnings/theme";
 
 import { useI18n } from "./i18n";
@@ -43,6 +44,7 @@ export function LanguageMenu({ preference, disabled, onOpen, onPressIn, onPressO
             onPress={openMenu}
             onPressIn={onPressIn}
             onPressOut={onPressOut}
+            android_ripple={rippleConfig(colors.ink)}
             className="flex-row items-center gap-3 px-4"
             style={{ width: menuWidth, minHeight: LANGUAGE_ROW_HEIGHT }}
         >

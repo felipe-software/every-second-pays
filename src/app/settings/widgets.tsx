@@ -4,10 +4,10 @@ import { Platform, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Defs, Ellipse, LinearGradient, RadialGradient, Rect, Stop } from "react-native-svg";
 
-import { Raised, RaisedPressable } from "@/components/elevated/raised";
+import { RaisedPressable } from "@/components/elevated/raised";
 import { LargeTitleScrollView } from "@/components/large-title-scroll-view";
 import { LineIcon } from "@/components/line-icon";
-import { SectionLabel } from "@/components/settings-card";
+import { Card, SectionLabel } from "@/components/settings-card";
 import { PALETTES } from "@/features/appearance/palettes";
 import { currencyPrefix } from "@/features/currency/currencies";
 import { useCurrencyStore } from "@/features/currency/store";
@@ -237,7 +237,7 @@ export default function WidgetsScreen() {
                             </View>
 
                             <SectionLabel>{t("widgets.section.layout")}</SectionLabel>
-                            <Raised surface="card" depth={3} radius={20} className="gap-3.5 p-3">
+                            <Card className="gap-3.5 p-3">
                                 <SizeSegments
                                     label={t("widgets.section.size")}
                                     options={PREVIEW_SIZES.map((size) => ({
@@ -268,7 +268,7 @@ export default function WidgetsScreen() {
                                     value={config.template}
                                     onChange={set("template")}
                                 />
-                            </Raised>
+                            </Card>
 
                             <View className="h-4" />
                             <CollapsibleCard testID="widget-group-appearance" icon={GROUP_ICONS.appearance} title={t("widgets.group.appearance")}>
