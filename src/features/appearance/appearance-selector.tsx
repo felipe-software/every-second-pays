@@ -62,6 +62,7 @@ function AppearancePreview({
                 radius={16}
                 selected={active}
                 pressed={sink.pressed}
+                ripple={sink.ripple}
                 className="h-[108px]"
             >
                 <View className="flex-1 overflow-hidden rounded-[15px] border-[3px] p-[7px]" style={{ borderColor: border }}>

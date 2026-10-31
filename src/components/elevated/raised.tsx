@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { Pressable, type PressableProps, type StyleProp, View, type ViewStyle } from "react-native";
+import type { ReactNode, RefObject } from "react";
+import { type GestureResponderEvent, Pressable, type PressableProps, type StyleProp, View, type ViewStyle } from "react-native";
 import Animated, {
     Easing,
     ReduceMotion,
@@ -12,6 +12,7 @@ import Animated, {
 import { useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
 
+import { RippleOverlay, useRippleOverlay } from "./ripple";
 import { useSquash } from "./use-squash";
 
 const PRESS_DURATION = 80;
@@ -55,6 +56,7 @@ type RaisedProps = {
     selected?: boolean;
     squashKey?: unknown;
     pressed?: SharedValue<number>;
+    ripple?: RefObject<View | null>;
     className?: string;
     style?: StyleProp<ViewStyle>;
     children?: ReactNode;
@@ -68,6 +70,7 @@ export function Raised({
     selected,
     squashKey,
     pressed,
+    ripple,
     className,
     style,
     children,
@@ -114,6 +117,7 @@ export function Raised({
                 ]}
             >
                 {children}
+                {ripple ? <RippleOverlay overlay={ripple} radius={radius - RAISED_OUTLINE} ink={colors.ink} /> : null}
             </Animated.View>
         </Animated.View>
     );
@@ -121,16 +125,22 @@ export function Raised({
 
 export function usePressSink() {
     const pressed = useSharedValue(0);
+    const { overlay, show, hide } = useRippleOverlay();
     const sink = (value: number) => pressed.set(withTiming(value, {
         duration: PRESS_DURATION,
         easing: Easing.out(Easing.quad),
         reduceMotion: ReduceMotion.System,
     }));
-    const onPressIn = () => {
+    const onPressIn = (event?: GestureResponderEvent) => {
         appHaptics.press();
         sink(1);
+        show(event);
     };
-    return { pressed, onPressIn, onPressOut: () => sink(0) };
+    const onPressOut = () => {
+        sink(0);
+        hide();
+    };
+    return { pressed, ripple: overlay, onPressIn, onPressOut };
 }
 
 export function RaisedPressable({
@@ -148,7 +158,7 @@ export function RaisedPressable({
     onPressIn,
     onPressOut,
     ...pressableProps
-}: Omit<RaisedProps, "pressed"> & Omit<PressableProps, "style" | "children"> & {
+}: Omit<RaisedProps, "pressed" | "ripple"> & Omit<PressableProps, "style" | "children"> & {
     containerClassName?: string;
     containerStyle?: StyleProp<ViewStyle>;
 }) {
@@ -160,7 +170,7 @@ export function RaisedPressable({
             className={containerClassName}
             style={containerStyle}
             onPressIn={(event) => {
-                sink.onPressIn();
+                sink.onPressIn(event);
                 onPressIn?.(event);
             }}
             onPressOut={(event) => {
@@ -176,6 +186,7 @@ export function RaisedPressable({
                 selected={selected}
                 squashKey={squashKey}
                 pressed={sink.pressed}
+                ripple={sink.ripple}
                 className={className}
                 style={style}
             >

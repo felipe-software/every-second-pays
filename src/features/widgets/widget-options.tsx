@@ -13,7 +13,7 @@ import { CheckIcon } from "@/components/check-icon";
 import { PopIn } from "@/components/elevated/pop-in";
 import { Raised, RaisedPressable, usePressSink } from "@/components/elevated/raised";
 import { LineIcon } from "@/components/line-icon";
-import { CardDivider, IconTile, usePressHighlight } from "@/components/settings-card";
+import { Card, CardDivider, IconTile, usePressHighlight } from "@/components/settings-card";
 import { edgeColor, useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
 
@@ -56,7 +56,7 @@ export function CollapsibleCard({
 
     return (
         <View className="mt-3">
-            <Raised surface="card" depth={3} radius={20} className="overflow-hidden">
+            <Card className="overflow-hidden">
                 <Pressable
                     testID={testID}
                     accessibilityRole="button"
@@ -67,6 +67,7 @@ export function CollapsibleCard({
                     }}
                     onPressIn={highlight.onPressIn}
                     onPressOut={highlight.onPressOut}
+                    android_ripple={highlight.android_ripple}
                     className="min-h-[60px] flex-row items-center gap-3 px-4"
                     style={highlight.style}
                 >
@@ -92,7 +93,7 @@ export function CollapsibleCard({
                         {children}
                     </View>
                 </Animated.View>
-            </Raised>
+            </Card>
         </View>
     );
 }
@@ -177,27 +178,24 @@ function Segment({
 }) {
     const { colors } = useEarningsTheme();
     return (
-        <Pressable
+        <RaisedPressable
             accessibilityRole="radio"
             accessibilityLabel={label}
             accessibilityState={{ checked: selected }}
             onPress={onPress}
-            className="flex-1"
+            containerClassName="flex-1"
+            surface={selected
+                ? { face: colors.chipSelected, edge: colors.edgeChip, outline: colors.chipSelectedBorder }
+                : { face: colors.canvas, edge: colors.canvas, outline: colors.canvas }}
+            flat={!selected}
+            depth={2}
+            radius={19}
+            selected={selected}
+            className="h-9 flex-row items-center justify-center gap-1.5"
         >
-            <Raised
-                surface={selected
-                    ? { face: colors.chipSelected, edge: colors.edgeChip, outline: colors.chipSelectedBorder }
-                    : { face: colors.canvas, edge: colors.canvas, outline: colors.canvas }}
-                flat={!selected}
-                depth={2}
-                radius={19}
-                selected={selected}
-                className="h-9 flex-row items-center justify-center gap-1.5"
-            >
-                {icon}
-                <Text className="font-sans text-[13px] font-semibold" style={{ color: selected ? colors.ink : colors.muted }}>{label}</Text>
-            </Raised>
-        </Pressable>
+            {icon}
+            <Text className="font-sans text-[13px] font-semibold" style={{ color: selected ? colors.ink : colors.muted }}>{label}</Text>
+        </RaisedPressable>
     );
 }
 
@@ -215,7 +213,7 @@ export function SizeSegments<T extends string>({
     const { colors } = useEarningsTheme();
     return (
         <View testID="widget-preview-size" accessibilityRole="radiogroup" accessibilityLabel={label}>
-            <Raised surface="canvas" depth={2} radius={23} className="flex-row gap-0.5 p-[2px]">
+            <View className="flex-row gap-0.5 rounded-[23px] p-[3px]" style={{ backgroundColor: colors.canvas }}>
                 {options.map((option) => {
                     const selected = option.value === value;
                     const { width, height } = option.glyph;
@@ -242,8 +240,63 @@ export function SizeSegments<T extends string>({
                         />
                     );
                 })}
-            </Raised>
+            </View>
         </View>
+    );
+}
+
+function PickerTile({
+    label,
+    art,
+    height,
+    selected,
+    onPress,
+    testID,
+}: {
+    label: string;
+    art: ReactNode;
+    height: number;
+    selected: boolean;
+    onPress: () => void;
+    testID?: string;
+}) {
+    const { colors } = useEarningsTheme();
+    const sink = usePressSink();
+    return (
+        <Pressable
+            testID={testID}
+            accessibilityRole="radio"
+            accessibilityLabel={label}
+            accessibilityState={{ checked: selected }}
+            onPress={onPress}
+            onPressIn={sink.onPressIn}
+            onPressOut={sink.onPressOut}
+            className="min-w-0 flex-1 gap-2"
+        >
+            <Raised
+                surface={{
+                    face: colors.canvas,
+                    edge: selected ? colors.edgeChip : colors.edgeCanvas,
+                    outline: selected ? colors.chipSelectedBorder : colors.canvas,
+                }}
+                depth={2}
+                radius={14}
+                selected={selected}
+                pressed={sink.pressed}
+                ripple={sink.ripple}
+                className="overflow-hidden"
+                style={{ height, borderWidth: 2 }}
+            >
+                {art}
+            </Raised>
+            <Text
+                numberOfLines={1}
+                className="text-center font-sans text-[13px] font-semibold"
+                style={{ color: selected ? colors.ink : colors.muted }}
+            >
+                {label}
+            </Text>
+        </Pressable>
     );
 }
 
@@ -262,45 +315,19 @@ export function PickerTiles<T extends string>({
     height: number;
     testID?: string;
 }) {
-    const { colors } = useEarningsTheme();
     return (
         <View testID={testID} accessibilityRole="radiogroup" accessibilityLabel={label} className="flex-row gap-2.5">
-            {options.map((option) => {
-                const selected = option.value === value;
-                return (
-                    <Pressable
-                        key={option.value}
-                        testID={testID ? `${testID}-${option.value}` : undefined}
-                        accessibilityRole="radio"
-                        accessibilityLabel={option.label}
-                        accessibilityState={{ checked: selected }}
-                        onPress={() => choose(value, option.value, onChange)}
-                        className="min-w-0 flex-1 gap-2"
-                    >
-                        <Raised
-                            surface={{
-                                face: colors.canvas,
-                                edge: selected ? colors.edgeChip : colors.edgeCanvas,
-                                outline: selected ? colors.chipSelectedBorder : colors.canvas,
-                            }}
-                            depth={2}
-                            radius={14}
-                            selected={selected}
-                            className="overflow-hidden"
-                            style={{ height, borderWidth: 2 }}
-                        >
-                            {option.art}
-                        </Raised>
-                        <Text
-                            numberOfLines={1}
-                            className="text-center font-sans text-[13px] font-semibold"
-                            style={{ color: selected ? colors.ink : colors.muted }}
-                        >
-                            {option.label}
-                        </Text>
-                    </Pressable>
-                );
-            })}
+            {options.map((option) => (
+                <PickerTile
+                    key={option.value}
+                    testID={testID ? `${testID}-${option.value}` : undefined}
+                    label={option.label}
+                    art={option.art}
+                    height={height}
+                    selected={option.value === value}
+                    onPress={() => choose(value, option.value, onChange)}
+                />
+            ))}
         </View>
     );
 }
@@ -324,6 +351,7 @@ function Swatch({ label, color, selected, onPress, children }: { label: string; 
                 radius={17}
                 selected={selected}
                 pressed={sink.pressed}
+                ripple={sink.ripple}
                 className="h-[34px] w-[34px] items-center justify-center overflow-hidden"
             >
                 {children}
@@ -409,6 +437,7 @@ export function SwitchRow({
                 }}
                 onPressIn={highlight.onPressIn}
                 onPressOut={highlight.onPressOut}
+                android_ripple={highlight.android_ripple}
                 className="min-h-[54px] flex-row items-center gap-3 px-4"
                 style={[highlight.style, { opacity: disabled ? 0.5 : 1 }]}
             >

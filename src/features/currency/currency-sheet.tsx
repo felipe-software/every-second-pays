@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppSheet } from "@/components/app-sheet";
 import { CheckIcon } from "@/components/check-icon";
 import { PopIn } from "@/components/elevated/pop-in";
+import { rippleConfig } from "@/components/elevated/ripple";
 import { LineIcon } from "@/components/line-icon";
 import { SettingsCard, SettingsRow } from "@/components/settings-card";
 import { useEarningsTheme } from "@/features/earnings/theme";
@@ -211,6 +212,7 @@ export function CurrencySheet({
                             accessibilityLabel={t("currency.clearSearch")}
                             onPress={() => setQuery("")}
                             hitSlop={4}
+                            android_ripple={rippleConfig(colors.ink, 18)}
                             className="h-9 w-9 items-center justify-center rounded-full"
                         >
                             <LineIcon d={CLEAR_PATH} color={colors.muted} size={14} strokeWidth={2.6} />

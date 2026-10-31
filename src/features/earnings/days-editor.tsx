@@ -2,6 +2,7 @@ import { Pressable, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 
 import { Raised, RaisedPressable, usePressSink } from "@/components/elevated/raised";
+import { rippleConfig } from "@/components/elevated/ripple";
 import { useSquash } from "@/components/elevated/use-squash";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
@@ -47,6 +48,7 @@ function DayToggle({
             }}
             onPressIn={onPressIn}
             onPressOut={onPressOut}
+            android_ripple={rippleConfig(colors.ink)}
             className="flex-1"
         >
             <Animated.View

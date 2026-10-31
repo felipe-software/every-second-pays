@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
 
 import { RaisedPressable } from "@/components/elevated/raised";
+import { rippleConfig } from "@/components/elevated/ripple";
 import { useAppearanceStore } from "@/features/appearance/store";
 import { runInterfaceTransition } from "@/features/appearance/theme-transition";
 import { getEarningsColors, useEarningsTheme } from "@/features/earnings/theme";
@@ -354,6 +355,7 @@ export function Onboarding() {
                                     appHaptics.dismiss();
                                     exit();
                                 }}
+                                android_ripple={rippleConfig(colors.ink, 28)}
                                 style={styles.skipButton}
                             >
                                 <Text style={[styles.skipLabel, { color: colors.muted }]}>{t("onboarding.skip")}</Text>
