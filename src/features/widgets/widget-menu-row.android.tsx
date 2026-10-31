@@ -10,6 +10,7 @@ import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
+import { rippleConfig } from "@/components/elevated/ripple";
 import { useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
 
@@ -42,6 +43,7 @@ export function WidgetMenuRow<T extends string>({ label, value, options, onChang
                     appHaptics.selection();
                     setOpen(true);
                 }}
+                android_ripple={rippleConfig(colors.ink)}
                 className="flex-row items-center gap-2 px-4"
                 style={{ minHeight: ROW_HEIGHT }}
             >

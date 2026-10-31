@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { type CSSTransitionProperties, css, cubicBezier } from "react-native-reanimated";
 import Svg, { Circle, Path } from "react-native-svg";
 
+import { rippleConfig } from "@/components/elevated/ripple";
 import { mixColors, withAlpha } from "@/features/appearance/color";
 import { PALETTES, type PaletteId } from "@/features/appearance/palettes";
 import { appHaptics } from "@/features/haptics/haptics";
@@ -89,6 +90,7 @@ function PhonePreview() {
 
 function Swatch({ palette, color, selected, onPress }: { palette: PaletteId; color: string; selected: boolean; onPress: () => void }) {
     const { t } = useI18n();
+    const { colors } = useOnboardingTheme();
     const index = PALETTES.findIndex((item) => item.id === palette);
     return (
         <Pressable
@@ -98,6 +100,7 @@ function Swatch({ palette, color, selected, onPress }: { palette: PaletteId; col
             accessibilityState={{ checked: selected }}
             hitSlop={5}
             onPress={onPress}
+            android_ripple={rippleConfig(colors.ink, 18)}
             style={[styles.swatch, { left: SWATCH_X[index] - BAR.x - 18 }]}
         >
             <View style={[styles.swatchEdge, { backgroundColor: mixColors(color, "#000000", 0.32) }]} />
@@ -128,6 +131,7 @@ function ModeButton({ onPress }: { onPress: () => void }) {
             accessibilityLabel={t(look.dark ? "onboarding.customize.toLight" : "onboarding.customize.toDark")}
             hitSlop={5}
             onPress={onPress}
+            android_ripple={rippleConfig(colors.ink, 18)}
             style={styles.mode}
         >
             <View style={[styles.modeEdge, { backgroundColor: colors.edgeFill }]} />
@@ -268,8 +272,7 @@ export function CustomizeStep({
             <PageLayer index={index} depth={DEPTH.art}>
                 <PhonePreview />
                 <Animated.View style={[styles.bar, rise(220, 26)]}>
-                    <View style={[styles.barEdge, { backgroundColor: colors.edgeRaised }]} />
-                    <View style={[styles.barFace, { backgroundColor: colors.raised }]} />
+                    <View style={[styles.barFace, { backgroundColor: colors.raised, borderColor: colors.cardOutline }]} />
                     <View accessibilityRole="radiogroup" style={StyleSheet.absoluteFill}>
                         {PALETTES.map((palette) => (
                             <Swatch
@@ -437,18 +440,10 @@ const styles = StyleSheet.create({
         width: 320,
         height: 60,
     },
-    // The raised edge: a 1 pt outline that thickens to 5 pt along the bottom.
-    barEdge: {
-        position: "absolute",
-        left: -1,
-        right: -1,
-        top: -1,
-        bottom: -5,
-        borderRadius: 31,
-    },
     barFace: {
         ...StyleSheet.absoluteFill,
         borderRadius: 30,
+        borderWidth: 1,
     },
     swatch: {
         position: "absolute",

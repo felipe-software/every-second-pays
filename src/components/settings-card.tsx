@@ -1,7 +1,7 @@
 import { Children, Fragment, type ReactNode, useState } from "react";
-import { Pressable, type PressableProps, Text, View } from "react-native";
+import { Platform, Pressable, type PressableProps, Text, View } from "react-native";
 
-import { Raised } from "@/components/elevated/raised";
+import { rippleConfig } from "@/components/elevated/ripple";
 import { useEarningsTheme } from "@/features/earnings/theme";
 
 export function SectionLabel({ children }: { children: string }) {
@@ -19,17 +19,29 @@ export function CardDivider({ inset = 16 }: { inset?: number }) {
     return <View className="h-px bg-track opacity-70" style={{ marginLeft: inset, marginRight: 16 }} />;
 }
 
+export function Card({ className = "", children }: { className?: string; children: ReactNode }) {
+    const { colors } = useEarningsTheme();
+    return (
+        <View
+            className={`rounded-[20px] border ${className}`}
+            style={{ backgroundColor: colors.cardFace, borderColor: colors.cardOutline }}
+        >
+            {children}
+        </View>
+    );
+}
+
 export function SettingsCard({ children, dividerInset }: { children: ReactNode; dividerInset?: number }) {
     const rows = Children.toArray(children).filter(Boolean);
     return (
-        <Raised surface="card" depth={3} radius={20} className="overflow-hidden">
+        <Card className="overflow-hidden">
             {rows.map((row, index) => (
                 <Fragment key={index}>
                     {index > 0 ? <CardDivider inset={dividerInset} /> : null}
                     {row}
                 </Fragment>
             ))}
-        </Raised>
+        </Card>
     );
 }
 
@@ -44,12 +56,15 @@ export function IconTile({ children, size = 32 }: { children: ReactNode; size?: 
     );
 }
 
+const TINTS_ON_PRESS = Platform.OS !== "android";
+
 export function usePressHighlight() {
     const { colors } = useEarningsTheme();
     const [pressed, setPressed] = useState(false);
     return {
+        android_ripple: rippleConfig(colors.ink),
         style: { backgroundColor: pressed ? `${colors.ink}0F` : "transparent" },
-        onPressIn: () => setPressed(true),
+        onPressIn: () => setPressed(TINTS_ON_PRESS),
         onPressOut: () => setPressed(false),
     };
 }
@@ -73,6 +88,7 @@ export function SettingsRow({
                 highlight.onPressOut();
                 onPressOut?.(event);
             }}
+            android_ripple={highlight.android_ripple}
             className={`flex-row items-center gap-3 px-4 ${className}`}
             style={[{ minHeight }, highlight.style]}
         />

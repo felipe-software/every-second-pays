@@ -53,6 +53,7 @@ function ShiftChip({
                     }}
                     containerClassName="ml-0.5"
                     surface="raised"
+                    flat
                     depth={2}
                     radius={10}
                     className="h-5 w-5 items-center justify-center"

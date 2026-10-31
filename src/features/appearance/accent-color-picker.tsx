@@ -52,6 +52,7 @@ function Swatch({
                 radius={17}
                 selected={selected}
                 pressed={sink.pressed}
+                ripple={sink.ripple}
                 className="h-[34px] w-[34px] items-center justify-center"
             >
                 <PopIn visible={selected}>
