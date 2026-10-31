@@ -57,9 +57,8 @@ export function DevJobControls() {
             appHaptics.primaryAction();
         } catch {
             setAddError(true);
-        } finally {
-            setAdding(false);
         }
+        setAdding(false);
     };
 
     return (

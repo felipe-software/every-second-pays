@@ -101,6 +101,8 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
             closeTestID="close-payment-sheet"
             dismissible={!saving}
             onDidDismiss={onDismiss}
+            // Android's IME inset already includes the navigation bar that the footer pads for.
+            footerOptions={Platform.OS === "android" ? { keyboardOffset: -insets.bottom } : undefined}
             headerActions={source ? (
                 <SheetHeaderButton
                     accessibilityLabel={t("payment.deleteAccessibility")}
