@@ -17,6 +17,8 @@ function deriveColors(base: ThemeColors, isDark: boolean) {
     const chipSelectedBorder = mixColors(card, base.accent, isDark ? 0.62 : 0.6);
     const cardFace = isDark ? base.row : raised;
     const dangerFace = mixColors(base.canvas, base.danger, 0.1);
+    // Matches EarningsBackground's blurred top; keep in sync with its glow opacities.
+    const canvasGlow = mixColors(mixColors(base.canvas, base.accent, 0.078), base.row, isDark ? 0.405 : 0.26);
 
     return {
         ...base,
@@ -26,6 +28,7 @@ function deriveColors(base: ThemeColors, isDark: boolean) {
         chipSelected,
         chipSelectedBorder,
         dangerFace,
+        canvasGlow,
         cardFace,
         cardOutline: isDark ? edgeColor(base.row) : base.track,
         edgeRow: edgeColor(base.row),
