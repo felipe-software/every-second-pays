@@ -7,6 +7,7 @@ export const ONBOARDING_ART = {
     intro: () => require("@/assets/onboarding/intro.json") as OnboardingAnimation,
     widget: () => require("@/assets/onboarding/widget.json") as OnboardingAnimation,
     privacy: () => require("@/assets/onboarding/privacy.json") as OnboardingAnimation,
+    notifications: () => require("@/assets/onboarding/notifications.json") as OnboardingAnimation,
 };
 
 /**

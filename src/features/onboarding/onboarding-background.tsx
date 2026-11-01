@@ -6,7 +6,7 @@ import { introDrop } from "./intro-timeline";
 import { useOnboardingTheme } from "./look";
 import { glow } from "./paint";
 
-export type PageId = "intro" | "widget" | "privacy" | "customize";
+export type PageId = "intro" | "widget" | "privacy" | "notifications" | "customize";
 
 type Blob = {
     width: number;
@@ -23,7 +23,7 @@ const BLOBS: Blob[] = [
     {
         width: 700,
         height: 600,
-        at: { intro: [206, -40], widget: [318, 40], privacy: [206, 230], customize: [90, 20] },
+        at: { intro: [206, -40], widget: [318, 40], privacy: [206, 230], notifications: [150, 120], customize: [90, 20] },
         breathe: 9000,
         opacity: { light: 0.62, dark: 0.72 },
         paint: ({ accent }) => glow(accent, [0.62], [0.24, 52]),
@@ -31,7 +31,7 @@ const BLOBS: Blob[] = [
     {
         width: 560,
         height: 460,
-        at: { intro: [30, 930], widget: [396, 900], privacy: [40, 850], customize: [380, 940] },
+        at: { intro: [30, 930], widget: [396, 900], privacy: [40, 850], notifications: [392, 880], customize: [380, 940] },
         breathe: 11000,
         opacity: { light: 0.5, dark: 0.42 },
         paint: ({ accentDeep }) => glow(accentDeep, [0.4], [0.14, 55]),
@@ -39,7 +39,7 @@ const BLOBS: Blob[] = [
     {
         width: 380,
         height: 320,
-        at: { intro: [398, 560], widget: [12, 520], privacy: [392, 600], customize: [226, 650] },
+        at: { intro: [398, 560], widget: [12, 520], privacy: [392, 600], notifications: [20, 540], customize: [226, 650] },
         breathe: 13000,
         opacity: { light: 0.55, dark: 0.5 },
         paint: ({ accent }) => glow(accent, [0.36]),
