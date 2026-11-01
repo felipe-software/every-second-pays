@@ -23,7 +23,6 @@ export const TouchFeedbackLayer = memo(function TouchFeedbackLayer({
             <TouchFeedback
                 {...visuals}
                 animatedStyle={animatedStyle}
-                gradientId="tabbar-touch-feedback"
             />
         </View>
     );

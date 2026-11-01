@@ -10,6 +10,7 @@ import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { withAlpha } from "@/features/appearance/color";
 import { useEarningsTheme } from "@/features/earnings/theme";
 
 const IS_IOS = Platform.OS === "ios";
@@ -23,9 +24,10 @@ const BLUR_INTENSITY = 30;
 const STICKY_BAR_GAP = BACKDROP_FADE_HEIGHT / 2;
 const STICKY_FADE_HEIGHT = 24;
 const STICKY_FADE_IN_SCROLL = 24;
-// Android has no blur behind the bar, so its background stays denser to keep content legible.
 const BLUR_MASK_STOPS = "rgba(0, 0, 0, 0.85) 75%, transparent 100%";
-const BACKGROUND_MASK_STOPS = `rgba(0, 0, 0, ${IS_IOS ? 0.35 : 0.6}) 70%, transparent 100%`;
+const BACKGROUND_MASK_STOPS = "rgba(0, 0, 0, 0.35) 70%, transparent 100%";
+// Android has no blur behind the bar, so its fade stays denser to keep content legible.
+const ANDROID_FADE_OPACITY = 0.6;
 
 type LargeTitleScrollViewProps = Omit<
     ComponentProps<typeof ScrollViewWithHeaders>,
@@ -143,17 +145,33 @@ function Backdrop({
 }: Pick<LargeTitleScrollViewProps, "background"> & { style: ComponentProps<typeof Animated.View>["style"] }) {
     const insets = useSafeAreaInsets();
     const { height: screenHeight } = useWindowDimensions();
-    const { isDark } = useEarningsTheme();
+    const { colors, isDark } = useEarningsTheme();
     const height = insets.top + BAR_HEIGHT + BACKDROP_FADE_HEIGHT;
     const solidUntil = (insets.top + BAR_HEIGHT * BACKDROP_SOLID_BAR_FRACTION) / height;
 
+    if (!IS_IOS) {
+        const fill = background ? colors.canvasGlow : colors.canvas;
+        const solidPercent = `${Math.round(solidUntil * 100)}%`;
+        return (
+            <Animated.View
+                pointerEvents="none"
+                style={[
+                    styles.backdrop,
+                    {
+                        height,
+                        experimental_backgroundImage: `linear-gradient(180deg, ${fill} 0%, ${fill} ${solidPercent}, ${withAlpha(fill, ANDROID_FADE_OPACITY)} 70%, ${withAlpha(fill, 0)} 100%)`,
+                    },
+                    style,
+                ]}
+            />
+        );
+    }
+
     return (
         <Animated.View pointerEvents="none" style={[styles.backdrop, { height }, style]}>
-            {IS_IOS ? (
-                <MaskedView style={StyleSheet.absoluteFill} maskElement={<FadeMask solidUntil={solidUntil} stops={BLUR_MASK_STOPS} />}>
-                    <BlurView intensity={BLUR_INTENSITY} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
-                </MaskedView>
-            ) : null}
+            <MaskedView style={StyleSheet.absoluteFill} maskElement={<FadeMask solidUntil={solidUntil} stops={BLUR_MASK_STOPS} />}>
+                <BlurView intensity={BLUR_INTENSITY} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
+            </MaskedView>
             <MaskedView style={StyleSheet.absoluteFill} maskElement={<FadeMask solidUntil={solidUntil} stops={BACKGROUND_MASK_STOPS} />}>
                 {/* Screen-tall, so a background laid out from the top lines up with the page's own. */}
                 <View style={{ height: screenHeight }}>

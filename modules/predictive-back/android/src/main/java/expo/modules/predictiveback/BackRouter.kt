@@ -1,6 +1,7 @@
 package expo.modules.predictiveback
 
 import android.graphics.Rect
+import android.os.Build
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.BackEventCompat
@@ -45,12 +46,17 @@ internal class BackRouter(
     }
   }
 
+  // React Native registers its callback only on API 36; without it, forwarding exits the app instead of reaching JS.
+  private val registeredReactCallback = reactCallback?.takeUnless { reactRegistersItsCallback(activity) }
+
   init {
+    registeredReactCallback?.let { activity.onBackPressedDispatcher.addCallback(activity, it) }
     activity.onBackPressedDispatcher.addCallback(activity, callback)
   }
 
   fun release() {
     callback.remove()
+    registeredReactCallback?.remove()
   }
 
   // The system only plays its back-to-home animation while no callback is enabled, including React Native's.
@@ -82,6 +88,11 @@ internal class BackRouter(
     return ProgressEventsAnimation(event, onProgress, onCancel)
   }
 }
+
+// Keep in sync with the check in ReactActivity.onCreate.
+private fun reactRegistersItsCallback(activity: ComponentActivity) =
+  Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA &&
+    activity.applicationInfo.targetSdkVersion >= Build.VERSION_CODES.BAKLAVA
 
 private fun findReactBackCallback(activity: ComponentActivity): OnBackPressedCallback? =
   runCatching {
