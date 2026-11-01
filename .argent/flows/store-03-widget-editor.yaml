@@ -1,0 +1,28 @@
+steps:
+  - script: { path: ../../goldie/bin/clock-off-shift.mjs }
+  - echo: Relaunch (state carries over from earlier scenes) and open the widget editor from Settings.
+  - launch: software.felipe.everysecondpays
+  - await: { visible: { id: period-button }, timeout: 25000 }
+  - await: { idle: true }
+  - tap: { id: settings-tab }
+  - await: { visible: { id: settings-widgets }, timeout: 15000 }
+  - tap: { id: settings-widgets }
+  - await: { visible: { id: widgets-add }, timeout: 15000 }
+  - await: { idle: true }
+
+  - echo: The large preview above its money flow and number motion choices.
+  - tap: { text: Large }
+  - await: { idle: true }
+  - tap: { id: widget-group-motion }
+  - await: { idle: true }
+  - scroll-to: { target: { text: Energy } }
+  - await: { idle: true }
+
+  - echo: Jump into both shifts so the preview counts and rains. The app only republishes
+      the schedule when it returns to the foreground, so leave and come back.
+  - script: { path: ../../goldie/bin/clock-on-shift.mjs }
+  - tool: button
+    args: { button: home }
+  - wait: 1500
+  - script: { path: ../../goldie/bin/resume-app.mjs }
+  - wait: 8000

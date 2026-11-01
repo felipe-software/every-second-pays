@@ -1,14 +1,15 @@
 steps:
+  - script: { path: ../../goldie/bin/clock-off-shift.mjs }
   - echo: Relaunch (state carries over from earlier scenes) and open personalization settings.
   - launch: software.felipe.everysecondpays
-  - await: { visible: { id: period-button }, timeout: 15000 }
+  - await: { visible: { id: period-button }, timeout: 25000 }
   - await: { idle: true }
   - tap: { id: settings-tab }
-  - await: { visible: { text: Accent color }, timeout: 10000 }
+  - await: { visible: { text: Accent color }, timeout: 15000 }
   - await: { idle: true }
-  - echo: Switch to the dark theme with the Ocean accent.
+  - echo: Switch to the dark theme with the Orange accent.
   - tap: { id: theme-dark }
   - wait: 1500
-  - tap: { id: palette-blue }
+  - tap: { id: palette-orange }
   - wait: 1500
   - await: { idle: true }

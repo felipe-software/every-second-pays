@@ -8,11 +8,14 @@ steps:
       into: { text: Company or client }
       text: Design Studio
       submit: false
-  - tap: { text: $0 }
+  - await: { idle: true }
+  - tap: { text: "$0, required" }
+  - await: { visible: { role: TextField, text: "0" }, timeout: 10000 }
   - type:
       into: { role: TextField, text: "0" }
       text: "6500"
       submit: false
+  - await: { idle: true }
   - tap: { id: save-source }
   - await: { hidden: { text: New payment source }, timeout: 10000 }
   - await: { visible: { text: Design Studio } }
@@ -25,15 +28,18 @@ steps:
       into: { text: Company or client }
       text: Tutoring
       submit: false
-  - tap: { text: $0 }
+  - await: { idle: true }
+  - tap: { text: "$0, required" }
+  - await: { visible: { role: TextField, text: "0" }, timeout: 10000 }
   - type:
       into: { role: TextField, text: "0" }
       text: "45"
       submit: false
+  - await: { idle: true }
   - tap: { text: per month }
   - tap: { text: Hour }
   - echo: The time label uses a narrow no-break space, so match any space.
-  - tap: { text: { matches: '^9\sAM$' } }
+  - tap: { text: { matches: '^9:00\sAM$' } }
   - await: { visible: { text: Mornings } }
   - tap: { text: Mornings }
   - tap: { id: save-source }
@@ -48,11 +54,14 @@ steps:
       into: { text: Company or client }
       text: Acme
       submit: false
-  - tap: { text: $0 }
+  - await: { idle: true }
+  - tap: { text: "$0, required" }
+  - await: { visible: { role: TextField, text: "0" }, timeout: 10000 }
   - type:
       into: { role: TextField, text: "0" }
       text: "1200"
       submit: false
+  - await: { idle: true }
   - tap: { text: per month }
   - tap: { text: One-time }
   - tap: { id: save-source }
