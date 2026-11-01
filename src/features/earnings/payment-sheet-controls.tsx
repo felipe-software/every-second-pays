@@ -74,11 +74,11 @@ export function PrimaryButton({
             surface={disabled ? "fill" : "accent"}
             flat={disabled}
             depth={4}
-            radius={17}
-            className="h-[54px] items-center justify-center"
+            radius={18}
+            className="min-h-[56px] items-center justify-center px-5"
         >
             <Text
-                className="font-sans text-[15.5px] font-semibold"
+                className="font-sans text-[16px] font-bold"
                 style={{ color: disabled ? colors.muted : isDark ? colors.canvas : "#FFFFFF" }}
             >
                 {label}
