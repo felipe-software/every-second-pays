@@ -1,0 +1,16 @@
+executionPrerequisite: Nothing to keep. The first step clears the app and starts it on the onboarding.
+steps:
+  - echo: The onboarding only shows on a fresh install, and a launch step right after clearing the app
+      outlasts its budget, so the script starts it. Keep this flow last, it wipes the seeded sources.
+  - script: { path: ../../goldie/bin/reset-app.mjs }
+  - echo: The intro ignores taps until its animation is up, which takes a while on a software-rendered emulator.
+  - wait: 35000
+  - echo: The onboarding animates too hard for tree reads, so this flow has no selectors. Both taps are the
+      Continue button on the 1080x2400 Pixel 8 capture AVD.
+  - tool: gesture-tap
+    args: { x: 0.5, y: 0.933 }
+  - wait: 8000
+  - tool: gesture-tap
+    args: { x: 0.5, y: 0.933 }
+  - echo: Let the lock and the three promises finish rising in.
+  - wait: 7000

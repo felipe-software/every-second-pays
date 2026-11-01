@@ -1,0 +1,4 @@
+steps:
+  - launch: software.felipe.everysecondpays
+  - await: { visible: { id: period-button }, timeout: 25000 }
+  - await: { idle: true }

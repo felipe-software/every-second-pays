@@ -1,9 +1,32 @@
+executionPrerequisite: A fresh install on the onboarding, which goldie's warm-up leaves running.
 steps:
-  - echo: Launch a clean release build in English and wait for the empty dashboard.
+  - echo: Hold the clock before every shift so the screen stays still while the flow reads it.
+  - script: { path: ../../goldie/bin/clock-off-shift.mjs }
+  - echo: A launch step here outlasts its budget, and the intro animates too hard for tree reads. So give the intro
+      time to accept taps, then tap Skip by its coordinates on the 1080x2400 Pixel 8 capture AVD.
+  - wait: 20000
+  - tool: gesture-tap
+    args: { x: 0.898, y: 0.083 }
+  - wait: 4000
+  - echo: From here launches are quick.
   - launch: software.felipe.everysecondpays
-  - await: { visible: { text: No payment sources yet }, timeout: 15000 }
+  - await: { visible: { id: new-source-tab }, timeout: 25000 }
   - await: { idle: true }
   - run: store-seed-sources
-  - echo: The dashboard counts today's pay live across salary, gig, and project income.
-  - await: { visible: { id: period-button }, timeout: 15000 }
-  - wait: 1500
+  - await: { visible: { id: period-button }, timeout: 25000 }
+  - echo: Keep the digits still instead of caught mid-roll, which also stops the small bills flying over them.
+  - script: { path: ../../goldie/bin/reduce-motion.mjs }
+  - run: store-open-dashboard
+  - echo: Reduced motion turns each row's fade-in into a single update, which a slow cold start can lose and leave
+      the row invisible. Relaunching shows them.
+  - when: { hidden: { text: Acme } }
+    steps:
+      - run: store-open-dashboard
+  - when: { hidden: { text: Acme } }
+    steps:
+      - run: store-open-dashboard
+  - await: { visible: { text: Acme } }
+  - run: store-show-earnings
+  - echo: Jump into both shifts so the dashboard counts live.
+  - script: { path: ../../goldie/bin/clock-on-shift.mjs }
+  - wait: 6000

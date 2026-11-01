@@ -1,0 +1,8 @@
+executionPrerequisite: The app was just launched, with the seeded sources.
+steps:
+  - echo: A cold start on this slow emulator can leave the pager's first layout unapplied, which draws Settings
+      over Earnings with no selected tab. Switching tabs both ways applies it.
+  - tap: { id: settings-tab }
+  - wait: 800
+  - tap: { id: today-tab }
+  - wait: 800
