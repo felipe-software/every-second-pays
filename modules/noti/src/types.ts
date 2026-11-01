@@ -258,3 +258,30 @@ export type MoneyWidgetData = {
 };
 export type MoneyWidget = { id: number; config: MoneyWidgetConfig; width: number; height: number };
 
+export type BillColorPair = readonly [day: string, night: string];
+
+export type BillChannel = { id: string; name: string; description: string };
+
+export type BillMark = { at: number; label: string | null };
+
+export type BillNotification = {
+    kind: string;
+    key: string;
+    channel: string;
+    title: string;
+    body: string;
+    publicTitle: string;
+    publicBody: string;
+    amount: string | null;
+    start: string | null;
+    marks: BillMark[];
+    from: number;
+    to: number;
+    intensity: number;
+    chain: boolean;
+    colors: Record<'canvas' | 'track' | 'ink' | 'muted' | 'accent' | 'deep', BillColorPair>;
+    actions: { less: string; nice: string };
+    period: string | null;
+};
+
+export type BillFeedback = { kind: string; key: string; action: 'less' | 'nice'; at: number };

@@ -24,6 +24,7 @@ import { useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 import { LanguageRow, useLanguageSetting } from "@/features/i18n/language-selector";
+import { NotificationsSettingsRow, notificationsRowVisible } from "@/features/notifications/notifications-settings-row";
 import { useWidgetsRowVisible, WidgetsSettingsRow } from "@/features/widgets/widgets-settings-row";
 
 const LIST_ICON_INSET = 60;
@@ -93,6 +94,7 @@ export default function SettingsScreen() {
                         <AppearanceSelector appearance={appearance} disabled={disabled} onChange={changeMode} />
                         <AccentColorPicker appearance={appearance} disabled={disabled} onChange={changePalette} />
                         {widgetsVisible ? <WidgetsSettingsRow /> : null}
+                        {notificationsRowVisible ? <NotificationsSettingsRow /> : null}
                     </SettingsCard>
                     {loadError || saveError ? <ErrorNote message={t(loadError ? "settings.loadError" : "settings.saveError")} /> : null}
                     {loadError ? <TryAgainButton onPress={() => void load()} className="mt-3" /> : null}

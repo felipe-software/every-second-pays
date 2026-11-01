@@ -31,6 +31,7 @@ import { I18nProvider } from "@/features/i18n/i18n";
 import { useLanguageStore } from "@/features/i18n/store";
 import { Onboarding } from "@/features/onboarding/onboarding";
 import { useOnboardingStore } from "@/features/onboarding/store";
+import { NotificationSync } from "@/features/notifications/notification-sync";
 import { MoneyWidgetSync } from "@/features/widgets/money-widget-sync";
 
 SplashScreen.preventAutoHideAsync();
@@ -87,6 +88,7 @@ export default function RootLayout() {
     return (
         <I18nProvider>
             <MoneyWidgetSync />
+            <NotificationSync />
             <GestureHandlerRootView
                 style={{ flex: 1, backgroundColor: SHEET_RECEDE_ENABLED ? SHEET_RECEDE_BACKDROP : colors.canvas }}
             >

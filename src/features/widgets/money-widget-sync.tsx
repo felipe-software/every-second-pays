@@ -15,7 +15,7 @@ function AndroidMoneyWidgetSync() {
     const { t, locale, firstDayOfWeek, decimalSeparator } = useI18n();
     const { main: currency, converted: sources } = useMainCurrencySources(useEarningsStore((state) => state.sources));
     const ready = useEarningsStore((state) => state.ready);
-    const period = usePeriodStore((state) => state.period);
+    const period = usePeriodStore((state) => state.saved);
     const appearance = useAppearanceStore((state) => state.appearance);
     const supported = useWidgetStore((state) => state.supported);
     const [foregrounds, setForegrounds] = useState(0);

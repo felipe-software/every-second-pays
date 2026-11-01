@@ -5,6 +5,9 @@ import { NotiPrimitives } from './components';
 import { serializeScene } from './serialize';
 import type {
     ActiveNotification,
+    BillChannel,
+    BillFeedback,
+    BillNotification,
     CreateNotificationOptions,
     MoneyWidget,
     MoneyWidgetConfig,
@@ -24,6 +27,7 @@ type Events = {
     onWidgetAction: (event: WidgetAction) => void;
     onWidgetPinned: (event: { widgetId: number }) => void;
     onMoneyWidgetsChanged: () => void;
+    onBillFeedback: () => void;
 };
 declare class NotificationMotionModule extends NativeModule<Events> {
     create(options: string): Promise<NotificationIdentity>;
@@ -44,9 +48,23 @@ declare class NotificationMotionModule extends NativeModule<Events> {
     requestPinMoneyWidget(config: string): Promise<boolean>;
     listMoneyWidgets(): Promise<{ id: number; config: string; width: number; height: number }[]>;
     updateMoneyWidget(widgetId: number, config: string): Promise<void>;
+    billsEnabled(): Promise<boolean>;
+    ensureBillChannels(channels: string): Promise<void>;
+    postBill(payload: string): Promise<boolean>;
+    drainBillFeedback(): Promise<string>;
+    openBillSettings(): Promise<void>;
+    takeOpenedBillPeriod(): Promise<string | null>;
 }
 
 const supported = () => Platform.OS === 'android' && Number(Platform.Version) >= 31;
+const billsSupported = () => Platform.OS === 'android' && Number(Platform.Version) >= 26;
+
+function billModule(): NotificationMotionModule {
+    if (!billsSupported()) throw new Error('Bill notifications require Android 8 / API 26 or newer.');
+    const module = requireOptionalNativeModule<NotificationMotionModule>('NotificationMotion');
+    if (!module) throw new Error('Noti is not linked. Rebuild the Expo development client.');
+    return module;
+}
 
 function native(): NotificationMotionModule {
     if (!supported()) throw new Error('Noti requires Android 12 / API 31 or newer.');
@@ -166,6 +184,31 @@ const moneyWidgets = {
     },
 };
 
+const bills = {
+    isSupported: billsSupported,
+    async areEnabled(): Promise<boolean> {
+        return billModule().billsEnabled();
+    },
+    async ensureChannels(channels: readonly BillChannel[]): Promise<void> {
+        await billModule().ensureBillChannels(JSON.stringify(channels));
+    },
+    async post(payload: BillNotification): Promise<boolean> {
+        return billModule().postBill(JSON.stringify(payload));
+    },
+    async drainFeedback(): Promise<BillFeedback[]> {
+        return JSON.parse(await billModule().drainBillFeedback()) as BillFeedback[];
+    },
+    async openSettings(): Promise<void> {
+        await billModule().openBillSettings();
+    },
+    async takeOpenedPeriod(): Promise<string | null> {
+        return billModule().takeOpenedBillPeriod();
+    },
+    addFeedbackListener(listener: () => void) {
+        return billModule().addListener('onBillFeedback', listener);
+    },
+};
+
 export type MoneyWidgetPreviewProps = ViewProps & {
     config: MoneyWidgetConfig;
     revision?: number;
@@ -216,4 +259,4 @@ const lifecycle = {
     },
 };
 
-export const Noti = Object.assign(NotiPrimitives, lifecycle, { widgets, moneyWidgets });
+export const Noti = Object.assign(NotiPrimitives, lifecycle, { widgets, moneyWidgets, bills });

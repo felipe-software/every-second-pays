@@ -8,6 +8,11 @@ const IS_PREVIEW = APP_VARIANT === "preview";
 const APP_IDENTIFIER = "software.felipe.everysecondpays";
 const EAS_PROJECT_ID = "84e9933c-067a-489e-b356-1526a665dbdc";
 
+const BACKGROUND_TASK_PROGUARD_RULES = `
+# expo-task-manager loads this by the name in the manifest to start JS for a background task.
+-keep class expo.modules.adapters.react.apploader.RNHeadlessAppLoader { *; }
+`;
+
 const PREVIEW_PROGUARD_RULES = `
 # Nitro creates this implementation from C++ by its fully qualified class name.
 -keep class com.margelo.nitro.nitrothemetransition.** { *; }
@@ -51,9 +56,9 @@ const plugins: NonNullable<ExpoConfig["plugins"]> = [
             android: {
                 enableMinifyInReleaseBuilds: true,
                 buildArchs: ["armeabi-v7a", "arm64-v8a"],
-                ...(IS_PREVIEW && {
-                    extraProguardRules: PREVIEW_PROGUARD_RULES,
-                }),
+                extraProguardRules: IS_PREVIEW
+                    ? BACKGROUND_TASK_PROGUARD_RULES + PREVIEW_PROGUARD_RULES
+                    : BACKGROUND_TASK_PROGUARD_RULES,
             },
         },
     ],
