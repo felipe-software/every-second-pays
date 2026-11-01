@@ -9,6 +9,7 @@ import {
 } from "@expo-google-fonts/archivo";
 import { ReanimatedTrueSheetProvider } from "@lodev09/react-native-true-sheet/reanimated";
 import { NavigationBar } from "expo-navigation-bar";
+import { usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
@@ -20,6 +21,7 @@ import {
     SHEET_RECEDE_BACKDROP,
     SHEET_RECEDE_ENABLED,
     SheetRecede,
+    useSheetOpen,
     useSheetReceded,
 } from "@/components/sheet-recede";
 import { useCurrencyStore } from "@/features/currency/store";
@@ -30,6 +32,7 @@ import { useEarningsTheme } from "@/features/earnings/theme";
 import { useHapticsWarmup } from "@/features/haptics/haptics";
 import { I18nProvider } from "@/features/i18n/i18n";
 import { useLanguageStore } from "@/features/i18n/store";
+import { useSystemBackAllowed } from "@/features/navigation/predictive-back";
 import { Onboarding } from "@/features/onboarding/onboarding";
 import { useOnboardingStore } from "@/features/onboarding/store";
 import { MoneyWidgetSync } from "@/features/widgets/money-widget-sync";
@@ -46,6 +49,16 @@ function SystemBars() {
             <NavigationBar style="auto" />
         </>
     );
+}
+
+function SystemBackRouting() {
+    const onHome = usePathname() === "/";
+    const sheetOpen = useSheetOpen();
+    const onboardingPending = useOnboardingStore((state) => state.status === "pending");
+
+    useSystemBackAllowed(onHome && !sheetOpen && !onboardingPending);
+
+    return null;
 }
 
 export default function RootLayout() {
@@ -94,6 +107,7 @@ export default function RootLayout() {
                 >
                     <ReanimatedTrueSheetProvider>
                         <SystemBars />
+                        <SystemBackRouting />
                         <KeyboardProvider>
                             {/* Mounted from the start, under the onboarding: mounting it while the onboarding plays stalls its animations. */}
                             <SheetRecede>
