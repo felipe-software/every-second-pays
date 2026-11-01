@@ -42,6 +42,7 @@ abstract class GenerateNotiSources extends DefaultTask {
     execOperations.exec { commandLine 'node', new File(scripts, 'generate-base-resources.cjs').path, res.path }
     execOperations.exec { commandLine 'node', new File(scripts, 'generate-money-widget-resources.mjs').path, res.path, kotlin.path }
     execOperations.exec { commandLine 'node', new File(scripts, 'generate-marked-bar-resources.mjs').path, res.path, kotlin.path }
+    execOperations.exec { commandLine 'node', new File(scripts, 'generate-tumbleweed-resources.mjs').path, res.path, kotlin.path }
   }
 }
 

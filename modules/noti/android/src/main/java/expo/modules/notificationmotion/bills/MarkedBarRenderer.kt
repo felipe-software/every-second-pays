@@ -66,17 +66,8 @@ internal class BillSpec(json: JSONObject) {
   }
 }
 
-internal class SetupSpec(json: JSONObject) {
-  val zero: String = json.getString("zero")
-  val title: String = json.getString("title")
-  val body: String = json.getString("body")
-  val colors = BillColors(json.getJSONObject("colors"))
-}
-
 @TargetApi(31)
 internal class MarkedBarRenderer(private val context: Context) {
-  internal class SetupType(val amount: Float, val title: Float, val body: Float?)
-
   internal class Shape(
     val height: Float,
     val amount: Float,
@@ -89,7 +80,6 @@ internal class MarkedBarRenderer(private val context: Context) {
     val density: Float,
     val unit: Float,
     val widthInset: Float,
-    val setup: SetupType,
   )
 
   private val packageName = context.packageName
@@ -108,9 +98,9 @@ internal class MarkedBarRenderer(private val context: Context) {
     letterSpacing = -0.02f
   }
 
-  private fun amountMetrics(text: String, base: Float, width: Float): Metrics {
-    val measured = amountPaint(base).measureText(text) / screenDensity
-    val size = if (measured > width * 0.92f) base * (width * 0.92f / measured) else base
+  private fun amountMetrics(text: String, shape: Shape, width: Float): Metrics {
+    val measured = amountPaint(shape.amount).measureText(text) / screenDensity
+    val size = if (measured > width * 0.92f) shape.amount * (width * 0.92f / measured) else shape.amount
     val metrics = amountPaint(size).fontMetrics
     return Metrics(size, ceil((metrics.descent - metrics.ascent) / screenDensity))
   }
@@ -132,10 +122,10 @@ internal class MarkedBarRenderer(private val context: Context) {
     background(views, R.id.nmb_stage, spec.colors.canvas)
     views.setContentDescription(R.id.nmb_stage, spec.description)
     if (spec.chain) trigger(views, R.id.nmb_shake)
-    blobs(views, spec.colors, shape, stageWidth)
+    blobs(views, spec, shape, stageWidth)
     views.setViewLayoutWidth(R.id.nmb_plane, barWidth, DIP)
 
-    val metrics = spec.amount?.let { amountMetrics(it, shape.amount, stageWidth) }
+    val metrics = spec.amount?.let { amountMetrics(it, shape, stageWidth) }
     val labelHeight = shape.label * LABEL_LINE
     val line = metrics?.line ?: 0f
     val gap = if (metrics != null) shape.barGap else 0f
@@ -159,135 +149,13 @@ internal class MarkedBarRenderer(private val context: Context) {
     return views
   }
 
-  fun renderSetup(spec: SetupSpec, shape: Shape): RemoteViews {
-    val views = RemoteViews(packageName, R.layout.nmb_root_setup)
-    val stageWidth = screenWidth - shape.widthInset
-    val barWidth = stageWidth * BAR_SHARE
-    val type = shape.setup
-    views.setViewLayoutHeight(R.id.nmb_stage, shape.height, DIP)
-    background(views, R.id.nmb_stage, spec.colors.canvas)
-    views.setContentDescription(R.id.nmb_stage, "${spec.title}. ${spec.body}")
-    trigger(views, R.id.nmb_shake)
-    blobs(views, spec.colors, shape, stageWidth)
-    views.setViewLayoutWidth(R.id.nmb_plane, barWidth, DIP)
-
-    val metrics = amountMetrics(spec.zero, type.amount, stageWidth)
-    val textGap = shape.labelGap + 1f
-    val titleLine = type.title * LABEL_LINE
-    val bodyLine = (type.body ?: 0f) * LABEL_LINE
-    val top = ((shape.height - (metrics.line + shape.barGap + shape.bar + textGap + titleLine + bodyLine)) / 2).coerceAtLeast(0f)
-    val barTop = top + metrics.line + shape.barGap
-    val centerY = barTop + shape.bar / 2
-
-    views.addView(R.id.nmb_plane, setupBurst(spec, shape, stageWidth, barWidth * MarkedBarTables.setupTips.last(), centerY))
-    val slot = RemoteViews(packageName, R.layout.nmb_amount_slot)
-    slot.setViewLayoutMargin(R.id.nmb_amount_slot, RemoteViews.MARGIN_TOP, top, DIP)
-    slot.addView(R.id.nmb_amount_slot, amountRow(R.layout.nmb_setup_amount, spec.zero, metrics, spec.colors.ink) { index, digit ->
-      val text = (MarkedBarTables.SETUP_REEL_LINES - 1 downTo 0).joinToString("\n") { line -> ((digit + line) % 10).toString() }
-      reelStrip(MarkedBarTables.setupReels[index], MarkedBarTables.SETUP_REEL_LINES, text, metrics, spec.colors.ink)
-    })
-    views.addView(R.id.nmb_plane, slot)
-    views.addView(R.id.nmb_plane, setupBar(spec, shape, barWidth, barTop))
-    views.addView(R.id.nmb_plane, setupText(spec, type, stageWidth, barWidth, barTop + shape.bar + textGap))
-    views.addView(R.id.nmb_plane, setupBeacon(spec, shape, centerY))
-    MarkedBarTables.setupPuffs.forEachIndexed { index, puff ->
-      val box = RemoteViews(packageName, MarkedBarTables.setupPuffBoxes[index])
-      val spread = MarkedBarTables.setupSpreads[index]
-      pieces(
-        box,
-        puff,
-        spec.colors,
-        shape,
-        stageWidth * 0.62f * spread,
-        max(shape.height * 0.78f, 52f) * spread,
-        barWidth * MarkedBarTables.setupTips[index],
-        centerY,
-        (puff.bills.size * shape.density).roundToInt(),
-        (puff.sparks.size * shape.density).roundToInt(),
-      )
-      views.addView(R.id.nmb_plane, box)
-    }
-    return views
-  }
-
-  private fun setupBar(spec: SetupSpec, shape: Shape, width: Float, top: Float): RemoteViews {
-    val views = RemoteViews(packageName, R.layout.nmb_bar)
-    size(views, R.id.nmb_bar, width, shape.bar)
-    views.setViewLayoutMargin(R.id.nmb_bar, RemoteViews.MARGIN_TOP, top, DIP)
-    background(views, R.id.nmb_bar, spec.colors.track)
-    val fill = RemoteViews(packageName, R.layout.nmb_setup_fill)
-    fill.setViewLayoutWidth(R.id.nmb_fill_box, width, DIP)
-    tint(fill, R.id.nmb_fill_face, spec.colors.accent)
-    trigger(fill, R.id.nmb_fill_trigger)
-    views.addView(R.id.nmb_bar, fill)
-    SETUP_TICKS.forEach { at ->
-      val tick = RemoteViews(packageName, R.layout.nmb_tick)
-      size(tick, R.id.nmb_tick, shape.tick, shape.tick)
-      tick.setViewLayoutMargin(R.id.nmb_tick, RemoteViews.MARGIN_LEFT, width * at - shape.tick / 2, DIP)
-      tint(tick, R.id.nmb_tick, spec.colors.canvas)
-      views.addView(R.id.nmb_bar, tick)
-    }
-    return views
-  }
-
-  private fun setupText(spec: SetupSpec, type: SetupType, stageWidth: Float, barWidth: Float, top: Float): RemoteViews {
-    val views = RemoteViews(packageName, R.layout.nmb_setup_text)
-    val width = stageWidth * 0.96f
-    views.setViewLayoutWidth(R.id.nmb_setup_text, width, DIP)
-    views.setViewLayoutMargin(R.id.nmb_setup_text, RemoteViews.MARGIN_LEFT, (barWidth - width) / 2, DIP)
-    views.setViewLayoutMargin(R.id.nmb_setup_text, RemoteViews.MARGIN_TOP, top, DIP)
-    views.setTextViewText(R.id.nmb_setup_title, spec.title)
-    textStyle(views, R.id.nmb_setup_title, fittedSize(spec.title, type.title, width, mediumFace), spec.colors.ink)
-    if (type.body == null) {
-      views.setViewVisibility(R.id.nmb_setup_body, View.GONE)
-    } else {
-      views.setTextViewText(R.id.nmb_setup_body, spec.body)
-      textStyle(views, R.id.nmb_setup_body, fittedSize(spec.body, type.body, width, Typeface.DEFAULT), spec.colors.muted)
-    }
-    return views
-  }
-
-  private fun fittedSize(text: String, size: Float, width: Float, face: Typeface): Float {
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-      typeface = face
-      textSize = size * screenDensity
-    }
-    val measured = paint.measureText(text) / screenDensity
-    return if (measured > width) size * width / measured else size
-  }
-
-  private fun setupBurst(spec: SetupSpec, shape: Shape, stageWidth: Float, x: Float, y: Float): RemoteViews {
-    val views = RemoteViews(packageName, R.layout.nmb_setup_burst)
-    val flashSide = max(stageWidth, shape.height) * 0.5f
-    val ring = hypot(stageWidth, shape.height) * 0.6f
-    val side = max(flashSide, ring)
-    fxBox(views, side, side, x, y)
-    flash(views, flashSide, spec.colors.accent)
-    size(views, R.id.nmb_ring0i, ring, ring)
-    tint(views, R.id.nmb_ring0i, spec.colors.accent)
-    trigger(views, R.id.nmb_ring0)
-    return views
-  }
-
-  private fun setupBeacon(spec: SetupSpec, shape: Shape, y: Float): RemoteViews {
-    val views = RemoteViews(packageName, R.layout.nmb_setup_beacon)
-    val side = max(shape.height * 0.42f, 26f)
-    fxBox(views, side, side, shape.bar / 2, y)
-    listOf(R.id.nmb_ring0 to R.id.nmb_ring0i, R.id.nmb_ring1 to R.id.nmb_ring1i).forEach { (ring, image) ->
-      size(views, image, side, side)
-      tint(views, image, spec.colors.accent)
-      trigger(views, ring)
-    }
-    return views
-  }
-
   private fun miniIndex(mark: BillMark): Int? {
     val marks = MarkedBarTables.miniMarks
     val index = marks.indices.minByOrNull { abs(marks[it] - mark.at) } ?: return null
     return index.takeIf { abs(marks[it] - mark.at) < 1f }
   }
 
-  private fun blobs(views: RemoteViews, colors: BillColors, shape: Shape, width: Float) {
+  private fun blobs(views: RemoteViews, spec: BillSpec, shape: Shape, width: Float) {
     val a = width * 0.7f
     val b = width * 0.62f
     size(views, R.id.nmb_blob_a, a, a)
@@ -296,43 +164,38 @@ internal class MarkedBarRenderer(private val context: Context) {
     views.setViewLayoutMargin(R.id.nmb_blob_a, RemoteViews.MARGIN_TOP, -shape.height * 0.5f, DIP)
     views.setViewLayoutMargin(R.id.nmb_blob_b, RemoteViews.MARGIN_RIGHT, -width * 0.12f, DIP)
     views.setViewLayoutMargin(R.id.nmb_blob_b, RemoteViews.MARGIN_BOTTOM, -shape.height * 0.62f, DIP)
-    tint(views, R.id.nmb_blob_a, colors.accent)
-    tint(views, R.id.nmb_blob_b, colors.accent)
+    tint(views, R.id.nmb_blob_a, spec.colors.accent)
+    tint(views, R.id.nmb_blob_b, spec.colors.accent)
     trigger(views, R.id.nmb_pulse_a)
     trigger(views, R.id.nmb_pulse_b)
   }
 
   private fun amount(spec: BillSpec, metrics: Metrics): RemoteViews {
+    val text = spec.amount.orEmpty()
     val layout = when {
       spec.chain -> MarkedBarTables.chainAmount
       spec.intensity <= 0.5f -> MarkedBarTables.shortAmounts[0]
       spec.intensity <= 0.7f -> MarkedBarTables.shortAmounts[1]
       else -> MarkedBarTables.shortAmounts[2]
     }
-    val reels = if (spec.chain) MarkedBarTables.chainReels else MarkedBarTables.shortReels
-    return amountRow(layout, spec.amount.orEmpty(), metrics, spec.colors.ink, reels.size) { index, digit ->
-      reel(reels[index], index, digit, metrics, spec.colors.ink)
-    }
-  }
-
-  private fun amountRow(layout: Int, text: String, metrics: Metrics, color: BillColor, maxReels: Int = MarkedBarTables.setupReels.size, reel: (Int, Int) -> RemoteViews): RemoteViews {
     val views = RemoteViews(packageName, layout)
     trigger(views, R.id.nmb_bump)
+    val reels = if (spec.chain) MarkedBarTables.chainReels else MarkedBarTables.shortReels
     val run = StringBuilder()
     var reelIndex = 0
     fun flush() {
       if (run.isEmpty()) return
       val piece = RemoteViews(packageName, R.layout.nmb_run)
       piece.setTextViewText(R.id.nmb_run, run.toString())
-      textStyle(piece, R.id.nmb_run, metrics.size, color)
+      textStyle(piece, R.id.nmb_run, metrics.size, spec.colors.ink)
       piece.setViewLayoutHeight(R.id.nmb_run, metrics.line, DIP)
       views.addView(R.id.nmb_amount_row, piece)
       run.clear()
     }
     for (char in text) {
-      if (char.isDigit() && reelIndex < maxReels) {
+      if (char.isDigit() && reelIndex < MarkedBarTables.MAX_REELS) {
         flush()
-        views.addView(R.id.nmb_amount_row, reel(reelIndex, char.digitToInt()))
+        views.addView(R.id.nmb_amount_row, reel(reels[reelIndex], reelIndex, char.digitToInt(), metrics, spec.colors.ink))
         reelIndex += 1
       } else {
         run.append(if (char.isWhitespace()) NBSP else char)
@@ -344,14 +207,10 @@ internal class MarkedBarRenderer(private val context: Context) {
 
   private fun reel(layout: Int, index: Int, digit: Int, metrics: Metrics, color: BillColor): RemoteViews {
     val lines = MarkedBarTables.reelLines[index]
-    val text = (0 until lines).joinToString("\n") { line -> ((digit - (lines - 1) + line + 100) % 10).toString() }
-    return reelStrip(layout, lines, text, metrics, color)
-  }
-
-  private fun reelStrip(layout: Int, lines: Int, text: String, metrics: Metrics, color: BillColor): RemoteViews {
     val views = RemoteViews(packageName, layout)
     views.setViewLayoutHeight(R.id.nmb_reel_box, metrics.line, DIP)
     views.setViewLayoutHeight(R.id.nmb_reel_text, metrics.line * lines, DIP)
+    val text = (0 until lines).joinToString("\n") { line -> ((digit - (lines - 1) + line + 100) % 10).toString() }
     views.setTextViewText(R.id.nmb_reel_text, text)
     textStyle(views, R.id.nmb_reel_text, metrics.size, color)
     trigger(views, R.id.nmb_reel)
@@ -449,7 +308,7 @@ internal class MarkedBarRenderer(private val context: Context) {
     pieces(
       views,
       base,
-      spec.colors,
+      spec,
       shape,
       stageWidth * 0.62f * reach,
       max(shape.height * 0.78f, 52f) * reach,
@@ -466,7 +325,7 @@ internal class MarkedBarRenderer(private val context: Context) {
     pieces(
       views,
       MarkedBarTables.mini[index],
-      spec.colors,
+      spec,
       shape,
       stageWidth * 0.62f * 0.5f,
       max(shape.height * 0.78f, 52f) * 0.5f,
@@ -481,7 +340,7 @@ internal class MarkedBarRenderer(private val context: Context) {
   private fun pieces(
     views: RemoteViews,
     burst: MarkedBurst,
-    colors: BillColors,
+    spec: BillSpec,
     shape: Shape,
     boxWidth: Float,
     boxHeight: Float,
@@ -500,7 +359,7 @@ internal class MarkedBarRenderer(private val context: Context) {
         trigger(views, piece.trigger)
       }
     }
-    val tones = listOf(colors.accent, colors.deep, GOLD, WHITE)
+    val tones = listOf(spec.colors.accent, spec.colors.deep, GOLD, WHITE)
     burst.sparks.forEachIndexed { index, piece ->
       if (index >= sparkCount) {
         views.setViewVisibility(piece.trigger, View.GONE)
@@ -599,10 +458,9 @@ internal class MarkedBarRenderer(private val context: Context) {
     private const val MAX_LABEL_DRIFT = 1.5f
     private val GOLD = BillColor(0xFFF5C451.toInt(), 0xFFF5C451.toInt())
     private val WHITE = BillColor(Color.WHITE, Color.WHITE)
-    private val SETUP_TICKS = listOf(0.25f, 0.5f, 0.75f)
 
-    val EXPANDED = Shape(176f, 46f, 8f, 9f, 4f, 11.5f, 5f, 40f, 1f, 1f, 120f, SetupType(46f, 16f, 13f))
-    val POPUP = Shape(76f, 32f, 3f, 5f, 3f, 9.5f, 2f, 26f, 0.7f, 0.72f, 155f, SetupType(26f, 12f, 10.5f))
-    val COLLAPSED = Shape(47f, 23f, 2f, 4f, 2f, 8.5f, 1f, 20f, 0.6f, 0.56f, 155f, SetupType(20f, 10.5f, null))
+    val EXPANDED = Shape(176f, 46f, 8f, 9f, 4f, 11.5f, 5f, 40f, 1f, 1f, 120f)
+    val POPUP = Shape(76f, 32f, 3f, 5f, 3f, 9.5f, 2f, 26f, 0.7f, 0.72f, 155f)
+    val COLLAPSED = Shape(47f, 23f, 2f, 4f, 2f, 8.5f, 1f, 20f, 0.6f, 0.56f, 155f)
   }
 }

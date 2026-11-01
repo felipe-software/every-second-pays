@@ -53,24 +53,43 @@ internal class BillNotifications private constructor(private val context: Contex
     val channelId = payload.getString("channel")
     val kind = payload.getString("kind")
     val id = NOTIFICATION_IDS[kind] ?: NOTIFICATION_IDS.getValue("progress")
-    val spec by lazy { BillSpec(payload) }
-    return deliver(channelId, id, { plainBuilder(payload, channelId, id, kind) }) { shape -> render(spec, shape) }
+    return deliver(channelId, id, { plainBuilder(payload, channelId, id, kind) }) {
+      val spec = BillSpec(payload)
+      val renderer = MarkedBarRenderer(context)
+      CardViews(
+        renderer.render(spec, MarkedBarRenderer.COLLAPSED),
+        renderer.render(spec, MarkedBarRenderer.POPUP),
+        renderer.render(spec, MarkedBarRenderer.EXPANDED),
+      )
+    }
   }
 
   suspend fun postReminder(serialized: String): Boolean {
     val payload = JSONObject(serialized)
     val channelId = payload.getString("channel")
     val id = NOTIFICATION_IDS.getValue(payload.getString("kind"))
-    val spec by lazy { SetupSpec(payload) }
-    val plain = { textBuilder(payload, channelId, id).setStyle(Notification.BigTextStyle().bigText(payload.getString("body"))) }
-    return deliver(channelId, id, plain) { shape -> renderSetup(spec, shape) }
+    val plain = {
+      val open = Notification.Action.Builder(null as Icon?, payload.getString("action"), openIntent(id, payload.optString("period"))).build()
+      textBuilder(payload, channelId, id)
+        .setStyle(Notification.BigTextStyle().bigText(payload.getString("body")))
+        .addAction(open)
+    }
+    return deliver(channelId, id, plain) {
+      val spec = TumbleweedSpec(payload)
+      val renderer = TumbleweedRenderer(context)
+      CardViews(
+        renderer.render(spec, TumbleweedRenderer.COLLAPSED),
+        renderer.render(spec, TumbleweedRenderer.POPUP),
+        renderer.render(spec, TumbleweedRenderer.EXPANDED),
+      )
+    }
   }
 
   private suspend fun deliver(
     channelId: String,
     id: Int,
     plain: () -> Notification.Builder,
-    surface: MarkedBarRenderer.(MarkedBarRenderer.Shape) -> RemoteViews,
+    card: () -> CardViews,
   ): Boolean {
     if (!channelEnabled(channelId)) return false
     if (Build.VERSION.SDK_INT >= 31 && Build.VERSION.SDK_INT <= LAST_SDK_FREEZING_NEW_ROWS && !isShowing(id)) {
@@ -81,15 +100,17 @@ internal class BillNotifications private constructor(private val context: Contex
     }
     val builder = plain()
     if (Build.VERSION.SDK_INT >= 31) {
-      val renderer = MarkedBarRenderer(context)
+      val views = card()
       builder.setStyle(Notification.DecoratedCustomViewStyle())
-      builder.setCustomContentView(renderer.surface(MarkedBarRenderer.COLLAPSED))
-      builder.setCustomHeadsUpContentView(renderer.surface(MarkedBarRenderer.POPUP))
-      builder.setCustomBigContentView(renderer.surface(MarkedBarRenderer.EXPANDED))
+      builder.setCustomContentView(views.collapsed)
+      builder.setCustomHeadsUpContentView(views.popup)
+      builder.setCustomBigContentView(views.expanded)
     }
     manager.notify(TAG, id, builder.build())
     return true
   }
+
+  private class CardViews(val collapsed: RemoteViews, val popup: RemoteViews, val expanded: RemoteViews)
 
   private fun isShowing(id: Int) = manager.activeNotifications.any { it.id == id && it.tag == TAG }
 
@@ -128,7 +149,7 @@ internal class BillNotifications private constructor(private val context: Contex
   }
 
   private fun openIntent(id: Int, period: String): PendingIntent {
-    val intent = Intent(context, BillTapActivity::class.java).putExtra(EXTRA_PERIOD, period)
+    val intent = Intent(context, BillTapActivity::class.java).putExtra(EXTRA_PERIOD, period).putExtra(EXTRA_ID, id)
     return PendingIntent.getActivity(context, id, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
   }
 

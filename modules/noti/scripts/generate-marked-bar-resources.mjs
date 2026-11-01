@@ -203,29 +203,6 @@ for (const mark of MINI_MARKS) {
     ].join('\n    ')));
 }
 
-const reelLayout = (name) =>
-    write(`layout/${name}.xml`, `<FrameLayout ${NS} android:id="@+id/nmb_reel_box" android:layout_width="wrap_content" android:layout_height="20dp" android:clipChildren="true" android:clipToPadding="true">
-    <ViewFlipper android:id="@+id/nmb_reel" android:layout_width="wrap_content" android:layout_height="match_parent" android:inAnimation="@anim/${name}" ${OPEN}>
-        ${PLACEHOLDER}
-        <TextView android:id="@+id/nmb_reel_text" android:layout_width="wrap_content" android:layout_height="100dp" android:layout_gravity="bottom" android:fontFamily="sans-serif" android:textStyle="bold" android:fontFeatureSettings="tnum" android:letterSpacing="-0.02" android:gravity="bottom|center_horizontal" android:includeFontPadding="false" android:textColor="#FFFFFFFF" />
-    </ViewFlipper>
-</FrameLayout>`);
-const amountLayout = (name, animation) =>
-    write(`layout/${name}.xml`, `<ViewFlipper ${NS} android:id="@+id/nmb_bump" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal|top" android:inAnimation="@anim/${animation}" ${OPEN}>
-    ${PLACEHOLDER}
-    <LinearLayout android:id="@+id/nmb_amount_row" android:layout_width="wrap_content" android:layout_height="wrap_content" android:baselineAligned="false" android:orientation="horizontal" ${OPEN} />
-</ViewFlipper>`);
-const pulseAnim = (name, arrive) => {
-    const rest = 0.274;
-    anim(name, [
-        alpha({ fromAlpha: rest, toAlpha: rest, duration: arrive + 900, interpolator: i('nmb_i_linear') }),
-        alpha({ fromAlpha: 1, toAlpha: round(1 / rest, 3), startOffset: arrive, duration: 180, interpolator: i('nmb_i_soft') }),
-        alpha({ fromAlpha: 1, toAlpha: rest, startOffset: arrive + 180, duration: 720, interpolator: i('nmb_i_soft') }),
-        scaleBy(1, 1.3, arrive, 180, 'nmb_i_soft'),
-        scaleBy(1, 0.769, arrive + 180, 720, 'nmb_i_soft'),
-    ]);
-};
-
 for (const set of Object.keys(DURATIONS)) {
     const arrive = arrival(set);
     for (let index = 0; index < MAX_REELS; index += 1) {
@@ -233,14 +210,29 @@ for (const set of Object.keys(DURATIONS)) {
         anim(`nmb_reel_${set}_${index}`, [
             translate({ fromYDelta: `${round(((lines - 1) / lines) * 100, 2)}%`, toYDelta: '0', startOffset: LEAD + 40, duration: Math.max(120, DURATIONS[set] + 20 + index * 46 - 40), interpolator: i('nmb_i_reel') }),
         ]);
-        reelLayout(`nmb_reel_${set}_${index}`);
+        write(`layout/nmb_reel_${set}_${index}.xml`, `<FrameLayout ${NS} android:id="@+id/nmb_reel_box" android:layout_width="wrap_content" android:layout_height="20dp" android:clipChildren="true" android:clipToPadding="true">
+    <ViewFlipper android:id="@+id/nmb_reel" android:layout_width="wrap_content" android:layout_height="match_parent" android:inAnimation="@anim/nmb_reel_${set}_${index}" ${OPEN}>
+        ${PLACEHOLDER}
+        <TextView android:id="@+id/nmb_reel_text" android:layout_width="wrap_content" android:layout_height="100dp" android:layout_gravity="bottom" android:fontFamily="sans-serif" android:textStyle="bold" android:fontFeatureSettings="tnum" android:letterSpacing="-0.02" android:gravity="bottom|center_horizontal" android:includeFontPadding="false" android:textColor="#FFFFFFFF" />
+    </ViewFlipper>
+</FrameLayout>`);
     }
     const peaks = set === 'chain' ? [1.2] : [1.09, 1.12, 1.16];
     peaks.forEach((peak, level) => {
         anim(`nmb_bump_${set}_${level}`, [scaleBy(1, peak, arrive, 112, 'nmb_i_spring'), scaleBy(1, round(1 / peak, 4), arrive + 112, 448, 'nmb_i_soft')]);
-        amountLayout(`nmb_amount_${set}_${level}`, `nmb_bump_${set}_${level}`);
+        write(`layout/nmb_amount_${set}_${level}.xml`, `<ViewFlipper ${NS} android:id="@+id/nmb_bump" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal|top" android:inAnimation="@anim/nmb_bump_${set}_${level}" ${OPEN}>
+    ${PLACEHOLDER}
+    <LinearLayout android:id="@+id/nmb_amount_row" android:layout_width="wrap_content" android:layout_height="wrap_content" android:baselineAligned="false" android:orientation="horizontal" ${OPEN} />
+</ViewFlipper>`);
     });
-    pulseAnim(`nmb_pulse_${set}`, arrive);
+    const rest = 0.274;
+    anim(`nmb_pulse_${set}`, [
+        alpha({ fromAlpha: rest, toAlpha: rest, duration: arrive + 900, interpolator: i('nmb_i_linear') }),
+        alpha({ fromAlpha: 1, toAlpha: round(1 / rest, 3), startOffset: arrive, duration: 180, interpolator: i('nmb_i_soft') }),
+        alpha({ fromAlpha: 1, toAlpha: rest, startOffset: arrive + 180, duration: 720, interpolator: i('nmb_i_soft') }),
+        scaleBy(1, 1.3, arrive, 180, 'nmb_i_soft'),
+        scaleBy(1, 0.769, arrive + 180, 720, 'nmb_i_soft'),
+    ]);
     anim(`nmb_fill_${set}`, [
         scale({ fromXScale: 0, toXScale: 1, fromYScale: 1, toYScale: 1, pivotX: '0%', startOffset: LEAD, duration: DURATIONS[set], interpolator: i('nmb_i_ease') }),
     ]);
@@ -296,75 +288,6 @@ write('drawable/nmb_streak.xml', `<shape ${NS} android:shape="rectangle"><solid 
 write('drawable/nmb_ring.xml', `<shape ${NS} android:shape="oval"><stroke android:width="3dp" android:color="#FFFFFFFF" /></shape>`);
 write('drawable/nmb_glow.xml', `<shape ${NS} android:shape="oval"><gradient android:type="radial" android:gradientRadius="50%" android:startColor="#FFFFFFFF" android:centerColor="#66FFFFFF" android:endColor="#00FFFFFF" /></shape>`);
 
-const SETUP_TRIES = [
-    { start: LEAD, rise: 170, fall: 280, reach: 0.16, lines: [0, 1, 3], bills: 0, sparks: 4, spread: 0.4, shake: 0.3 },
-    { start: LEAD + 520, rise: 230, fall: 340, reach: 0.36, lines: [0, 3, 6], bills: 2, sparks: 6, spread: 0.6, shake: 0.5 },
-    { start: LEAD + 1180, rise: 480, fall: 640, reach: 0.74, lines: [4, 7, 10], bills: 9, sparks: 10, spread: 1, shake: 1 },
-];
-const SETUP_STUB = 0.025;
-const SETUP_REEL_LINES = 12;
-const SETUP_REELS = [0, 1, 2];
-const lastTry = SETUP_TRIES[SETUP_TRIES.length - 1];
-const SETUP_PEAK = lastTry.start + lastTry.rise;
-const SETUP_END = SETUP_PEAK + lastTry.fall;
-const fillScale = (from, to, startOffset, duration, interpolator) =>
-    scale({ fromXScale: from, toXScale: to, fromYScale: 1, toYScale: 1, pivotX: '0%', startOffset, duration, interpolator: i(interpolator) });
-anim('nmb_setup_fill', SETUP_TRIES.flatMap(({ start, rise, fall, reach }, index) => [
-    index === 0 ? fillScale(0, reach, start, rise, 'nmb_i_out') : fillScale(1, round(reach / SETUP_STUB, 4), start, rise, reach === lastTry.reach ? 'nmb_i_ease' : 'nmb_i_out'),
-    fillScale(1, round(SETUP_STUB / reach, 4), start + rise, fall, 'nmb_i_fall'),
-]));
-write('layout/nmb_setup_fill.xml', `<FrameLayout ${NS} android:id="@+id/nmb_fill_box" android:layout_width="10dp" android:layout_height="match_parent" android:layout_gravity="left">
-    ${flipper('nmb_fill_trigger', 'nmb_setup_fill', '<ImageView android:id="@+id/nmb_fill_face" android:layout_width="match_parent" android:layout_height="match_parent" android:importantForAccessibility="no" android:scaleType="fitXY" android:src="@drawable/nmb_solid" />')}
-</FrameLayout>`);
-for (const reel of SETUP_REELS) {
-    anim(`nmb_reel_setup_${reel}`, SETUP_TRIES.flatMap(({ start, rise, fall, lines }, index) => {
-        if (!lines[reel]) return [];
-        const travel = round((lines[reel] / SETUP_REEL_LINES) * 100, 2);
-        return [
-            translate({ fromYDelta: '0', toYDelta: `${travel}%`, startOffset: start, duration: rise, interpolator: i(index === SETUP_TRIES.length - 1 ? 'nmb_i_ease' : 'nmb_i_out') }),
-            translate({ fromYDelta: '0', toYDelta: `-${travel}%`, startOffset: start + rise, duration: fall, interpolator: i('nmb_i_fall') }),
-        ];
-    }));
-    reelLayout(`nmb_reel_setup_${reel}`);
-}
-anim('nmb_setup_bump', [scaleBy(1, 1.14, SETUP_END, 110, 'nmb_i_spring'), scaleBy(1, 0.8772, SETUP_END + 110, 420, 'nmb_i_soft')]);
-amountLayout('nmb_setup_amount', 'nmb_setup_bump');
-const jolt = (at, strength) => shake.map(([x, y], index) =>
-    translate({ fromXDelta: '0', toXDelta: `${round(x * strength)}%`, fromYDelta: '0', toYDelta: `${round(y * strength)}%`, startOffset: at + index * 68, duration: 68, interpolator: i('nmb_i_linear') }));
-anim('nmb_setup_shake', [...SETUP_TRIES.flatMap((attempt) => jolt(attempt.start + attempt.rise, attempt.shake)), ...jolt(SETUP_END, 0.4)]);
-pulseAnim('nmb_pulse_setup', SETUP_PEAK);
-const setupPuffs = SETUP_TRIES.map((attempt, index) => {
-    const at = attempt.start + attempt.rise;
-    const bills = Array.from({ length: attempt.bills }, (_, n) => billPiece(`nmb_setup_${index}_bill_${n}`, spread(n, ...MINI_UP), at));
-    const sparks = Array.from({ length: attempt.sparks }, (_, n) => sparkPiece(`nmb_setup_${index}_spark_${n}`, spread(n + 1, ...MINI_UP), at));
-    write(`layout/nmb_setup_puff_${index}.xml`, box([
-        ...bills.map((piece, n) => billBody(n, `nmb_setup_${index}_bill_${n}`, piece)),
-        ...sparks.map((piece, n) => sparkBody(n, `nmb_setup_${index}_spark_${n}`, piece)),
-    ].join('\n    ')));
-    return { bills, sparks };
-});
-flashAnim('nmb_setup_flash', SETUP_PEAK);
-ringAnim('nmb_setup_ring', SETUP_PEAK, 600);
-write('layout/nmb_setup_burst.xml', box([
-    flipper('nmb_flash', 'nmb_setup_flash', flashFace),
-    flipper('nmb_ring0', 'nmb_setup_ring', pieceImage('nmb_ring0i', 'nmb_ring')),
-].join('\n    ')));
-ringAnim('nmb_setup_beacon0', SETUP_END + 120, 760);
-ringAnim('nmb_setup_beacon1', SETUP_END + 620, 760);
-write('layout/nmb_setup_beacon.xml', box([
-    flipper('nmb_ring0', 'nmb_setup_beacon0', pieceImage('nmb_ring0i', 'nmb_ring')),
-    flipper('nmb_ring1', 'nmb_setup_beacon1', pieceImage('nmb_ring1i', 'nmb_ring')),
-].join('\n    ')));
-const setupLine = (id, family) =>
-    `<TextView android:id="@+id/${id}" android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="${family}" android:gravity="center" android:includeFontPadding="false" android:maxLines="1" android:ellipsize="end" android:textColor="#FFFFFFFF" />`;
-write('layout/nmb_setup_text.xml', `<LinearLayout ${NS} android:id="@+id/nmb_setup_text" android:layout_width="100dp" android:layout_height="wrap_content" android:layout_gravity="top|left" android:orientation="vertical" ${OPEN}>
-    ${setupLine('nmb_setup_title', 'sans-serif-medium')}
-    ${setupLine('nmb_setup_body', 'sans-serif')}
-</LinearLayout>`);
-write('layout/nmb_root_setup.xml', rootLayout('setup', (body) => flipper('nmb_shake', 'nmb_setup_shake', `<FrameLayout android:layout_width="match_parent" android:layout_height="match_parent" ${OPEN}>
-        ${body}
-    </FrameLayout>`)));
-
 for (const [relative, contents] of Object.entries(files)) {
     const file = path.join(root, relative);
     fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -402,14 +325,6 @@ internal object MarkedBarTables {
   val miniBursts = ${layouts(MINI_MARKS.map((mark) => `nmb_miniburst_${mark}`))}
   val mini = listOf(
 ${MINI_MARKS.map((mark) => `    MarkedBurst(${billList(miniTables[mark].bills)}, ${sparkList(miniTables[mark].sparks)}),`).join('\n')}
-  )
-  const val SETUP_REEL_LINES = ${SETUP_REEL_LINES}
-  val setupReels = ${layouts(SETUP_REELS.map((reel) => `nmb_reel_setup_${reel}`))}
-  val setupTips = floatArrayOf(${SETUP_TRIES.map((attempt) => `${attempt.reach}f`).join(', ')})
-  val setupSpreads = floatArrayOf(${SETUP_TRIES.map((attempt) => `${attempt.spread}f`).join(', ')})
-  val setupPuffBoxes = ${layouts(SETUP_TRIES.map((_, index) => `nmb_setup_puff_${index}`))}
-  val setupPuffs = listOf(
-${setupPuffs.map((puff) => `    MarkedBurst(${billList(puff.bills)}, ${sparkList(puff.sparks)}),`).join('\n')}
   )
 }
 `);
