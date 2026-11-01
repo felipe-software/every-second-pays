@@ -8,7 +8,7 @@ import { EarningsBackground } from "@/features/earnings/earnings-background";
 import { EarningsHeader } from "@/features/earnings/earnings-header";
 import { MONEY_IMPACT_DELAY, type MoneyTransfer } from "@/features/earnings/money-counter-celebration";
 import { EmptySourcesCallout, EmptySourcesMessage } from "@/features/earnings/empty-sources";
-import { type PaymentDraft, currentShift, earnedInPeriod, ratePerSecond } from "@/features/earnings/model";
+import { type PaymentDraft, currentShift, earnedInPeriod, earnedToday, ratePerSecond } from "@/features/earnings/model";
 import { usePaymentComposerStore } from "@/features/earnings/payment-composer-store";
 import { PaymentSheet, PrimaryButton } from "@/features/earnings/payment-sheet";
 import { usePeriodStore } from "@/features/earnings/period-store";
@@ -59,6 +59,7 @@ export default function EarningsScreen() {
     const newSourceRequest = usePaymentComposerStore((state) => state.newSourceRequest);
     const revealed = useOnboardingStore((state) => state.revealed);
     const handledNewSourceRequest = useRef(0);
+    const pendingCelebrationSourceId = useRef<number | null>(null);
     const [sheetOpen, setSheetOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -145,23 +146,32 @@ export default function EarningsScreen() {
             clearUpdateTimers();
         }
 
+        const celebrationSourceId = pendingCelebrationSourceId.current;
+        const celebrating = celebrationSourceId != null;
+        pendingCelebrationSourceId.current = null;
+        if (celebrating) clearUpdateTimers();
+
         const displayedCents = displayedCentsRef.current;
-        if (calculatedCents <= displayedCents) {
-            if (calculatedCents < displayedCents) {
-                syncDisplayedTotal(calculatedCents);
+        if (!celebrating) {
+            if (calculatedCents <= displayedCents) {
+                if (calculatedCents < displayedCents) {
+                    syncDisplayedTotal(calculatedCents);
+                }
+                return;
             }
-            return;
+
+            if (updateTimers.current.length || Date.now() - lastTransferAt.current < MIN_TRANSFER_INTERVAL) return;
         }
 
-        if (updateTimers.current.length || Date.now() - lastTransferAt.current < MIN_TRANSFER_INTERVAL) return;
-
-        const activeSources = converted.filter((source) => currentShift(source, now));
-        if (!activeSources.length) {
+        const launchingSources = celebrating
+            ? sources.filter((source) => source.id === celebrationSourceId)
+            : converted.filter((source) => currentShift(source, now));
+        if (!launchingSources.length) {
             syncDisplayedTotal(calculatedCents);
             return;
         }
 
-        const origins = activeSources.flatMap((source, index) => {
+        const origins = launchingSources.flatMap((source, index) => {
             const node = sourceValueNodes.current.get(source.id);
             return node ? [{
                 delay: Math.min(index * SOURCE_TRANSFER_STAGGER, MAX_SOURCE_TRANSFER_STAGGER),
@@ -179,13 +189,15 @@ export default function EarningsScreen() {
         lastTransferAt.current = Date.now();
         const displayedWhole = Math.floor(displayedCents / 100);
         const calculatedWhole = Math.floor(calculatedCents / 100);
-        const transferTarget = displayedWhole === calculatedWhole
-            ? { target: "cents" as const }
-            : {
-                target: "whole" as const,
-                nextWhole: calculatedWhole,
-                changedDigitIndex: firstChangedDigitIndex(displayedWhole, calculatedWhole),
-            };
+        const transferTarget = celebrating
+            ? { target: "whole" as const, nextWhole: calculatedWhole, changedDigitIndex: 0 }
+            : displayedWhole === calculatedWhole
+                ? { target: "cents" as const }
+                : {
+                    target: "whole" as const,
+                    nextWhole: calculatedWhole,
+                    changedDigitIndex: firstChangedDigitIndex(displayedWhole, calculatedWhole),
+                };
 
         setMoneyTransfer({
             id: nextTransferId.current,
@@ -209,7 +221,7 @@ export default function EarningsScreen() {
             }, MONEY_IMPACT_DELAY + origin.delay);
             return timer;
         });
-    }, [calculatedTotal, clearUpdateTimers, converted, isFocused, now, period, ready, sheetOpen, syncDisplayedTotal, updateDisplayedTotal]);
+    }, [calculatedTotal, clearUpdateTimers, converted, isFocused, now, period, ready, sheetOpen, sources, syncDisplayedTotal, updateDisplayedTotal]);
 
     useEffect(() => () => {
         clearUpdateTimers();
@@ -236,7 +248,12 @@ export default function EarningsScreen() {
     const saveSource = async (draft: PaymentDraft, id?: number) => {
         if (useEarningsStore.getState().saving) return;
         try {
+            const isFirstJob = useEarningsStore.getState().sources.length === 0;
             await save(draft, id);
+            const created = id == null ? useEarningsStore.getState().sources.at(-1) : undefined;
+            if (created && (isFirstJob || earnedToday(created, new Date()) === 0)) {
+                pendingCelebrationSourceId.current = created.id;
+            }
         } catch {
             Alert.alert(t("home.saveErrorTitle"), t("home.saveErrorBody"));
             throw new Error("Could not save payment source");

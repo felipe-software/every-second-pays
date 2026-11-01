@@ -14,6 +14,7 @@ import { usePeriodStore } from "./period-store";
 import { useEarningsTheme } from "./theme";
 
 const SWIPE_DISTANCE = 30;
+const WHOLE_MEASUREMENT_OVERHANG = 400;
 
 function wholeFontSize(characters: number) {
     return characters <= 5 ? 88 : characters === 6 ? 74 : 62;
@@ -152,11 +153,14 @@ export function EarningsHeader({
 }
 
 const styles = StyleSheet.create({
+    // Overhangs the current digits so a longer next value can't wrap, and centers because the row re-centers when it grows.
     wholeMeasurement: {
         position: "absolute",
         top: 0,
-        left: 0,
+        left: -WHOLE_MEASUREMENT_OVERHANG,
+        right: -WHOLE_MEASUREMENT_OVERHANG,
         flexDirection: "row",
+        justifyContent: "center",
         opacity: 0,
     },
 });
