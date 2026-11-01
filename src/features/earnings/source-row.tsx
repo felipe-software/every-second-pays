@@ -65,7 +65,7 @@ export function SourceRow({
     const active = Boolean(shift);
     const weekdays = source.days.length === 5 && [1, 2, 3, 4, 5].every((day) => source.days.includes(day));
     const days = weekdays ? t("home.weekdays") : formatDays(source.days);
-    const schedule = `${days} · ${source.shifts.map((item) => `${formatTime(item.start)}–${formatTime(item.end)}`).join(", ")}`;
+    const schedule = `${days} · ${source.shifts.map((item) => `${formatTime(item.start)}-${formatTime(item.end)}`).join(", ")}`;
     const subtitle = source.frequency !== "once"
         ? schedule
         : source.when !== "today"

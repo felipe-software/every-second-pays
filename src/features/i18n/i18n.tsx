@@ -163,7 +163,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         [timeParts],
     );
     const formatTimeRange = useCallback(
-        (start: number, end: number, separator = "–") => formatTimeRangeParts(start, end).join(separator),
+        (start: number, end: number, separator = "-") => formatTimeRangeParts(start, end).join(separator),
         [formatTimeRangeParts],
     );
     const weekdayName = useCallback(
@@ -187,7 +187,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
             runs.push(current);
             return runs
                 .map((run) => run.length > 1
-                    ? `${weekdayName(run[0])}–${weekdayName(run.at(-1)!)}`
+                    ? `${weekdayName(run[0])}-${weekdayName(run.at(-1)!)}`
                     : weekdayName(run[0]))
                 .join(", ");
         },

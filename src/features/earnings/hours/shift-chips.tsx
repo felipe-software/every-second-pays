@@ -1,7 +1,7 @@
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
-import { RaisedPressable } from "@/components/elevated/raised";
+import { Chip } from "@/components/elevated/chip";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 
@@ -25,25 +25,13 @@ function ShiftChip({
     const { t, formatTimeRange } = useI18n();
 
     return (
-        <RaisedPressable
-            accessibilityRole="button"
-            accessibilityState={{ selected }}
-            onPress={() => {
-                appHaptics.selection();
-                onPress();
-            }}
-            surface={selected ? "chip" : "card"}
-            depth={2}
-            radius={22}
+        <Chip
+            label={formatTimeRange(shift.start, shift.end)}
             selected={selected}
-            className="h-11 flex-row items-center gap-2 pr-3 pl-4"
-        >
-            <View className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: colors.accent, opacity: selected ? 1 : 0.5 }} />
-            <Text className="font-sans text-[14px] font-semibold tabular-nums" style={{ color: selected ? colors.ink : colors.muted }}>
-                {formatTimeRange(shift.start, shift.end)}
-            </Text>
-            {selected && removable ? (
-                <RaisedPressable
+            onPress={onPress}
+            leading={<View className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: colors.accent, opacity: selected ? 1 : 0.5 }} />}
+            trailing={selected && removable ? (
+                <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={t("payment.removeTimeBlock")}
                     hitSlop={10}
@@ -51,17 +39,12 @@ function ShiftChip({
                         appHaptics.selection();
                         onRemove();
                     }}
-                    containerClassName="ml-0.5"
-                    surface="raised"
-                    flat
-                    depth={2}
-                    radius={10}
                     className="h-5 w-5 items-center justify-center"
                 >
-                    <Text className="mt-[-1px] font-sans text-[13px] text-muted">×</Text>
-                </RaisedPressable>
-            ) : null}
-        </RaisedPressable>
+                    <Text className="mt-[-1px] font-sans text-[13px] text-ink">×</Text>
+                </Pressable>
+            ) : undefined}
+        />
     );
 }
 
@@ -94,22 +77,15 @@ export function ShiftChips({
                     onRemove={() => onRemove(index)}
                 />
             ))}
-            <RaisedPressable
-                accessibilityRole="button"
+            <Chip
                 accessibilityLabel={t("payment.addTimeBlock")}
-                onPress={() => {
-                    appHaptics.selection();
-                    onAdd();
-                }}
-                surface="card"
-                depth={2}
-                radius={22}
-                className="h-11 w-11 items-center justify-center"
-            >
-                <Svg width={18} height={18} viewBox="0 0 24 24">
-                    <Path d="M12 5v14M5 12h14" stroke={colors.ink} strokeWidth={2} strokeLinecap="round" />
-                </Svg>
-            </RaisedPressable>
+                onPress={onAdd}
+                leading={(
+                    <Svg width={14} height={14} viewBox="0 0 24 24">
+                        <Path d="M12 5v14M5 12h14" stroke={colors.ink} strokeWidth={2.4} strokeLinecap="round" />
+                    </Svg>
+                )}
+            />
         </View>
     );
 }

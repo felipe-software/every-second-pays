@@ -1,7 +1,8 @@
 import { Pressable, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 
-import { Raised, RaisedPressable, usePressSink } from "@/components/elevated/raised";
+import { Chip } from "@/components/elevated/chip";
+import { Raised, usePressSink } from "@/components/elevated/raised";
 import { rippleConfig } from "@/components/elevated/ripple";
 import { useSquash } from "@/components/elevated/use-squash";
 import { appHaptics } from "@/features/haptics/haptics";
@@ -64,7 +65,6 @@ function DayToggle({
 }
 
 export function DaysEditor({ days, onChange }: { days: number[]; onChange: (days: number[]) => void }) {
-    const { colors } = useEarningsTheme();
     const { t } = useI18n();
     const sink = usePressSink();
 
@@ -89,24 +89,12 @@ export function DaysEditor({ days, onChange }: { days: number[]; onChange: (days
                 {DAY_SETS.map((option) => {
                     const selected = sameDays(option.days, days);
                     return (
-                        <RaisedPressable
+                        <Chip
                             key={option.id}
-                            accessibilityRole="button"
-                            accessibilityState={{ selected }}
-                            onPress={() => {
-                                appHaptics.selection();
-                                onChange([...option.days]);
-                            }}
-                            surface={selected ? "active" : "card"}
-                            depth={2}
-                            radius={8}
+                            label={t(`payment.daySet.${option.id}` as TranslationKey)}
                             selected={selected}
-                            className="h-8 justify-center px-3"
-                        >
-                            <Text className="font-sans text-[12.5px] font-semibold" style={{ color: selected ? colors.ink : colors.muted }}>
-                                {t(`payment.daySet.${option.id}` as TranslationKey)}
-                            </Text>
-                        </RaisedPressable>
+                            onPress={() => onChange([...option.days])}
+                        />
                     );
                 })}
             </View>
