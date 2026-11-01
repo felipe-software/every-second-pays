@@ -14,7 +14,6 @@ import {
     useMemo,
 } from "react";
 import { type LayoutChangeEvent, StyleSheet } from "react-native";
-import { Freeze } from "react-freeze";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
     cancelAnimation,
@@ -27,7 +26,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-import { useInterfaceTransitionRunning } from "@/features/appearance/theme-transition";
 import { useEarningsTheme } from "@/features/earnings/theme";
 
 type PagerSceneProps = PropsWithChildren<{
@@ -52,7 +50,6 @@ function clampPagePosition(value: number) {
 }
 
 function PagerScene({ children, index, isFocused, pageWidth, position }: PagerSceneProps) {
-    const transitionRunning = useInterfaceTransitionRunning();
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [{
             translateX: (index - position.get()) * pageWidth.get(),
@@ -66,7 +63,7 @@ function PagerScene({ children, index, isFocused, pageWidth, position }: PagerSc
             pointerEvents={isFocused ? "auto" : "none"}
             style={[styles.scene, animatedStyle]}
         >
-            <Freeze freeze={transitionRunning && !isFocused}>{children}</Freeze>
+            {children}
         </Animated.View>
     );
 }
