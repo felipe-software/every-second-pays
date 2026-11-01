@@ -374,7 +374,6 @@ export function recordSent(state: RoutineState, candidate: RoutineCandidate, now
     };
 }
 
-// Editing a source or switching range can jump the percentage, which isn't a real milestone.
 export function markCrossedHandled(
     state: RoutineState,
     sources: readonly PaymentSource[],

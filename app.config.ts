@@ -9,7 +9,6 @@ const APP_IDENTIFIER = "software.felipe.everysecondpays";
 const EAS_PROJECT_ID = "84e9933c-067a-489e-b356-1526a665dbdc";
 
 const BACKGROUND_TASK_PROGUARD_RULES = `
-# expo-task-manager loads this by the name in the manifest to start JS for a background task.
 -keep class expo.modules.adapters.react.apploader.RNHeadlessAppLoader { *; }
 `;
 

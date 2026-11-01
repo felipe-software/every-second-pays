@@ -31,8 +31,6 @@ internal class BillNotifications private constructor(private val context: Contex
     context.startActivity(intent)
   }
 
-  // Silent, but high importance: only high-importance notifications pop up on arrival, and the pop-up
-  // is what plays the animation in front of the user.
   fun ensureChannels(serialized: String) {
     val channels = JSONArray(serialized)
     for (index in 0 until channels.length()) {
@@ -55,7 +53,6 @@ internal class BillNotifications private constructor(private val context: Contex
     if (!channelEnabled(channelId)) return false
     val kind = payload.getString("kind")
     val id = NOTIFICATION_IDS[kind] ?: NOTIFICATION_IDS.getValue("progress")
-    // Android 12 drops a new row's view animations but not an update's, so the row is created quietly first.
     if (Build.VERSION.SDK_INT >= 31 && Build.VERSION.SDK_INT <= LAST_SDK_FREEZING_NEW_ROWS && !isShowing(id)) {
       val quiet = plainBuilder(payload, channelId, id, kind).setGroup(QUIET_GROUP).setGroupAlertBehavior(Notification.GROUP_ALERT_SUMMARY)
       manager.notify(TAG, id, quiet.build())
@@ -123,7 +120,6 @@ internal class BillNotifications private constructor(private val context: Contex
     return Notification.Action.Builder(null as Icon?, title, pending).build()
   }
 
-  // The app may not be running when a button is tapped, so taps wait here until JS next runs.
   @Synchronized fun record(kind: String, key: String, action: String) {
     val pending = runCatching { JSONArray(feedback.getString(FEEDBACK_KEY, "[]")) }.getOrElse { JSONArray() }
     pending.put(JSONObject().put("kind", kind).put("key", key).put("action", action).put("at", System.currentTimeMillis()))

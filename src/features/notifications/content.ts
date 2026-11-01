@@ -80,7 +80,6 @@ function money(value: number, { currency, locale }: ContentContext) {
     return `${currencyPrefix(currency)}${whole}`;
 }
 
-// Compact notation only shortens from 1,000 up; below that a decimal would just be noise.
 function compactMoney(value: number, locale: string) {
     return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: value < 1000 ? 0 : 1 }).format(value);
 }
@@ -91,7 +90,6 @@ function intensity(mark: number) {
     return mark < 100 ? 0.82 : 1;
 }
 
-// A mark every 10% has no room for ten labels, so only every other one gets a label, plus the current one.
 function hasRoom(at: number, current: number, count: number) {
     if (count < CROWDED_MARK_COUNT) return true;
     return at === 100 || at === current || (at % 20 === 0 && Math.abs(at - current) > 10);

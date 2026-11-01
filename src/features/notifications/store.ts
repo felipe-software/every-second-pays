@@ -24,7 +24,6 @@ export const useNotificationStore = create<NotificationStoreState>((set, get) =>
     },
     change: (change) => {
         const current = get().settings;
-        // Choosing a level here replaces whatever the buttons on a notification did.
         const lessSteps = { ...current.lessSteps };
         for (const kind of ["week", "progress", "year", "meter"] as const) if (kind in change) lessSteps[kind] = 0;
         const settings = { ...current, ...change, lessSteps };

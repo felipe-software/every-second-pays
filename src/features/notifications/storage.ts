@@ -32,7 +32,6 @@ export async function readState() {
     return parseState(await readJson(STATE_KEY));
 }
 
-// Updates run in turn, because the task and the app can both change the state.
 let stateQueue: Promise<unknown> = Promise.resolve();
 
 export function updateState(change: (state: RoutineState) => RoutineState) {

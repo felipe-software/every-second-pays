@@ -20,7 +20,6 @@ import { useNotificationStore } from "./store";
 
 const ASK_DELAY = 1_600;
 
-// Shows the tapped notification's total without changing the range the user chose.
 function openTappedPeriod(goHome: boolean) {
     void Noti.bills.takeOpenedPeriod().then((opened) => {
         const period = PERIODS.find((item) => item === opened);

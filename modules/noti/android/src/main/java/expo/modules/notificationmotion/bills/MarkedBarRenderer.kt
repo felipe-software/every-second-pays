@@ -54,7 +54,6 @@ internal class BillSpec(json: JSONObject) {
   fun lit(mark: BillMark) = mark.at > from && mark.at <= to
   fun reached(mark: BillMark) = mark.at <= to
 
-  // When the fill reaches a mark: the fill eases with smoothstep, so this inverts it.
   fun lightStep(mark: BillMark): Int {
     val goal = ((mark.at - from) / max(to - from, 1f)).coerceIn(0f, 1f)
     var low = 0f
@@ -269,8 +268,6 @@ internal class MarkedBarRenderer(private val context: Context) {
     }
   }
 
-  // Locales like pt and es write thousands as "10,8 mil", too wide for marks this close, so labels are
-  // placed from the right and one that would end up too far from its tick is dropped.
   private fun placedLabels(spec: BillSpec, shape: Shape, barWidth: Float): List<PlacedLabel> {
     val gap = shape.label * LABEL_GAP
     val floor = spec.start?.let { labelWidth(it, shape) + gap } ?: 0f
@@ -292,7 +289,6 @@ internal class MarkedBarRenderer(private val context: Context) {
     val x = barWidth * mark.at / 100
     return when {
       mark.at >= 100f -> barWidth - width
-      // Sits left of its tick so it clears the 100% label at the end of the bar.
       mark.at >= CROWDED_FROM -> x - width - shape.label * LABEL_GAP
       else -> x - width / 2
     }
@@ -448,8 +444,6 @@ internal class MarkedBarRenderer(private val context: Context) {
     views.setColorStateList(id, "setBackgroundTintList", ColorStateList.valueOf(color.day), ColorStateList.valueOf(color.night))
   }
 
-  // Showing the child starts its in-animation on its first draw, so a view that is only drawn when
-  // the shade opens still plays from the start.
   private fun trigger(views: RemoteViews, id: Int) {
     views.setDisplayedChild(id, 1)
   }
@@ -465,7 +459,6 @@ internal class MarkedBarRenderer(private val context: Context) {
     private val GOLD = BillColor(0xFFF5C451.toInt(), 0xFFF5C451.toInt())
     private val WHITE = BillColor(Color.WHITE, Color.WHITE)
 
-    // Heights and insets are what Android 12+ leaves for a decorated custom view on each surface.
     val EXPANDED = Shape(176f, 46f, 8f, 9f, 4f, 11.5f, 5f, 40f, 1f, 1f, 120f)
     val POPUP = Shape(76f, 32f, 3f, 5f, 3f, 9.5f, 2f, 26f, 0.7f, 0.72f, 155f)
     val COLLAPSED = Shape(47f, 23f, 2f, 4f, 2f, 8.5f, 1f, 20f, 0.6f, 0.56f, 155f)
