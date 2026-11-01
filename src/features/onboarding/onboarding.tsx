@@ -34,6 +34,8 @@ import { OnboardingHapticsContext } from "./haptics-context";
 import { IntroStep } from "./intro-step";
 import { type Look, OnboardingLookProvider, sameLook, useOnboardingTheme } from "./look";
 import { ARTBOARD, EASE_SOFT_FN, EASE_SPRING } from "./motion";
+import { notificationsAllowed, rememberNotificationsAsked, requestNotifications } from "./notification-permission";
+import { type NotificationAnswer, NotificationsStep } from "./notifications-step";
 import { OnboardingBackground, type PageId } from "./onboarding-background";
 import { PagerContext } from "./pager";
 import { PrivacyStep } from "./privacy-step";
@@ -61,9 +63,17 @@ const REVEAL = css.keyframes({
 
 /** Live widgets need Android 12; elsewhere the step would promise something the app can't do. */
 const HAS_WIDGETS = Platform.OS === "android" && Number(Platform.Version) >= 31;
-const PAGES: PageId[] = HAS_WIDGETS ? ["intro", "widget", "privacy", "customize"] : ["intro", "privacy", "customize"];
+const HAS_NOTIFICATIONS = Platform.OS === "android" && Number(Platform.Version) >= 26;
+const PAGES: PageId[] = [
+    "intro",
+    ...(HAS_WIDGETS ? (["widget"] as const) : []),
+    "privacy",
+    ...(HAS_NOTIFICATIONS ? (["notifications"] as const) : []),
+    "customize",
+];
 const LAST_PAGE = PAGES.length - 1;
 const CUSTOMIZE_PAGE = PAGES.indexOf("customize");
+const NOTIFICATIONS_PAGE = PAGES.indexOf("notifications");
 
 function Dot({ index, position }: { index: number; position: SharedValue<number> }) {
     const { colors } = useOnboardingTheme();
@@ -90,7 +100,8 @@ function labelPlacement(shown: boolean, from: "above" | "below") {
 
 /**
  * The first-launch walkthrough, drawn over the app: what the app does, the home screen
- * widget, privacy, and picking the app's look. Swipe or tap through; it fades into the app.
+ * widget, privacy, notifications, and picking the app's look. Swipe or tap through; it fades
+ * into the app.
  */
 export function Onboarding() {
     const { isDark } = useEarningsTheme();
@@ -117,6 +128,8 @@ export function Onboarding() {
     const [exiting, setExiting] = useState(false);
     const [flare, setFlare] = useState({ count: 0, big: false });
     const [introLifted, setIntroLifted] = useState(reduced);
+    const [notifications, setNotifications] = useState<NotificationAnswer>("ask");
+    const [askingSystem, setAskingSystem] = useState(false);
 
     const position = useSharedValue(0);
     const lagging = useSharedValue(0);
@@ -132,6 +145,14 @@ export function Onboarding() {
     const skipTop = Math.max(34, (insets.top + 4 - offsetY) / scale);
     const footerBottom = Math.max(28, ARTBOARD.height - (window.height - insets.bottom - 8 - offsetY) / scale);
     const last = step === LAST_PAGE;
+    const onNotificationsPage = step === NOTIFICATIONS_PAGE;
+    const awaitingAnswer = onNotificationsPage && notifications === "ask";
+    const primaryAction = awaitingAnswer ? "allow" : last ? "start" : "continue";
+    const primaryLabel = {
+        allow: t("onboarding.notifications.allow"),
+        start: t("onboarding.getStarted"),
+        continue: t("onboarding.continue"),
+    }[primaryAction];
 
     const settleTo = (target: number) => {
         "worklet";
@@ -168,6 +189,26 @@ export function Onboarding() {
         setTimeout(complete, REVEAL_DELAY + REVEAL_DURATION);
     };
 
+    useEffect(() => {
+        if (!HAS_NOTIFICATIONS) return;
+        void notificationsAllowed().then((allowed) => {
+            if (allowed) setNotifications("allowed");
+        });
+    }, []);
+
+    const askForNotifications = async () => {
+        setAskingSystem(true);
+        const allowed = await requestNotifications();
+        setAskingSystem(false);
+        setNotifications(allowed ? "allowed" : "declined");
+    };
+
+    const declineNotifications = () => {
+        appHaptics.dismiss();
+        rememberNotificationsAsked();
+        setNotifications("declined");
+    };
+
     // Looks change the way the app's theme switch does: revealed in a circle from the tap.
     const toScreen = (at: ArtboardPoint) => ({ x: offsetX + at.x * scale, y: offsetY + at.y * scale });
     const previewLook = (next: Look, at: ArtboardPoint) => {
@@ -187,7 +228,7 @@ export function Onboarding() {
     const artVariants = useArtVariants();
     useEffect(() => {
         if (!introDone) return;
-        const later = PAGES.filter((page) => page === "widget" || page === "privacy");
+        const later = PAGES.filter((page) => page === "widget" || page === "privacy" || page === "notifications");
         const timers = later.map((page, order) => setTimeout(
             () => onboardingSkottie(ONBOARDING_ART[page](), appLook, artVariants),
             600 + order * 400,
@@ -273,6 +314,9 @@ export function Onboarding() {
         }
         if (page === "widget") return <WidgetStep index={index} playing={playing} reduced={reduced} />;
         if (page === "privacy") return <PrivacyStep index={index} playing={playing} reduced={reduced} />;
+        if (page === "notifications") {
+            return <NotificationsStep index={index} playing={playing && !askingSystem} reduced={reduced} answer={notifications} />;
+        }
         return (
             <CustomizeStep
                 index={index}
@@ -286,7 +330,7 @@ export function Onboarding() {
     };
 
     const footerShown = introDone && !exiting;
-    const skipShown = skipReady && !last && !exiting;
+    const skipShown = skipReady && !last && !exiting && (!onNotificationsPage || awaitingAnswer);
 
     return (
         <OnboardingLookProvider look={look} artLook={appLook}>
@@ -352,13 +396,19 @@ export function Onboarding() {
                                 accessibilityRole="button"
                                 hitSlop={8}
                                 onPress={() => {
+                                    if (awaitingAnswer) {
+                                        declineNotifications();
+                                        return;
+                                    }
                                     appHaptics.dismiss();
                                     exit();
                                 }}
                                 android_ripple={rippleConfig(colors.ink, 28)}
                                 style={styles.skipButton}
                             >
-                                <Text style={[styles.skipLabel, { color: colors.muted }]}>{t("onboarding.skip")}</Text>
+                                <Text style={[styles.skipLabel, { color: colors.muted }]}>
+                                    {awaitingAnswer ? t("onboarding.notifications.notNow") : t("onboarding.skip")}
+                                </Text>
                             </Pressable>
                         </Animated.View>
 
@@ -383,11 +433,13 @@ export function Onboarding() {
                             </View>
                             <PrimaryButton
                                 testID="onboarding-continue"
-                                accessibilityLabel={last ? t("onboarding.getStarted") : t("onboarding.continue")}
+                                accessibilityLabel={primaryLabel}
                                 colors={colors}
                                 style={styles.primary}
                                 onPress={() => {
-                                    if (last) {
+                                    if (primaryAction === "allow") {
+                                        void askForNotifications();
+                                    } else if (last) {
                                         appHaptics.primaryAction();
                                         exit();
                                     } else {
@@ -396,10 +448,13 @@ export function Onboarding() {
                                 }}
                                 label={(textStyle) => (
                                     <>
-                                        <Animated.Text style={[styles.primaryLabel, textStyle, LABEL_SWAP, labelPlacement(!last, "above")]}>
+                                        <Animated.Text style={[styles.primaryLabel, textStyle, LABEL_SWAP, labelPlacement(primaryAction === "continue", "above")]}>
                                             {t("onboarding.continue")}
                                         </Animated.Text>
-                                        <Animated.Text style={[styles.primaryLabel, textStyle, LABEL_SWAP, labelPlacement(last, "below")]}>
+                                        <Animated.Text style={[styles.primaryLabel, textStyle, LABEL_SWAP, labelPlacement(primaryAction === "allow", "below")]}>
+                                            {t("onboarding.notifications.allow")}
+                                        </Animated.Text>
+                                        <Animated.Text style={[styles.primaryLabel, textStyle, LABEL_SWAP, labelPlacement(primaryAction === "start", "below")]}>
                                             {t("onboarding.getStarted")}
                                         </Animated.Text>
                                     </>

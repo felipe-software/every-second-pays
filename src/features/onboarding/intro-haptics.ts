@@ -1,5 +1,5 @@
 import { scoreHaptic } from "@/features/haptics/haptics";
-import type { Note, Primitive } from "@/features/haptics/score";
+import { type Note, payoff, sparkle } from "@/features/haptics/score";
 
 import { BIRD, MONTH_WORKDAYS, STORY } from "./intro-timeline";
 
@@ -7,14 +7,6 @@ import { BIRD, MONTH_WORKDAYS, STORY } from "./intro-timeline";
 export const INTRO_HAPTICS_AT = 300;
 
 const range = (count: number) => Array.from({ length: count }, (_, index) => index);
-
-function payoff(time: number, scale: number, body: Primitive, bodyScale: number): Note[] {
-    return [[time, "click", scale], [time + 20, body, bodyScale]];
-}
-
-function sparkle(from: number, scales: number[], gap: number): Note[] {
-    return scales.map((scale, index) => [from + index * gap, "tick", scale]);
-}
 
 // Offsets from the timeline's moments are read off the illustration's keyframes.
 const SCORE: Note[] = [
