@@ -13,7 +13,8 @@ import {
     useEffect,
     useMemo,
 } from "react";
-import { type ColorValue, type LayoutChangeEvent, StyleSheet } from "react-native";
+import { type LayoutChangeEvent, StyleSheet } from "react-native";
+import { Freeze } from "react-freeze";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
     cancelAnimation,
@@ -26,9 +27,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-type AndroidTabPagerProps = PropsWithChildren<{
-    backgroundColor: ColorValue;
-}>;
+import { useInterfaceTransitionRunning } from "@/features/appearance/theme-transition";
+import { useEarningsTheme } from "@/features/earnings/theme";
 
 type PagerSceneProps = PropsWithChildren<{
     index: number;
@@ -52,6 +52,7 @@ function clampPagePosition(value: number) {
 }
 
 function PagerScene({ children, index, isFocused, pageWidth, position }: PagerSceneProps) {
+    const transitionRunning = useInterfaceTransitionRunning();
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [{
             translateX: (index - position.get()) * pageWidth.get(),
@@ -65,7 +66,7 @@ function PagerScene({ children, index, isFocused, pageWidth, position }: PagerSc
             pointerEvents={isFocused ? "auto" : "none"}
             style={[styles.scene, animatedStyle]}
         >
-            {children}
+            <Freeze freeze={transitionRunning && !isFocused}>{children}</Freeze>
         </Animated.View>
     );
 }
@@ -84,7 +85,8 @@ export function useAndroidTabPagerProgress() {
     return context.position;
 }
 
-export function AndroidTabPager({ backgroundColor, children }: AndroidTabPagerProps) {
+export function AndroidTabPager({ children }: PropsWithChildren) {
+    const { colors } = useEarningsTheme();
     const indexTab = useTabTrigger({ name: "index" });
     const settingsTab = useTabTrigger({ name: "settings" });
     const selectedIndex = settingsTab.trigger?.isFocused ? 1 : 0;
@@ -186,7 +188,7 @@ export function AndroidTabPager({ backgroundColor, children }: AndroidTabPagerPr
 
     return (
         <AndroidTabPagerContext.Provider value={contextValue}>
-            <Animated.View style={[styles.pager, { backgroundColor }]}>
+            <Animated.View style={[styles.pager, { backgroundColor: colors.canvas }]}>
                 <GestureDetector gesture={pan}>
                     <Animated.View onLayout={handleLayout} style={styles.viewport}>
                         <TabSlot

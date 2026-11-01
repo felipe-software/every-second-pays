@@ -23,6 +23,7 @@ import {
     useSheetReceded,
 } from "@/components/sheet-recede";
 import { useCurrencyStore } from "@/features/currency/store";
+import { InterfaceTransitionBoundary } from "@/features/appearance/theme-transition";
 import { useAppearanceSync } from "@/features/appearance/use-appearance-sync";
 import { usePeriodStore } from "@/features/earnings/period-store";
 import { useEarningsTheme } from "@/features/earnings/theme";
@@ -85,29 +86,31 @@ export default function RootLayout() {
     if (!ready) return null;
 
     return (
-        <I18nProvider>
-            <MoneyWidgetSync />
-            <GestureHandlerRootView
-                style={{ flex: 1, backgroundColor: SHEET_RECEDE_ENABLED ? SHEET_RECEDE_BACKDROP : colors.canvas }}
-            >
-                <ReanimatedTrueSheetProvider>
-                    <SystemBars />
-                    <KeyboardProvider>
-                        {/* Mounted from the start, under the onboarding: mounting it while the onboarding plays stalls its animations. */}
-                        <SheetRecede backgroundColor={colors.canvas}>
-                            <View
-                                accessibilityElementsHidden={covered}
-                                importantForAccessibility={covered ? "no-hide-descendants" : "auto"}
-                                style={[styles.app, covered && styles.covered]}
-                            >
-                                <AppTabs />
-                            </View>
-                        </SheetRecede>
-                    </KeyboardProvider>
-                    {onboarding === "pending" ? <Onboarding /> : null}
-                </ReanimatedTrueSheetProvider>
-            </GestureHandlerRootView>
-        </I18nProvider>
+        <InterfaceTransitionBoundary>
+            <I18nProvider>
+                <MoneyWidgetSync />
+                <GestureHandlerRootView
+                    style={{ flex: 1, backgroundColor: SHEET_RECEDE_ENABLED ? SHEET_RECEDE_BACKDROP : colors.canvas }}
+                >
+                    <ReanimatedTrueSheetProvider>
+                        <SystemBars />
+                        <KeyboardProvider>
+                            {/* Mounted from the start, under the onboarding: mounting it while the onboarding plays stalls its animations. */}
+                            <SheetRecede>
+                                <View
+                                    accessibilityElementsHidden={covered}
+                                    importantForAccessibility={covered ? "no-hide-descendants" : "auto"}
+                                    style={[styles.app, covered && styles.covered]}
+                                >
+                                    <AppTabs />
+                                </View>
+                            </SheetRecede>
+                        </KeyboardProvider>
+                        {onboarding === "pending" ? <Onboarding /> : null}
+                    </ReanimatedTrueSheetProvider>
+                </GestureHandlerRootView>
+            </I18nProvider>
+        </InterfaceTransitionBoundary>
     );
 }
 
