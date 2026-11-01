@@ -51,8 +51,8 @@ function Swatch({
                 depth={3}
                 radius={17}
                 selected={selected}
+                // No ripple: redrawing it during the theme render delays the reveal by about 250 ms on low-end Android.
                 pressed={sink.pressed}
-                ripple={sink.ripple}
                 className="h-[34px] w-[34px] items-center justify-center"
             >
                 <PopIn visible={selected}>
