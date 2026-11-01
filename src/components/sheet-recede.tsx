@@ -68,6 +68,10 @@ export function RecedingSheet(props: ComponentProps<typeof ReanimatedTrueSheet>)
     return <ReanimatedTrueSheet cornerRadius={SHEET_RECEDE_ENABLED ? SHEET_CORNER_RADIUS : undefined} {...props} />;
 }
 
+export function useSheetOpen() {
+    return useProgressAbove(useRecedeProgress(), 0);
+}
+
 export function useSheetReceded() {
     const progress = useRecedeProgress();
     const receded = useProgressAbove(progress, 0.5);

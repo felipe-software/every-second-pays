@@ -27,6 +27,7 @@ import Animated, {
 import { scheduleOnRN } from "react-native-worklets";
 
 import { useEarningsTheme } from "@/features/earnings/theme";
+import { useBackProgress } from "@/features/navigation/predictive-back";
 
 type PagerSceneProps = PropsWithChildren<{
     index: number;
@@ -43,6 +44,8 @@ const AndroidTabPagerContext = createContext<AndroidTabPagerContextValue | null>
 
 const LAST_PAGE_INDEX = 1;
 const VELOCITY_PROJECTION_SECONDS = 0.18;
+const BACK_GESTURE_REVEAL = 0.28;
+const BACK_CANCEL_SPRING = { damping: 28, overshootClamping: true, stiffness: 300 };
 
 function clampPagePosition(value: number) {
     "worklet";
@@ -101,6 +104,11 @@ export function AndroidTabPager({ children }: PropsWithChildren) {
             easing: Easing.out(Easing.cubic),
         }));
     }, [position, routerIndex, selectedIndex]);
+
+    useBackProgress(selectedIndex === LAST_PAGE_INDEX && !onSubpage, {
+        onProgress: (progress) => position.set(LAST_PAGE_INDEX - progress * BACK_GESTURE_REVEAL),
+        onCancel: () => position.set(withSpring(LAST_PAGE_INDEX, BACK_CANCEL_SPRING)),
+    });
 
     const switchToIndex = useCallback((index: number) => {
         const tab = index === 1 ? settingsTab : indexTab;
