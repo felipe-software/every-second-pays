@@ -49,7 +49,7 @@ export function HourPresets({ shifts, onPick }: { shifts: readonly Shift[]; onPi
                                 numberOfLines={1}
                                 adjustsFontSizeToFit
                                 className="font-sans text-[13.5px] font-semibold"
-                                style={{ color: selected ? colors.accentDeep : colors.muted }}
+                                style={{ color: selected ? colors.ink : colors.muted }}
                             >
                                 {t(PRESET_KEYS[preset.id])}
                             </Text>

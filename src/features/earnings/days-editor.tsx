@@ -103,7 +103,7 @@ export function DaysEditor({ days, onChange }: { days: number[]; onChange: (days
                             selected={selected}
                             className="h-8 justify-center px-3"
                         >
-                            <Text className="font-sans text-[12.5px] font-semibold" style={{ color: selected ? colors.accentDeep : colors.muted }}>
+                            <Text className="font-sans text-[12.5px] font-semibold" style={{ color: selected ? colors.ink : colors.muted }}>
                                 {t(`payment.daySet.${option.id}` as TranslationKey)}
                             </Text>
                         </RaisedPressable>

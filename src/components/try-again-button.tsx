@@ -17,7 +17,7 @@ export function TryAgainButton({ onPress, className }: { onPress: () => void; cl
             radius={10}
             className="h-9 justify-center px-3.5"
         >
-            <Text className="font-sans text-[14px] font-semibold text-accent-deep">{t("common.tryAgain")}</Text>
+            <Text className="font-sans text-[14px] font-semibold text-ink">{t("common.tryAgain")}</Text>
         </RaisedPressable>
     );
 }
