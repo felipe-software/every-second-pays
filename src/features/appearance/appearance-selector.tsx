@@ -117,7 +117,7 @@ function AppearancePreview({
                     }}
                 >
                     <PopIn visible={active}>
-                        <CheckIcon size={12} color="#FFFFFF" />
+                        <CheckIcon size={12} color={preview.canvas} />
                     </PopIn>
                 </View>
                 <Text className="font-sans text-[13px] font-semibold text-ink">{label}</Text>

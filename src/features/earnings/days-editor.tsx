@@ -1,7 +1,8 @@
 import { Pressable, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 
-import { Raised, RaisedPressable, usePressSink } from "@/components/elevated/raised";
+import { Chip } from "@/components/elevated/chip";
+import { Raised, usePressSink } from "@/components/elevated/raised";
 import { rippleConfig } from "@/components/elevated/ripple";
 import { useSquash } from "@/components/elevated/use-squash";
 import { appHaptics } from "@/features/haptics/haptics";
@@ -55,7 +56,7 @@ function DayToggle({
                 className="flex-1 items-center justify-center"
                 style={[{ backgroundColor: selected ? colors.accent : "transparent" }, squashStyle]}
             >
-                <Text className="font-sans text-[14px] font-semibold" style={{ color: selected ? colors.ink : colors.muted }}>
+                <Text className="font-sans text-[14px] font-semibold" style={selected ? colors.onAccentText : { color: colors.muted }}>
                     {weekdayName(day, "narrow").toLocaleUpperCase(locale)}
                 </Text>
             </Animated.View>
@@ -64,13 +65,12 @@ function DayToggle({
 }
 
 export function DaysEditor({ days, onChange }: { days: number[]; onChange: (days: number[]) => void }) {
-    const { colors } = useEarningsTheme();
     const { t } = useI18n();
     const sink = usePressSink();
 
     return (
         <View className="gap-4">
-            <Raised surface="fill" depth={3} radius={14} pressed={sink.pressed} className="h-14 flex-row overflow-hidden">
+            <Raised surface="card" depth={3} radius={14} pressed={sink.pressed} className="h-14 flex-row overflow-hidden">
                 {DAY_ORDER.map((day) => {
                     const selected = days.includes(day);
                     return (
@@ -89,24 +89,12 @@ export function DaysEditor({ days, onChange }: { days: number[]; onChange: (days
                 {DAY_SETS.map((option) => {
                     const selected = sameDays(option.days, days);
                     return (
-                        <RaisedPressable
+                        <Chip
                             key={option.id}
-                            accessibilityRole="button"
-                            accessibilityState={{ selected }}
-                            onPress={() => {
-                                appHaptics.selection();
-                                onChange([...option.days]);
-                            }}
-                            surface={selected ? "active" : "fill"}
-                            depth={2}
-                            radius={8}
+                            label={t(`payment.daySet.${option.id}` as TranslationKey)}
                             selected={selected}
-                            className="h-8 justify-center px-3"
-                        >
-                            <Text className="font-sans text-[12.5px] font-semibold" style={{ color: selected ? colors.accentDeep : colors.muted }}>
-                                {t(`payment.daySet.${option.id}` as TranslationKey)}
-                            </Text>
-                        </RaisedPressable>
+                            onPress={() => onChange([...option.days])}
+                        />
                     );
                 })}
             </View>

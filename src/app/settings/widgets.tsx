@@ -4,6 +4,7 @@ import { Platform, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Circle, Ellipse } from "react-native-svg";
 
+import { PrimaryButton } from "@/components/elevated/primary-button";
 import { RaisedPressable } from "@/components/elevated/raised";
 import { LargeTitleScrollView } from "@/components/large-title-scroll-view";
 import { LineIcon } from "@/components/line-icon";
@@ -160,7 +161,7 @@ function BackgroundArt({ background }: { background: MoneyWidgetConfig["backgrou
 export default function WidgetsScreen() {
     const insets = useSafeAreaInsets();
     const { width: windowWidth } = useWindowDimensions();
-    const { colors, isDark } = useEarningsTheme();
+    const { colors } = useEarningsTheme();
     const { t, formatMoney } = useI18n();
     const supported = useWidgetStore((state) => state.supported);
     const pinSupported = useWidgetStore((state) => state.pinSupported);
@@ -172,7 +173,6 @@ export default function WidgetsScreen() {
     const [previewSize, setPreviewSize] = useState<PreviewSize>("wide");
     const [pinFailed, setPinFailed] = useState(false);
     const available = Platform.OS === "android" && supported !== false;
-    const ctaText = isDark ? colors.canvas : "#FFFFFF";
 
     useEffect(() => {
         void useWidgetStore.getState().load();
@@ -350,22 +350,13 @@ export default function WidgetsScreen() {
                             </CollapsibleCard>
 
                             <View className="mt-7">
-                                <RaisedPressable
+                                <PrimaryButton
                                     testID="widgets-add"
-                                    accessibilityRole="button"
-                                    onPress={() => void addWidget()}
+                                    label={t("widgets.add")}
+                                    icon={pinSupported ? (color) => <LineIcon d="M12 5v14M5 12h14" color={color} size={18} strokeWidth={2.2} /> : undefined}
                                     disabled={!pinSupported}
-                                    surface={pinSupported ? "accent" : "canvas"}
-                                    flat={!pinSupported}
-                                    depth={4}
-                                    radius={18}
-                                    className="min-h-[56px] flex-row items-center justify-center gap-2 px-5"
-                                >
-                                    {pinSupported ? <LineIcon d="M12 5v14M5 12h14" color={ctaText} size={18} strokeWidth={2.2} /> : null}
-                                    <Text className="font-sans text-[16px] font-bold" style={{ color: pinSupported ? ctaText : colors.muted }}>
-                                        {t("widgets.add")}
-                                    </Text>
-                                </RaisedPressable>
+                                    onPress={() => void addWidget()}
+                                />
                                 {!pinSupported || pinFailed ? (
                                     <Text accessibilityLiveRegion="polite" className="mt-3 px-1 text-center font-sans text-[13px] leading-5 text-muted">
                                         {t(pinSupported ? "widgets.pinError" : "widgets.pinUnsupported")}

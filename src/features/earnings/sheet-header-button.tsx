@@ -31,7 +31,7 @@ export function SheetHeaderButton({
             testID={testID}
             // Dim the whole control: a translucent face would let its edge show through.
             containerStyle={{ opacity: disabled ? 0.55 : 1 }}
-            surface={isClose ? "fill" : "danger"}
+            surface={isClose ? "card" : "danger"}
             depth={2}
             radius={isClose ? 18 : 11}
             className={isClose ? "h-9 w-9 items-center justify-center" : "h-9 justify-center px-3.5"}

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { View } from "react-native";
 
+import { Card } from "@/components/settings-card";
+
 import type { Shift } from "../model";
-import { useEarningsTheme } from "../theme";
 import { DayArc } from "./day-arc";
 import { HourPresets } from "./hour-presets";
 import { ShiftChips } from "./shift-chips";
@@ -10,7 +11,6 @@ import { ShiftChips } from "./shift-chips";
 const NEW_SHIFT: Shift = { start: 780, end: 1020 };
 
 export function HoursEditor({ shifts, onChange }: { shifts: Shift[]; onChange: (shifts: Shift[]) => void }) {
-    const { colors } = useEarningsTheme();
     const [selected, setSelected] = useState(0);
     const selectedIndex = Math.min(selected, shifts.length - 1);
 
@@ -20,7 +20,7 @@ export function HoursEditor({ shifts, onChange }: { shifts: Shift[]; onChange: (
 
     return (
         <View className="gap-4">
-            <View className="gap-3 rounded-[28px] px-4 pt-3 pb-4" style={{ backgroundColor: colors.card }}>
+            <Card className="gap-3 px-4 pt-3 pb-4">
                 <DayArc
                     shifts={shifts}
                     selectedIndex={selectedIndex}
@@ -40,7 +40,7 @@ export function HoursEditor({ shifts, onChange }: { shifts: Shift[]; onChange: (
                         setSelected(Math.max(0, index - 1));
                     }}
                 />
-            </View>
+            </Card>
             <HourPresets shifts={shifts} onPick={onChange} />
         </View>
     );

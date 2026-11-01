@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Platform, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { PrimaryButton } from "@/components/elevated/primary-button";
+import { appHaptics } from "@/features/haptics/haptics";
 import { useMainCurrencySources } from "@/features/currency/use-main-currency-sources";
 import { EarningsBackground } from "@/features/earnings/earnings-background";
 import { EarningsHeader } from "@/features/earnings/earnings-header";
@@ -10,7 +12,7 @@ import { MONEY_IMPACT_DELAY, type MoneyTransfer } from "@/features/earnings/mone
 import { EmptySourcesCallout, EmptySourcesMessage } from "@/features/earnings/empty-sources";
 import { type PaymentDraft, currentShift, earnedInPeriod, earnedToday, ratePerSecond } from "@/features/earnings/model";
 import { usePaymentComposerStore } from "@/features/earnings/payment-composer-store";
-import { PaymentSheet, PrimaryButton } from "@/features/earnings/payment-sheet";
+import { PaymentSheet } from "@/features/earnings/payment-sheet";
 import { usePeriodStore } from "@/features/earnings/period-store";
 import { SourceRow } from "@/features/earnings/source-row";
 import { useEarningsStore } from "@/features/earnings/store";
@@ -299,7 +301,13 @@ export default function EarningsScreen() {
                         {loadError ? (
                             <View className="gap-3 py-4">
                                 <Text className="text-center font-sans text-[14px] text-muted">{t("home.loadError")}</Text>
-                                <PrimaryButton label={t("common.tryAgain")} onPress={() => void load()} />
+                                <PrimaryButton
+                                    label={t("common.tryAgain")}
+                                    onPress={() => {
+                                        appHaptics.primaryAction();
+                                        void load();
+                                    }}
+                                />
                             </View>
                         ) : ready && sources.length === 0 ? (
                             <EmptySourcesMessage />
