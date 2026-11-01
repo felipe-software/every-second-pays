@@ -15,6 +15,14 @@ const MAX_LATE = 25;
 // than by how long the vibrator says its primitives last.
 const NEW_CHUNK_PAUSE = 100;
 
+export function payoff(time: number, scale: number, body: Primitive, bodyScale: number): Note[] {
+    return [[time, "click", scale], [time + 20, body, bodyScale]];
+}
+
+export function sparkle(from: number, scales: number[], gap: number): Note[] {
+    return scales.map((scale, index) => [from + index * gap, "tick", scale]);
+}
+
 export function canCompose(score: readonly Note[], durations: PrimitiveDurations) {
     return score.every(([, primitive]) => durations[primitive] > 0);
 }

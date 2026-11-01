@@ -8,6 +8,7 @@ mock.module("@/features/haptics/haptics", () => ({ scoreHaptic: (score) => score
 
 const { toChunks, toPattern } = await import("../features/haptics/score");
 const { INTRO_HAPTICS } = await import("../features/onboarding/intro-haptics");
+const { BELL_HAPTICS } = await import("../features/onboarding/bell-haptics");
 
 // What a Galaxy S24 reports.
 const S24 = { click: 20, tick: 20, lowTick: 20, thud: 300, spin: 130, quickRise: 150, slowRise: 500, quickFall: 100 };
@@ -73,4 +74,16 @@ describe("the intro's score", () => {
         starts.forEach(([start], index) => expect(Math.abs(start - notes[index][0])).toBeLessThanOrEqual(5));
         expect(chunks.every((chunk) => chunk.primitives.length <= 10)).toBe(true);
     });
+});
+
+describe("the bell's scores", () => {
+    for (const [name, score] of Object.entries(BELL_HAPTICS)) {
+        test(`${name} starts after its cue and plays every note on time`, () => {
+            const notes = [...score].sort((a, b) => a[0] - b[0]);
+            expect(notes[0][0]).toBeGreaterThanOrEqual(0);
+            const starts = played(toChunks(notes, S24), S24);
+            expect(starts).toHaveLength(notes.length);
+            starts.forEach(([start], index) => expect(Math.abs(start - notes[index][0])).toBeLessThanOrEqual(5));
+        });
+    }
 });
