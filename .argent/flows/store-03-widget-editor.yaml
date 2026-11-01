@@ -11,15 +11,17 @@ steps:
   - await: { idle: true }
 
   - echo: The large preview above its money flow and number motion choices.
-  - tap: { text: Large }
+  - echo: French calls the wide size Large, so pick the size that comes after it.
+  - tap: { text: { matches: '^(Large|Grande|Grand)$' }, after: { text: { matches: '^(Wide|Largo|Ancho|Large)$' } } }
   - await: { idle: true }
   - tap: { id: widget-group-motion }
   - await: { idle: true }
-  - scroll-to: { target: { text: Energy } }
+  - scroll-to: { target: { text: { matches: '^(Energy|Energia|Energía|Énergie)$' } } }
   - await: { idle: true }
 
   - echo: Jump into both shifts so the preview counts and rains. The app only republishes
       the schedule when it returns to the foreground, so leave and come back.
+  - script: { path: ../../goldie/bin/still-numbers.mjs }
   - script: { path: ../../goldie/bin/clock-on-shift.mjs }
   - tool: button
     args: { button: home }

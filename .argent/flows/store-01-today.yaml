@@ -10,15 +10,23 @@ steps:
   - wait: 4000
   - echo: From here launches are quick.
   - launch: software.felipe.everysecondpays
-  - await: { visible: { text: No payment sources yet }, timeout: 25000 }
+  - await: { visible: { id: new-source-tab }, timeout: 25000 }
   - await: { idle: true }
   - run: store-seed-sources
   - await: { visible: { id: period-button }, timeout: 25000 }
-  - launch: software.felipe.everysecondpays
-  - await: { visible: { id: period-button }, timeout: 25000 }
-  - await: { idle: true }
+  - echo: Keep the digits still instead of caught mid-roll, which also stops the small bills flying over them.
+  - script: { path: ../../goldie/bin/reduce-motion.mjs }
+  - run: store-open-dashboard
+  - echo: Reduced motion turns each row's fade-in into a single update, which a slow cold start can lose and leave
+      the row invisible. Relaunching shows them.
+  - when: { hidden: { text: Acme } }
+    steps:
+      - run: store-open-dashboard
+  - when: { hidden: { text: Acme } }
+    steps:
+      - run: store-open-dashboard
+  - await: { visible: { text: Acme } }
   - run: store-show-earnings
-  - echo: Jump into both shifts so the dashboard counts live, with the digits still instead of caught mid-roll.
-  - script: { path: ../../goldie/bin/still-numbers.mjs }
+  - echo: Jump into both shifts so the dashboard counts live.
   - script: { path: ../../goldie/bin/clock-on-shift.mjs }
   - wait: 6000

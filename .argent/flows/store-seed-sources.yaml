@@ -2,14 +2,14 @@ executionPrerequisite: A fresh install on the empty earnings dashboard.
 steps:
   - echo: Add a monthly salary on the default Mon–Fri, 9 AM–5 PM schedule.
   - tap: { id: new-source-tab }
-  - await: { visible: { text: New payment source }, timeout: 10000 }
+  - await: { visible: { id: save-source }, timeout: 10000 }
   - await: { idle: true }
   - type:
-      into: { text: Company or client }
-      text: Design Studio
+      into: { role: TextField }
+      text: Studio Nova
       submit: false
   - await: { idle: true }
-  - tap: { text: "$0, required" }
+  - tap: { text: { matches: '0, [^,]+$' } }
   - await: { visible: { role: TextField, text: "0" }, timeout: 10000 }
   - type:
       into: { role: TextField, text: "0" }
@@ -17,53 +17,53 @@ steps:
       submit: false
   - await: { idle: true }
   - tap: { id: save-source }
-  - await: { hidden: { text: New payment source }, timeout: 10000 }
-  - await: { visible: { text: Design Studio } }
+  - await: { hidden: { id: save-source }, timeout: 10000 }
+  - await: { visible: { text: Studio Nova } }
 
   - echo: Add a morning hourly gig with the Mornings preset on the day dial.
   - tap: { id: new-source-tab }
-  - await: { visible: { text: New payment source }, timeout: 10000 }
+  - await: { visible: { id: save-source }, timeout: 10000 }
   - await: { idle: true }
   - type:
-      into: { text: Company or client }
-      text: Tutoring
+      into: { role: TextField }
+      text: Yoga
       submit: false
   - await: { idle: true }
-  - tap: { text: "$0, required" }
+  - tap: { text: { matches: '0, [^,]+$' } }
   - await: { visible: { role: TextField, text: "0" }, timeout: 10000 }
   - type:
       into: { role: TextField, text: "0" }
       text: "45"
       submit: false
   - await: { idle: true }
-  - tap: { text: per month }
-  - tap: { text: Hour }
-  - echo: The time label uses a narrow no-break space, so match any space.
-  - tap: { text: { matches: '^9:00\sAM$' } }
-  - await: { visible: { text: Mornings } }
-  - tap: { text: Mornings }
+  - tap: { text: { matches: '^(per month|por mês|por mes|par mois)$' } }
+  - tap: { text: { matches: '^(Hour|Hora|Heure)$' } }
+  - echo: The label is 9:00 AM in English and 09:00 or 9:00 elsewhere, with a narrow no-break space before AM.
+  - tap: { text: { matches: '^0?9:00(\sAM)?$' } }
+  - await: { visible: { text: { matches: '^(Mornings|Manhãs|Mañanas|Matinées)$' } } }
+  - tap: { text: { matches: '^(Mornings|Manhãs|Mañanas|Matinées)$' } }
   - tap: { id: save-source }
-  - await: { hidden: { text: New payment source }, timeout: 10000 }
-  - await: { visible: { text: Tutoring } }
+  - await: { hidden: { id: save-source }, timeout: 10000 }
+  - await: { visible: { text: Yoga } }
 
   - echo: Add a one-time project payment that landed today.
   - tap: { id: new-source-tab }
-  - await: { visible: { text: New payment source }, timeout: 10000 }
+  - await: { visible: { id: save-source }, timeout: 10000 }
   - await: { idle: true }
   - type:
-      into: { text: Company or client }
+      into: { role: TextField }
       text: Acme
       submit: false
   - await: { idle: true }
-  - tap: { text: "$0, required" }
+  - tap: { text: { matches: '0, [^,]+$' } }
   - await: { visible: { role: TextField, text: "0" }, timeout: 10000 }
   - type:
       into: { role: TextField, text: "0" }
       text: "1200"
       submit: false
   - await: { idle: true }
-  - tap: { text: per month }
-  - tap: { text: One-time }
+  - tap: { text: { matches: '^(per month|por mês|por mes|par mois)$' } }
+  - tap: { text: { matches: '^(One-time|Único|Unique)$' } }
   - tap: { id: save-source }
-  - await: { hidden: { text: New payment source }, timeout: 10000 }
+  - await: { hidden: { id: save-source }, timeout: 10000 }
   - await: { visible: { text: Acme } }

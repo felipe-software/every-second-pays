@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 
-const AVD_NAME = "Goldie_Pixel_8_API_36";
+export const AVD_NAME = "Goldie_Pixel_8_API_36";
 const WEDNESDAY_NOV_4 = "1104";
 const YEAR = "2026";
 

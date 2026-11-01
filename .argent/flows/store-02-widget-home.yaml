@@ -15,18 +15,18 @@ steps:
   - tap: { id: widget-template-hero }
   - tap: { id: widget-group-motion }
   - await: { idle: true }
-  - scroll-to: { target: { text: Wild } }
-  - tap: { text: Wild }
+  - scroll-to: { target: { text: { matches: '^(Wild|Frenético|Déchaîné)$' } } }
+  - tap: { text: { matches: '^(Wild|Frenético|Déchaîné)$' } }
   - scroll-to: { target: { id: widgets-add } }
   - await: { idle: true }
 
   - tap: { id: widgets-add }
-  - echo: The Pixel launcher's pin dialog, whose button shares the app's label. Jump into both shifts
-      before confirming, so the widget counts live from its first frame.
-  - await: { visible: { text: Cancel }, timeout: 15000 }
+  - echo: The Pixel launcher's pin dialog, whose wording differs from the app's, so tap the button after Cancel.
+      Jump into both shifts before confirming, so the widget counts live from its first frame.
+  - await: { visible: { text: { matches: '^(Cancel|Cancelar|Annuler)$' } }, timeout: 15000 }
   - script: { path: ../../goldie/bin/clock-on-shift.mjs }
   - wait: 1500
-  - tap: { text: Add to home screen }
+  - tap: { role: button, next: { text: { matches: '^(Cancel|Cancelar|Annuler)$' } } }
   - wait: 2500
 
   - echo: Go home, where the live widget now counts up on the launcher.
