@@ -11,8 +11,8 @@ import { interpolate, resolveLocale } from "@/features/i18n/resolve";
 import { readLanguagePreference } from "@/features/i18n/store";
 import { translations } from "@/features/i18n/translations";
 
-import { billChannels, buildBillNotification, type Translate } from "./content";
-import { nextNotification, nice, type NotificationKind, type NotificationSettings, recordSent, showLess } from "./routine";
+import { billChannels, buildBillNotification, buildSetupReminder, type ContentContext, type Translate } from "./content";
+import { nextNotification, nice, type NotificationKind, type NotificationSettings, recordSent, type RoutineCandidate, showLess } from "./routine";
 import { readSettings, readState, updateState, writeSettings } from "./storage";
 
 const KINDS: readonly NotificationKind[] = ["week", "progress", "year", "meter"];
@@ -57,6 +57,11 @@ export async function applyPendingFeedback(): Promise<NotificationSettings | nul
     return settings;
 }
 
+export function postCandidate(candidate: RoutineCandidate, context: ContentContext) {
+    if (candidate.kind === "setup") return Noti.bills.postReminder(buildSetupReminder(context));
+    return Noti.bills.post(buildBillNotification(candidate, context));
+}
+
 export async function runRoutine() {
     await applyPendingFeedback();
     if (AppState.currentState === "active") return;
@@ -72,12 +77,12 @@ export async function runRoutine() {
     });
     if (!candidate) return;
     await Noti.bills.ensureChannels(billChannels(environment.t));
-    const posted = await Noti.bills.post(buildBillNotification(candidate, {
+    const posted = await postCandidate(candidate, {
         t: environment.t,
         locale: environment.locale,
         currency: environment.currency,
         showAmounts: settings.showAmounts,
         appearance: environment.appearance,
-    }));
+    });
     if (posted) await updateState((current) => recordSent(current, candidate, now));
 }

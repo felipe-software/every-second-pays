@@ -284,4 +284,6 @@ export type BillNotification = {
     period: string | null;
 };
 
+export type BillReminder = Pick<BillNotification, 'kind' | 'channel' | 'title' | 'body' | 'colors' | 'period'>;
+
 export type BillFeedback = { kind: string; key: string; action: 'less' | 'nice'; at: number };

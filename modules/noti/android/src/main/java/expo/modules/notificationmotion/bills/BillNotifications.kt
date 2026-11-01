@@ -72,9 +72,26 @@ internal class BillNotifications private constructor(private val context: Contex
     return true
   }
 
+  fun postReminder(serialized: String): Boolean {
+    val payload = JSONObject(serialized)
+    val channelId = payload.getString("channel")
+    if (!channelEnabled(channelId)) return false
+    val id = NOTIFICATION_IDS.getValue(payload.getString("kind"))
+    val builder = textBuilder(payload, channelId, id).setStyle(Notification.BigTextStyle().bigText(payload.getString("body")))
+    manager.notify(TAG, id, builder.build())
+    return true
+  }
+
   private fun isShowing(id: Int) = manager.activeNotifications.any { it.id == id && it.tag == TAG }
 
   private fun plainBuilder(payload: JSONObject, channelId: String, id: Int, kind: String): Notification.Builder {
+    val actions = payload.getJSONObject("actions")
+    return textBuilder(payload, channelId, id)
+      .addAction(action(id, kind, payload.getString("key"), ACTION_LESS, actions.getString("less")))
+      .addAction(action(id, kind, payload.getString("key"), ACTION_NICE, actions.getString("nice")))
+  }
+
+  private fun textBuilder(payload: JSONObject, channelId: String, id: Int): Notification.Builder {
     val icon = context.resources.getIdentifier("nm_small_icon", "drawable", context.packageName)
     val accent = Color.parseColor(payload.getJSONObject("colors").getJSONArray("accent").getString(0))
     val hidden = !payload.has("amount") || payload.isNull("amount")
@@ -98,9 +115,6 @@ internal class BillNotifications private constructor(private val context: Contex
           .build(),
       )
     }
-    val actions = payload.getJSONObject("actions")
-    builder.addAction(action(id, kind, payload.getString("key"), ACTION_LESS, actions.getString("less")))
-    builder.addAction(action(id, kind, payload.getString("key"), ACTION_NICE, actions.getString("nice")))
     return builder
   }
 
@@ -159,7 +173,7 @@ internal class BillNotifications private constructor(private val context: Contex
     private const val LAST_SDK_FREEZING_NEW_ROWS = 32
     private const val ROW_SETTLE_MS = 1_000L
     private const val QUIET_GROUP = "earnings-bill-quiet"
-    private val NOTIFICATION_IDS = mapOf("week" to 72_001, "progress" to 72_002, "year" to 72_003, "meter" to 72_004)
+    private val NOTIFICATION_IDS = mapOf("week" to 72_001, "progress" to 72_002, "year" to 72_003, "meter" to 72_004, "setup" to 72_005)
 
     @Volatile private var instance: BillNotifications? = null
     fun get(context: Context): BillNotifications = instance ?: synchronized(this) {

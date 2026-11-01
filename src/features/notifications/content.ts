@@ -1,11 +1,13 @@
-import type { BillColorPair, BillMark, BillNotification } from "react-native-noti";
+import type { BillColorPair, BillMark, BillNotification, BillReminder } from "react-native-noti";
 
 import { mixColors } from "@/features/appearance/color";
 import { type Appearance, getThemeColors, type ThemeColors } from "@/features/appearance/palettes";
 import { type Currency, currencyPrefix } from "@/features/currency/currencies";
 import type { TranslationKey } from "@/features/i18n/translations";
 
-import type { NotificationKind, RoutineCandidate } from "./routine";
+import type { EarningsCandidate, RoutineCandidate } from "./routine";
+
+type ChannelKind = RoutineCandidate["kind"];
 
 export type Translate = (key: TranslationKey, replacements?: Record<string, string | number>) => string;
 
@@ -17,25 +19,30 @@ export type ContentContext = {
     appearance: Appearance;
 };
 
-export const CHANNEL_IDS: Record<NotificationKind, string> = {
+export const ADD_SOURCE_TAP = "add-source";
+
+export const CHANNEL_IDS: Record<ChannelKind, string> = {
     week: "earnings-week",
     progress: "earnings-progress",
     year: "earnings-year",
     meter: "earnings-meter",
+    setup: "earnings-setup",
 };
 
-const CHANNEL_NAMES: Record<NotificationKind, TranslationKey> = {
+const CHANNEL_NAMES: Record<ChannelKind, TranslationKey> = {
     week: "notifications.week",
     progress: "notifications.progress",
     year: "notifications.year",
     meter: "notifications.meter",
+    setup: "notifications.setup",
 };
 
-const CHANNEL_DESCRIPTIONS: Record<NotificationKind, TranslationKey> = {
+const CHANNEL_DESCRIPTIONS: Record<ChannelKind, TranslationKey> = {
     week: "notifications.channel.week.description",
     progress: "notifications.channel.progress.description",
     year: "notifications.channel.year.description",
     meter: "notifications.channel.meter.description",
+    setup: "notifications.channel.setup.description",
 };
 
 const QUARTERS = [25, 50, 75, 100];
@@ -44,7 +51,7 @@ const METER_WEEK = 7 * 86_400_000;
 const CROWDED_MARK_COUNT = 6;
 
 export function billChannels(t: Translate) {
-    return (Object.keys(CHANNEL_IDS) as NotificationKind[]).map((kind) => ({
+    return (Object.keys(CHANNEL_IDS) as ChannelKind[]).map((kind) => ({
         id: CHANNEL_IDS[kind],
         name: t(CHANNEL_NAMES[kind]),
         description: t(CHANNEL_DESCRIPTIONS[kind]),
@@ -102,7 +109,18 @@ function moneyMarks(marks: readonly number[], goal: number, current: number, con
     });
 }
 
-export function buildBillNotification(candidate: RoutineCandidate, context: ContentContext): BillNotification {
+export function buildSetupReminder({ t, appearance }: ContentContext): BillReminder {
+    return {
+        kind: "setup",
+        channel: CHANNEL_IDS.setup,
+        title: t("notifications.content.setup.title"),
+        body: t("notifications.content.setup.body"),
+        colors: billColors(appearance),
+        period: ADD_SOURCE_TAP,
+    };
+}
+
+export function buildBillNotification(candidate: EarningsCandidate, context: ContentContext): BillNotification {
     const { t, locale, showAmounts, appearance } = context;
     const amount = money(candidate.amount, context);
     const percentLabel = (at: number) => `${at}%`;

@@ -15,7 +15,8 @@ const {
     recordSent,
     showLess,
 } = await import("../features/notifications/routine");
-const { buildBillNotification } = await import("../features/notifications/content");
+const { ADD_SOURCE_TAP, billChannels, buildBillNotification, buildSetupReminder } = await import("../features/notifications/content");
+const { translations } = await import("../features/i18n/translations");
 
 const originalTimeZone = process.env.TZ;
 beforeEach(() => {
@@ -292,7 +293,69 @@ describe("Show less and Nice", () => {
     });
 });
 
+describe("setup reminder", () => {
+    const DAY = 86_400_000;
+    const now = new Date(2026, 9, 16, 12);
+    const onboarded = (daysAgo, overrides = {}) => ({ ...EMPTY_STATE, lastOpenedAt: now.getTime(), onboardedAt: now.getTime() - daysAgo * DAY, ...overrides });
+    const noSources = (state, overrides = {}) => run(now, { sources: [], state, ...overrides });
+
+    test("sends three days after onboarding when there is still no source", () => {
+        expect(noSources(onboarded(3))).toEqual({ kind: "setup", key: "setup" });
+        expect(noSources(onboarded(2.9))).toBeNull();
+    });
+
+    test("waits until onboarding has finished", () => {
+        expect(noSources({ ...EMPTY_STATE, lastOpenedAt: now.getTime() })).toBeNull();
+    });
+
+    test("sends once and then stays silent", () => {
+        const sent = recordSent(onboarded(3), noSources(onboarded(3)), now);
+        expect(sent.setupSettled).toBe(true);
+        expect(noSources({ ...sent, lastSentDay: null })).toBeNull();
+    });
+
+    test("stays silent for someone who once had a source and removed it", () => {
+        expect(noSources(onboarded(30, { setupSettled: true }))).toBeNull();
+    });
+
+    test("follows pause, quiet hours and the one-a-day limit", () => {
+        const paused = { ...DEFAULT_SETTINGS, pause: "forever" };
+        expect(noSources(onboarded(3), { settings: paused })).toBeNull();
+        expect(noSources(onboarded(3, { lastSentDay: "2026-10-16" }))).toBeNull();
+        const night = new Date(2026, 9, 16, 22);
+        expect(run(night, { sources: [], state: onboarded(3) })).toBeNull();
+    });
+
+    test("is not sent once any source exists", () => {
+        const oneOff = { ...job, frequency: "once" };
+        expect(run(now, { sources: [oneOff], state: onboarded(3) })).toBeNull();
+        expect(run(now, { sources: [job], state: onboarded(3) })?.kind).not.toBe("setup");
+    });
+
+    test("opens the new source sheet and has its own channel, with no amounts", () => {
+        const t = (key) => key;
+        const reminder = buildSetupReminder({ t, locale: "en-US", currency: "USD", showAmounts: true, appearance: { mode: "system", palette: "green" } });
+        expect(reminder.period).toBe(ADD_SOURCE_TAP);
+        expect(reminder.channel).toBe("earnings-setup");
+        expect(reminder).not.toHaveProperty("amount");
+        expect(billChannels(t).map((channel) => channel.id)).toContain("earnings-setup");
+    });
+
+    test("every language has the reminder text", () => {
+        for (const table of Object.values(translations)) {
+            for (const key of ["notifications.setup", "notifications.content.setup.title", "notifications.content.setup.body", "notifications.channel.setup.description"]) {
+                expect(table[key].length).toBeGreaterThan(0);
+            }
+        }
+    });
+});
+
 describe("saved data", () => {
+    test("saved onboarding state survives and bad values are dropped", () => {
+        expect(parseState({ onboardedAt: 5, setupSettled: true })).toMatchObject({ onboardedAt: 5, setupSettled: true });
+        expect(parseState({ onboardedAt: "x", setupSettled: "yes" })).toMatchObject({ onboardedAt: null, setupSettled: false });
+    });
+
     test("bad saved values fall back to defaults", () => {
         expect(parseSettings(null)).toEqual(DEFAULT_SETTINGS);
         expect(parseSettings({ week: "nope", progress: 3 })).toEqual(DEFAULT_SETTINGS);

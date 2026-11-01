@@ -7,8 +7,9 @@ import { useAppearanceStore } from "@/features/appearance/store";
 import { useCurrencyStore } from "@/features/currency/store";
 import { useI18n } from "@/features/i18n/i18n";
 
-import { billChannels, buildBillNotification } from "./content";
+import { billChannels } from "./content";
 import { EMPTY_STATE, MONTH_MARKS, type RoutineCandidate, YEAR_MARKS } from "./routine";
+import { postCandidate } from "./runner";
 import { updateState } from "./storage";
 import { useNotificationStore } from "./store";
 
@@ -39,6 +40,7 @@ const PREVIEWS: { id: string; label: string; candidate: RoutineCandidate }[] = [
     },
     { id: "year", label: "Year", candidate: { kind: "year", key: "preview:year", year: 2026, amount: 48_000, goal: 48_000 } },
     { id: "meter", label: "Meter", candidate: { kind: "meter", key: "preview:meter", since: Date.now() - 14 * 86_400_000, amount: 2310, goal: 2310 } },
+    { id: "setup", label: "Setup", candidate: { kind: "setup", key: "preview:setup" } },
 ];
 
 export function DevNotificationControls() {
@@ -50,7 +52,7 @@ export function DevNotificationControls() {
     const preview = async (candidate: RoutineCandidate) => {
         await Noti.requestPermission();
         await Noti.bills.ensureChannels(billChannels(t));
-        await Noti.bills.post(buildBillNotification(candidate, { t, locale, currency, showAmounts, appearance }));
+        await postCandidate(candidate, { t, locale, currency, showAmounts, appearance });
     };
 
     return (
@@ -74,7 +76,7 @@ export function DevNotificationControls() {
                 <RaisedPressable
                     testID="notification-reset"
                     accessibilityRole="button"
-                    onPress={() => void updateState((state) => ({ ...EMPTY_STATE, lastOpenedAt: state.lastOpenedAt, handled: state.handled }))}
+                    onPress={() => void updateState((state) => ({ ...EMPTY_STATE, lastOpenedAt: state.lastOpenedAt, handled: state.handled, onboardedAt: state.onboardedAt }))}
                     surface="canvas"
                     depth={4}
                     radius={15}

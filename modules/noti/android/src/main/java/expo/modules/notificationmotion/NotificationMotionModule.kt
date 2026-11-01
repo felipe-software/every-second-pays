@@ -52,6 +52,7 @@ class NotificationMotionModule : Module() {
     AsyncFunction("billsEnabled") { bills.areEnabled() }
     AsyncFunction("ensureBillChannels") { channels: String -> bills.ensureChannels(channels) }
     AsyncFunction("postBill") Coroutine { payload: String -> bills.post(payload) }
+    AsyncFunction("postBillReminder") { payload: String -> bills.postReminder(payload) }
     AsyncFunction("drainBillFeedback") { bills.drain() }
     AsyncFunction("openBillSettings") { bills.openSettings() }
     AsyncFunction("takeOpenedBillPeriod") { bills.takeOpenedPeriod() }

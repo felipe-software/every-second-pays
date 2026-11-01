@@ -29,15 +29,19 @@ export type RoutineState = {
     lastOpenedAt: number | null;
     silenceSince: number | null;
     niceTaps: number;
+    onboardedAt: number | null;
+    setupSettled: boolean;
 };
 
 type Base = { key: string; amount: number; goal: number };
 
-export type RoutineCandidate =
+export type EarningsCandidate =
     | (Base & { kind: "progress"; scope: "month" | "year"; start: number; mark: number; from: number; marks: number[] })
     | (Base & { kind: "week"; start: number; days: number[] })
     | (Base & { kind: "year"; year: number })
     | (Base & { kind: "meter"; since: number });
+
+export type RoutineCandidate = EarningsCandidate | { kind: "setup"; key: string };
 
 type RoutineInput = {
     sources: readonly PaymentSource[];
@@ -58,6 +62,7 @@ const YEAR_DROPS_AFTER = 14 * DAY;
 const QUIET_FROM_HOUR = 21;
 const QUIET_UNTIL_HOUR = 8;
 export const SILENT_AFTER = 14 * DAY;
+const SETUP_AFTER = 3 * DAY;
 const MAX_SENT_KEYS = 64;
 const CROSSING_TOLERANCE = 0.001;
 
@@ -84,6 +89,8 @@ export const EMPTY_STATE: RoutineState = {
     lastOpenedAt: null,
     silenceSince: null,
     niceTaps: 0,
+    onboardedAt: null,
+    setupSettled: false,
 };
 
 const pick = <T>(allowed: readonly T[], value: unknown, fallback: T) => (allowed.includes(value as T) ? (value as T) : fallback);
@@ -117,6 +124,8 @@ export function parseState(value: unknown): RoutineState {
         lastOpenedAt: typeof data.lastOpenedAt === "number" ? data.lastOpenedAt : null,
         silenceSince: typeof data.silenceSince === "number" ? data.silenceSince : null,
         niceTaps: Number(data.niceTaps) || 0,
+        onboardedAt: typeof data.onboardedAt === "number" ? data.onboardedAt : null,
+        setupSettled: data.setupSettled === true,
     };
 }
 
@@ -348,10 +357,16 @@ function meterCandidate({ sources, settings, state, now }: RoutineInput): Routin
     return { kind: "meter", key: `meter:${state.lastOpenedAt}`, since: state.lastOpenedAt, ...earnedAll(amount) };
 }
 
+function setupCandidate({ state, now }: RoutineInput): RoutineCandidate | null {
+    if (state.setupSettled || state.onboardedAt == null) return null;
+    return now.getTime() - state.onboardedAt >= SETUP_AFTER ? { kind: "setup", key: "setup" } : null;
+}
+
 export function nextNotification(input: RoutineInput): RoutineCandidate | null {
     const { settings, state, now, sources } = input;
     if (activePause(settings, now.getTime()) !== "none") return null;
     if (isQuietHour(now) || state.lastSentDay === dayKey(now)) return null;
+    if (!sources.length) return setupCandidate(input);
     if (!recurring(sources).length) return null;
     if (state.lastOpenedAt != null && now.getTime() - state.lastOpenedAt >= SILENT_AFTER) {
         return state.silenceSince === state.lastOpenedAt ? null : meterCandidate(input);
@@ -371,6 +386,7 @@ export function recordSent(state: RoutineState, candidate: RoutineCandidate, now
         sent: [...state.sent, candidate.key].slice(-MAX_SENT_KEYS),
         lastSentDay: dayKey(now),
         silenceSince: candidate.kind === "meter" ? candidate.since : state.silenceSince,
+        setupSettled: state.setupSettled || candidate.kind === "setup",
     };
 }
 

@@ -6,13 +6,14 @@ import { Noti } from "react-native-noti";
 import { toMainCurrency } from "@/features/currency/rates";
 import { useCurrencyStore } from "@/features/currency/store";
 import { PERIODS } from "@/features/earnings/model";
+import { usePaymentComposerStore } from "@/features/earnings/payment-composer-store";
 import { usePeriodStore } from "@/features/earnings/period-store";
 import { useEarningsStore } from "@/features/earnings/store";
 import { useI18n } from "@/features/i18n/i18n";
 import { useOnboardingStore } from "@/features/onboarding/store";
 
 import { registerRoutineTask } from "./background-task";
-import { billChannels } from "./content";
+import { ADD_SOURCE_TAP, billChannels } from "./content";
 import { markCrossedHandled } from "./routine";
 import { applyPendingFeedback } from "./runner";
 import { markPermissionAsked, updateState, wasPermissionAsked } from "./storage";
@@ -20,11 +21,12 @@ import { useNotificationStore } from "./store";
 
 const ASK_DELAY = 1_600;
 
-function openTappedPeriod(goHome: boolean) {
+function openTappedNotification(goHome: boolean) {
     void Noti.bills.takeOpenedPeriod().then((opened) => {
         const period = PERIODS.find((item) => item === opened);
-        if (!period) return;
-        usePeriodStore.getState().peek(period);
+        if (period) usePeriodStore.getState().peek(period);
+        else if (opened === ADD_SOURCE_TAP) usePaymentComposerStore.getState().requestNewSource();
+        else return;
         if (goHome) router.navigate("/");
     }).catch(() => {});
 }
@@ -54,12 +56,12 @@ function AndroidNotificationSync() {
         };
         const markOpened = () => updateState((state) => ({ ...state, lastOpenedAt: Date.now() })).catch(() => {});
         refreshFeedback();
-        openTappedPeriod(false);
+        openTappedNotification(false);
         const appState = AppState.addEventListener("change", (state) => {
             if (state !== "active") return;
             void markOpened();
             refreshFeedback();
-            openTappedPeriod(true);
+            openTappedNotification(true);
         });
         const feedback = Noti.bills.addFeedbackListener(refreshFeedback);
         return () => {
@@ -83,7 +85,16 @@ function AndroidNotificationSync() {
     }, [firstDayOfWeek, period, ready, sources]);
 
     useEffect(() => {
-        if (!ready || !hasSources || !onboarded) return;
+        if (!ready || !onboarded) return;
+        void updateState((state) => ({
+            ...state,
+            onboardedAt: state.onboardedAt ?? Date.now(),
+            setupSettled: state.setupSettled || hasSources,
+        })).catch(() => {});
+    }, [hasSources, onboarded, ready]);
+
+    useEffect(() => {
+        if (!ready || !onboarded) return;
         let cancelled = false;
         const timer = setTimeout(() => {
             void (async () => {
@@ -100,7 +111,7 @@ function AndroidNotificationSync() {
             cancelled = true;
             clearTimeout(timer);
         };
-    }, [hasSources, onboarded, ready, t]);
+    }, [onboarded, ready, t]);
 
     return null;
 }

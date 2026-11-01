@@ -8,6 +8,7 @@ import type {
     BillChannel,
     BillFeedback,
     BillNotification,
+    BillReminder,
     CreateNotificationOptions,
     MoneyWidget,
     MoneyWidgetConfig,
@@ -51,6 +52,7 @@ declare class NotificationMotionModule extends NativeModule<Events> {
     billsEnabled(): Promise<boolean>;
     ensureBillChannels(channels: string): Promise<void>;
     postBill(payload: string): Promise<boolean>;
+    postBillReminder(payload: string): Promise<boolean>;
     drainBillFeedback(): Promise<string>;
     openBillSettings(): Promise<void>;
     takeOpenedBillPeriod(): Promise<string | null>;
@@ -194,6 +196,9 @@ const bills = {
     },
     async post(payload: BillNotification): Promise<boolean> {
         return billModule().postBill(JSON.stringify(payload));
+    },
+    async postReminder(payload: BillReminder): Promise<boolean> {
+        return billModule().postBillReminder(JSON.stringify(payload));
     },
     async drainFeedback(): Promise<BillFeedback[]> {
         return JSON.parse(await billModule().drainBillFeedback()) as BillFeedback[];
