@@ -35,7 +35,7 @@ export function SystemTimeInput({ label, value, onChange, variant = "field", fon
                 }}
                 hitSlop={inline ? 8 : undefined}
                 containerClassName={inline ? "min-w-0 shrink" : undefined}
-                surface={inline ? "chip" : "fill"}
+                surface={inline ? "chip" : "card"}
                 depth={2}
                 radius={inline ? 7 : 13}
                 className={inline ? "items-center justify-center py-0.5" : "h-11 items-center justify-center"}

@@ -70,7 +70,7 @@ export function DaysEditor({ days, onChange }: { days: number[]; onChange: (days
 
     return (
         <View className="gap-4">
-            <Raised surface="fill" depth={3} radius={14} pressed={sink.pressed} className="h-14 flex-row overflow-hidden">
+            <Raised surface="card" depth={3} radius={14} pressed={sink.pressed} className="h-14 flex-row overflow-hidden">
                 {DAY_ORDER.map((day) => {
                     const selected = days.includes(day);
                     return (
@@ -97,7 +97,7 @@ export function DaysEditor({ days, onChange }: { days: number[]; onChange: (days
                                 appHaptics.selection();
                                 onChange([...option.days]);
                             }}
-                            surface={selected ? "active" : "fill"}
+                            surface={selected ? "active" : "card"}
                             depth={2}
                             radius={8}
                             selected={selected}

@@ -126,7 +126,7 @@ export function SourceRow({
                     appHaptics.secondaryAction();
                     onPress();
                 }}
-                surface={active ? "active" : "row"}
+                surface={active ? "active" : "card"}
                 depth={3}
                 radius={16}
                 className="flex-row items-start gap-[18px] px-5 py-[18px]"

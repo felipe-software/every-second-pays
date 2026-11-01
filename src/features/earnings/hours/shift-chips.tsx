@@ -32,7 +32,7 @@ function ShiftChip({
                 appHaptics.selection();
                 onPress();
             }}
-            surface={selected ? "chip" : "fill"}
+            surface={selected ? "chip" : "card"}
             depth={2}
             radius={22}
             selected={selected}
@@ -101,7 +101,7 @@ export function ShiftChips({
                     appHaptics.selection();
                     onAdd();
                 }}
-                surface="fill"
+                surface="card"
                 depth={2}
                 radius={22}
                 className="h-11 w-11 items-center justify-center"

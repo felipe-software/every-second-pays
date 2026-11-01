@@ -89,7 +89,7 @@ export function TokenButton({
                 onPress();
             }}
             containerClassName="mr-[-3px]"
-            surface={active ? "active" : "fill"}
+            surface={active ? "active" : "card"}
             depth={2}
             radius={7}
             selected={active}
@@ -125,7 +125,7 @@ export function ChoiceChip({ selected, label, onPress, wide = false }: { selecte
                 onPress();
             }}
             containerClassName={wide ? "min-w-[30%] flex-1" : undefined}
-            surface={selected ? "accent" : "fill"}
+            surface={selected ? "accent" : "card"}
             depth={3}
             radius={13}
             selected={selected}

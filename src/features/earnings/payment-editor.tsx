@@ -75,7 +75,7 @@ export function PaymentEditor({
                         appHaptics.secondaryAction();
                         onOpenCurrency();
                     }}
-                    surface="fill"
+                    surface="card"
                     depth={3}
                     radius={16}
                     className="min-h-[58px] flex-row items-center gap-2.5 px-4"
