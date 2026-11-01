@@ -1,6 +1,7 @@
 import { Text, View } from "react-native";
 
 import { RaisedPressable } from "@/components/elevated/raised";
+import { Subheading } from "@/components/subheading";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 import type { TranslationKey } from "@/features/i18n/translations";
@@ -23,11 +24,9 @@ export function HourPresets({ shifts, onPick }: { shifts: readonly Shift[]; onPi
     const matching = HOUR_PRESETS.find((preset) => sameShifts(shifts, preset.shifts));
 
     return (
-        <View className="gap-1.5 rounded-[18px] px-1 pt-2.5 pb-1" style={{ backgroundColor: colors.fill }}>
-            <Text accessibilityRole="header" className="px-2.5 font-sans text-[13px] font-semibold text-muted">
-                {t("payment.presets")}
-            </Text>
-            <View accessibilityRole="radiogroup" accessibilityLabel={t("payment.presets")} className="flex-row gap-1">
+        <View className="gap-2.5">
+            <Subheading className="ml-1">{t("payment.presets")}</Subheading>
+            <View accessibilityRole="radiogroup" accessibilityLabel={t("payment.presets")} className="flex-row gap-2">
                 {HOUR_PRESETS.map((preset) => {
                     const selected = matching?.id === preset.id;
                     return (
@@ -40,9 +39,8 @@ export function HourPresets({ shifts, onPick }: { shifts: readonly Shift[]; onPi
                                 onPick(preset.shifts.map((shift) => ({ ...shift })));
                             }}
                             containerClassName="min-w-0 flex-1"
-                            surface={selected ? "raised" : "fill"}
-                            flat={!selected}
-                            depth={2}
+                            surface={selected ? "active" : "card"}
+                            depth={3}
                             radius={13}
                             selected={selected}
                             className="h-[42px] items-center justify-center px-1"
@@ -51,7 +49,7 @@ export function HourPresets({ shifts, onPick }: { shifts: readonly Shift[]; onPi
                                 numberOfLines={1}
                                 adjustsFontSizeToFit
                                 className="font-sans text-[13.5px] font-semibold"
-                                style={{ color: selected ? colors.ink : colors.muted }}
+                                style={{ color: selected ? colors.accentDeep : colors.muted }}
                             >
                                 {t(PRESET_KEYS[preset.id])}
                             </Text>

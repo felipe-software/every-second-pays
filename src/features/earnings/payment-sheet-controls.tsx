@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Text, TextInput, View } from "react-native";
+import { Text, TextInput } from "react-native";
 
 import { RaisedPressable } from "@/components/elevated/raised";
 import { appHaptics } from "@/features/haptics/haptics";
@@ -7,57 +7,29 @@ import { useI18n } from "@/features/i18n/i18n";
 
 import { useEarningsTheme } from "./theme";
 
-export function NativeField({
-    value,
-    onChangeText,
-    placeholder,
-    numeric = false,
-    large = false,
-}: {
-    value: string;
-    onChangeText: (value: string) => void;
-    placeholder: string;
-    numeric?: boolean;
-    large?: boolean;
-}) {
+export function AmountInput({ value, onChangeText }: { value: string; onChangeText: (value: string) => void }) {
     const { colors } = useEarningsTheme();
 
     return (
         <TextInput
             value={value}
             onChangeText={onChangeText}
-            placeholder={placeholder}
+            placeholder="0"
             placeholderTextColor={colors.muted}
-            keyboardType={numeric ? "decimal-pad" : "default"}
-            autoCapitalize={numeric ? "none" : "words"}
+            keyboardType="decimal-pad"
+            autoCapitalize="none"
             selectionColor={colors.accent}
             style={{
-                height: large ? 76 : 58,
-                paddingHorizontal: large ? 4 : 18,
-                paddingVertical: large ? 8 : 15,
-                backgroundColor: large ? "transparent" : colors.fill,
-                borderRadius: 16,
+                height: 76,
+                paddingHorizontal: 4,
+                paddingVertical: 8,
                 color: colors.ink,
-                fontFamily: large ? "Archivo-Bold" : "Archivo-Medium",
-                fontSize: large ? 44 : 19,
-                fontWeight: large ? "700" : "500",
-                lineHeight: large ? 52 : 26,
+                fontFamily: "Archivo-Bold",
+                fontSize: 44,
+                fontWeight: "700",
+                lineHeight: 52,
             }}
         />
-    );
-}
-
-export function FieldLabel({ label, required = false }: { label: string; required?: boolean }) {
-    const { colors } = useEarningsTheme();
-    const { t } = useI18n();
-
-    return (
-        <View accessible accessibilityLabel={required ? `${label}, ${t("payment.required")}` : label}>
-            <Text className="font-sans text-[10.5px] font-semibold tracking-[1.25px] text-muted uppercase">
-                {label}
-                {required ? <Text style={{ color: colors.danger }}> *</Text> : null}
-            </Text>
-        </View>
     );
 }
 

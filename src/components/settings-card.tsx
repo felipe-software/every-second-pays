@@ -1,18 +1,12 @@
 import { Children, Fragment, type ReactNode, useState } from "react";
-import { Platform, Pressable, type PressableProps, Text, View } from "react-native";
+import { Platform, Pressable, type PressableProps, View } from "react-native";
 
 import { rippleConfig } from "@/components/elevated/ripple";
+import { Subheading } from "@/components/subheading";
 import { useEarningsTheme } from "@/features/earnings/theme";
 
 export function SectionLabel({ children }: { children: string }) {
-    return (
-        <Text
-            accessibilityRole="header"
-            className="mt-7 mb-[9px] ml-1 font-sans text-[13px] font-semibold text-muted"
-        >
-            {children}
-        </Text>
-    );
+    return <Subheading className="mt-7 mb-[9px] ml-1">{children}</Subheading>;
 }
 
 export function CardDivider({ inset = 16 }: { inset?: number }) {

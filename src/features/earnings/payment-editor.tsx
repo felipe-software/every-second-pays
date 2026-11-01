@@ -1,6 +1,8 @@
 import { Text, View } from "react-native";
 
 import { RaisedPressable } from "@/components/elevated/raised";
+import { Subheading } from "@/components/subheading";
+import { TextField } from "@/components/text-field";
 import { currencyName, currencySymbol, DEFAULT_CURRENCY, isCurrencyCode } from "@/features/currency/currencies";
 import { withTallDollar } from "@/features/currency/currency-text";
 import { appHaptics } from "@/features/haptics/haptics";
@@ -11,7 +13,7 @@ import type { TranslationKey } from "@/features/i18n/translations";
 import { DaysEditor } from "./days-editor";
 import { HoursEditor } from "./hours/hours-editor";
 import { FREQUENCIES, type Frequency, type PaymentDraft } from "./model";
-import { ChoiceChip, FieldLabel, NativeField } from "./payment-sheet-controls";
+import { AmountInput, ChoiceChip } from "./payment-sheet-controls";
 import { useEarningsTheme } from "./theme";
 
 export type PaymentToken = "name" | "amount" | "frequency" | "days" | "hours" | "when";
@@ -44,8 +46,8 @@ export function PaymentEditor({
     if (token === "name") {
         return (
             <View className="gap-2.5">
-                <FieldLabel label={t("payment.companyLabel")} required />
-                <NativeField value={draft.name} onChangeText={(name) => onPatch({ name })} placeholder={t("payment.companyPlaceholder")} />
+                <Subheading required className="ml-1">{t("payment.companyLabel")}</Subheading>
+                <TextField value={draft.name} onChangeText={(name) => onPatch({ name })} autoCapitalize="words" placeholder={t("payment.companyPlaceholder")} />
             </View>
         );
     }
@@ -54,16 +56,13 @@ export function PaymentEditor({
         const currency = draft.currency ?? DEFAULT_CURRENCY;
         return (
             <View className="gap-2.5">
-                <FieldLabel label={t("payment.amountLabel")} required />
+                <Subheading required className="ml-1">{t("payment.amountLabel")}</Subheading>
                 <View className="flex-row items-center gap-2">
                     <Text className="font-sans text-[32px] font-bold text-muted">{withTallDollar(currencySymbol(currency), 32)}</Text>
                     <View className="flex-1">
-                        <NativeField
+                        <AmountInput
                             value={draft.amount}
                             onChangeText={(amount) => onPatch({ amount: amount.replace(/[^0-9.,]/g, "") })}
-                            placeholder="0"
-                            numeric
-                            large
                         />
                     </View>
                 </View>
@@ -93,7 +92,7 @@ export function PaymentEditor({
     if (token === "frequency") {
         return (
             <View className="gap-2.5">
-                <FieldLabel label={t("payment.paidPer")} />
+                <Subheading className="ml-1">{t("payment.paidPer")}</Subheading>
                 <View className="flex-row flex-wrap gap-2">
                     {FREQUENCIES.map((frequency) => (
                         <ChoiceChip
