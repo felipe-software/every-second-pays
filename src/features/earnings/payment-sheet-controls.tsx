@@ -58,7 +58,7 @@ export function PrimaryButton({
     onPress: () => void;
     testID?: string;
 }) {
-    const { colors } = useEarningsTheme();
+    const { colors, isDark } = useEarningsTheme();
 
     return (
         <RaisedPressable
@@ -79,7 +79,7 @@ export function PrimaryButton({
         >
             <Text
                 className="font-sans text-[15.5px] font-semibold"
-                style={{ color: disabled ? colors.muted : colors.ink }}
+                style={{ color: disabled ? colors.muted : isDark ? colors.canvas : "#FFFFFF" }}
             >
                 {label}
             </Text>
