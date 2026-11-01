@@ -11,6 +11,7 @@ import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.widget.RemoteViews
 import kotlinx.coroutines.delay
 import org.json.JSONArray
 import org.json.JSONObject
@@ -50,34 +51,42 @@ internal class BillNotifications private constructor(private val context: Contex
   suspend fun post(serialized: String): Boolean {
     val payload = JSONObject(serialized)
     val channelId = payload.getString("channel")
-    if (!channelEnabled(channelId)) return false
     val kind = payload.getString("kind")
     val id = NOTIFICATION_IDS[kind] ?: NOTIFICATION_IDS.getValue("progress")
+    val spec by lazy { BillSpec(payload) }
+    return deliver(channelId, id, { plainBuilder(payload, channelId, id, kind) }) { shape -> render(spec, shape) }
+  }
+
+  suspend fun postReminder(serialized: String): Boolean {
+    val payload = JSONObject(serialized)
+    val channelId = payload.getString("channel")
+    val id = NOTIFICATION_IDS.getValue(payload.getString("kind"))
+    val spec by lazy { SetupSpec(payload) }
+    val plain = { textBuilder(payload, channelId, id).setStyle(Notification.BigTextStyle().bigText(payload.getString("body"))) }
+    return deliver(channelId, id, plain) { shape -> renderSetup(spec, shape) }
+  }
+
+  private suspend fun deliver(
+    channelId: String,
+    id: Int,
+    plain: () -> Notification.Builder,
+    surface: MarkedBarRenderer.(MarkedBarRenderer.Shape) -> RemoteViews,
+  ): Boolean {
+    if (!channelEnabled(channelId)) return false
     if (Build.VERSION.SDK_INT >= 31 && Build.VERSION.SDK_INT <= LAST_SDK_FREEZING_NEW_ROWS && !isShowing(id)) {
-      val quiet = plainBuilder(payload, channelId, id, kind).setGroup(QUIET_GROUP).setGroupAlertBehavior(Notification.GROUP_ALERT_SUMMARY)
+      val quiet = plain().setGroup(QUIET_GROUP).setGroupAlertBehavior(Notification.GROUP_ALERT_SUMMARY)
       manager.notify(TAG, id, quiet.build())
       delay(ROW_SETTLE_MS)
       if (!isShowing(id)) return true
     }
-    val builder = plainBuilder(payload, channelId, id, kind)
+    val builder = plain()
     if (Build.VERSION.SDK_INT >= 31) {
-      val spec = BillSpec(payload)
       val renderer = MarkedBarRenderer(context)
       builder.setStyle(Notification.DecoratedCustomViewStyle())
-      builder.setCustomContentView(renderer.render(spec, MarkedBarRenderer.COLLAPSED))
-      builder.setCustomHeadsUpContentView(renderer.render(spec, MarkedBarRenderer.POPUP))
-      builder.setCustomBigContentView(renderer.render(spec, MarkedBarRenderer.EXPANDED))
+      builder.setCustomContentView(renderer.surface(MarkedBarRenderer.COLLAPSED))
+      builder.setCustomHeadsUpContentView(renderer.surface(MarkedBarRenderer.POPUP))
+      builder.setCustomBigContentView(renderer.surface(MarkedBarRenderer.EXPANDED))
     }
-    manager.notify(TAG, id, builder.build())
-    return true
-  }
-
-  fun postReminder(serialized: String): Boolean {
-    val payload = JSONObject(serialized)
-    val channelId = payload.getString("channel")
-    if (!channelEnabled(channelId)) return false
-    val id = NOTIFICATION_IDS.getValue(payload.getString("kind"))
-    val builder = textBuilder(payload, channelId, id).setStyle(Notification.BigTextStyle().bigText(payload.getString("body")))
     manager.notify(TAG, id, builder.build())
     return true
   }

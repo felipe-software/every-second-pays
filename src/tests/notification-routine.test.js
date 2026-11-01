@@ -338,6 +338,7 @@ describe("setup reminder", () => {
         expect(reminder.period).toBe(ADD_SOURCE_TAP);
         expect(reminder.channel).toBe("earnings-setup");
         expect(reminder).not.toHaveProperty("amount");
+        expect(reminder.zero).toBe("$0.00");
         expect(billChannels(t).map((channel) => channel.id)).toContain("earnings-setup");
     });
 

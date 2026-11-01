@@ -109,12 +109,14 @@ function moneyMarks(marks: readonly number[], goal: number, current: number, con
     });
 }
 
-export function buildSetupReminder({ t, appearance }: ContentContext): BillReminder {
+export function buildSetupReminder({ t, locale, currency, appearance }: ContentContext): BillReminder {
+    const zero = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(0);
     return {
         kind: "setup",
         channel: CHANNEL_IDS.setup,
         title: t("notifications.content.setup.title"),
         body: t("notifications.content.setup.body"),
+        zero: `${currencyPrefix(currency)}${zero}`,
         colors: billColors(appearance),
         period: ADD_SOURCE_TAP,
     };
