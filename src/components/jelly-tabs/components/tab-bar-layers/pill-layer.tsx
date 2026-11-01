@@ -90,7 +90,6 @@ export const PillLayer = memo(function PillLayer({
                     <TouchFeedback
                         {...touchFeedback}
                         animatedStyle={touchFeedbackStyle}
-                        gradientId="selected-tab-touch-feedback"
                         offsetX={maskOverscanX}
                         offsetY={maskOverscanY}
                     />

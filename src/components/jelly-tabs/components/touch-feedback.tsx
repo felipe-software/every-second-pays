@@ -1,4 +1,5 @@
 import {
+    processColor,
     type StyleProp,
     StyleSheet,
     type ViewStyle,
@@ -6,40 +7,41 @@ import {
 import Animated, {
     type AnimatedStyle,
 } from "react-native-reanimated";
-import Svg, {
-    Defs,
-    RadialGradient,
-    Rect,
-    Stop,
-} from "react-native-svg";
 
 export interface TouchFeedbackProps {
     animatedStyle: StyleProp<AnimatedStyle<ViewStyle>>;
     centerOpacity: number;
     color?: string;
     diameter: number;
-    gradientId: string;
     middleOpacity: number;
     offsetX?: number;
     offsetY?: number;
-    radius: number;
 }
+
+const withOpacity = (color: string, opacity: number) => {
+    const argb = processColor(color);
+
+    if (typeof argb !== "number") {
+        return color;
+    }
+
+    return `rgba(${(argb >> 16) & 255},${(argb >> 8) & 255},${argb & 255},${opacity})`;
+};
 
 export const TouchFeedback = ({
     animatedStyle,
     centerOpacity,
     color = "#ffffff",
     diameter,
-    gradientId,
     middleOpacity,
     offsetX = 0,
     offsetY = 0,
-    radius,
 }: TouchFeedbackProps) => (
     <Animated.View
         style={[
             styles.root,
             {
+                experimental_backgroundImage: `radial-gradient(circle closest-side, ${withOpacity(color, centerOpacity)} 0%, ${withOpacity(color, middleOpacity)} 45%, ${withOpacity(color, 0)} 100%)`,
                 height: diameter,
                 left: offsetX,
                 top: offsetY,
@@ -47,42 +49,7 @@ export const TouchFeedback = ({
             },
             animatedStyle,
         ]}
-    >
-        <Svg height={diameter} width={diameter}>
-            <Defs>
-                <RadialGradient
-                    id={gradientId}
-                    cx={radius}
-                    cy={radius}
-                    fx={radius}
-                    fy={radius}
-                    gradientUnits="userSpaceOnUse"
-                    r={radius}
-                >
-                    <Stop
-                        offset="0%"
-                        stopColor={color}
-                        stopOpacity={centerOpacity}
-                    />
-                    <Stop
-                        offset="45%"
-                        stopColor={color}
-                        stopOpacity={middleOpacity}
-                    />
-                    <Stop
-                        offset="100%"
-                        stopColor={color}
-                        stopOpacity={0}
-                    />
-                </RadialGradient>
-            </Defs>
-            <Rect
-                fill={`url(#${gradientId})`}
-                height={diameter}
-                width={diameter}
-            />
-        </Svg>
-    </Animated.View>
+    />
 );
 
 const styles = StyleSheet.create({
