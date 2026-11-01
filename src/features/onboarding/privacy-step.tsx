@@ -53,7 +53,7 @@ function Check({ delay }: { delay: number }) {
         <Svg width={13} height={13} viewBox="0 0 24 24" fill="none">
             <AnimatedPath
                 d="M20 6 9 17l-5-5"
-                stroke={colors.ink}
+                stroke={colors.onAccent}
                 strokeWidth={3.4}
                 strokeLinecap="round"
                 strokeLinejoin="round"

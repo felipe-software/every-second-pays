@@ -55,7 +55,7 @@ function DayToggle({
                 className="flex-1 items-center justify-center"
                 style={[{ backgroundColor: selected ? colors.accent : "transparent" }, squashStyle]}
             >
-                <Text className="font-sans text-[14px] font-semibold" style={{ color: selected ? colors.ink : colors.muted }}>
+                <Text className="font-sans text-[14px] font-semibold" style={selected ? colors.onAccentText : { color: colors.muted }}>
                     {weekdayName(day, "narrow").toLocaleUpperCase(locale)}
                 </Text>
             </Animated.View>

@@ -61,17 +61,17 @@ export function SystemTimeInput({ label, value, onChange, variant = "field", fon
                         elementColors={{
                             containerColor: colors.canvas,
                             clockDialColor: colors.active,
-                            clockDialSelectedContentColor: colors.ink,
+                            clockDialSelectedContentColor: colors.onAccent,
                             clockDialUnselectedContentColor: colors.ink,
                             selectorColor: colors.accent,
                             periodSelectorBorderColor: colors.track,
                             periodSelectorSelectedContainerColor: colors.accent,
                             periodSelectorUnselectedContainerColor: "transparent",
-                            periodSelectorSelectedContentColor: colors.ink,
+                            periodSelectorSelectedContentColor: colors.onAccent,
                             periodSelectorUnselectedContentColor: colors.muted,
                             timeSelectorSelectedContainerColor: colors.accent,
                             timeSelectorUnselectedContainerColor: colors.active,
-                            timeSelectorSelectedContentColor: colors.ink,
+                            timeSelectorSelectedContentColor: colors.onAccent,
                             timeSelectorUnselectedContentColor: colors.ink,
                         }}
                         onDateSelected={(date) => {

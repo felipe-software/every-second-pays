@@ -9,6 +9,7 @@ import { useOnboardingStore } from "@/features/onboarding/store";
 
 import type { PaymentDraft, PaymentSource } from "./model";
 import { useEarningsStore } from "./store";
+import { useEarningsTheme } from "./theme";
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 const FULL_DAY = [{ start: 0, end: 1440 }];
@@ -34,6 +35,7 @@ function createJob(sources: PaymentSource[], active: boolean): PaymentDraft {
 
 export function DevJobControls() {
     const { t } = useI18n();
+    const { colors } = useEarningsTheme();
     const earningsSaving = useEarningsStore((state) => state.saving);
     const [adding, setAdding] = useState(false);
     const [addError, setAddError] = useState(false);
@@ -79,7 +81,7 @@ export function DevJobControls() {
                     radius={15}
                     className="min-h-[52px] items-center justify-center px-4"
                 >
-                    <Text className={`text-center font-sans text-[14px] font-semibold ${disabled ? "text-muted" : "text-ink"}`}>
+                    <Text className="text-center font-sans text-[14px] font-semibold" style={disabled ? { color: colors.muted } : colors.onAccentText}>
                         {t("settings.addAlwaysActiveJob")}
                     </Text>
                 </RaisedPressable>

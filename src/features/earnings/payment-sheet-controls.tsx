@@ -47,46 +47,6 @@ export function NativeField({
     );
 }
 
-export function PrimaryButton({
-    label,
-    disabled,
-    onPress,
-    testID,
-}: {
-    label: string;
-    disabled?: boolean;
-    onPress: () => void;
-    testID?: string;
-}) {
-    const { colors, isDark } = useEarningsTheme();
-
-    return (
-        <RaisedPressable
-            accessibilityRole="button"
-            accessibilityState={{ disabled: Boolean(disabled) }}
-            disabled={disabled}
-            onPress={() => {
-                appHaptics.primaryAction();
-                onPress();
-            }}
-            testID={testID}
-            containerClassName="w-full"
-            surface={disabled ? "fill" : "accent"}
-            flat={disabled}
-            depth={4}
-            radius={18}
-            className="min-h-[56px] items-center justify-center px-5"
-        >
-            <Text
-                className="font-sans text-[16px] font-bold"
-                style={{ color: disabled ? colors.muted : isDark ? colors.canvas : "#FFFFFF" }}
-            >
-                {label}
-            </Text>
-        </RaisedPressable>
-    );
-}
-
 export function FieldLabel({ label, required = false }: { label: string; required?: boolean }) {
     const { colors } = useEarningsTheme();
     const { t } = useI18n();
@@ -171,7 +131,7 @@ export function ChoiceChip({ selected, label, onPress, wide = false }: { selecte
             selected={selected}
             className={`${wide ? "h-[50px]" : "px-[15px] py-2.5"} items-center justify-center`}
         >
-            <Text className="font-sans text-[13.5px] font-semibold" style={{ color: selected ? colors.ink : colors.muted }}>
+            <Text className="font-sans text-[13.5px] font-semibold" style={selected ? colors.onAccentText : { color: colors.muted }}>
                 {label}
             </Text>
         </RaisedPressable>
