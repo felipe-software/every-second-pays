@@ -335,6 +335,7 @@ export function PickerTiles<T extends string>({
 }
 
 function Swatch({ label, color, selected, onPress, children }: { label: string; color: string; selected: boolean; onPress: () => void; children?: ReactNode }) {
+    const { colors } = useEarningsTheme();
     const sink = usePressSink();
     return (
         <Pressable
@@ -359,7 +360,7 @@ function Swatch({ label, color, selected, onPress, children }: { label: string; 
                 {children}
                 <View className="absolute">
                     <PopIn visible={selected}>
-                        <CheckIcon size={16} color="#FFFFFF" />
+                        <CheckIcon size={16} color={colors.onAccent} />
                     </PopIn>
                 </View>
             </Raised>

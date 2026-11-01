@@ -18,7 +18,7 @@ import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
 
-import { RaisedPressable } from "@/components/elevated/raised";
+import { PrimaryButton } from "@/components/elevated/primary-button";
 import { rippleConfig } from "@/components/elevated/ripple";
 import { useAppearanceStore } from "@/features/appearance/store";
 import { runInterfaceTransition } from "@/features/appearance/theme-transition";
@@ -381,10 +381,11 @@ export function Onboarding() {
                             >
                                 {PAGES.map((page, index) => <Dot key={page} index={index} position={position} />)}
                             </View>
-                            <RaisedPressable
+                            <PrimaryButton
                                 testID="onboarding-continue"
-                                accessibilityRole="button"
                                 accessibilityLabel={last ? t("onboarding.getStarted") : t("onboarding.continue")}
+                                colors={colors}
+                                style={styles.primary}
                                 onPress={() => {
                                     if (last) {
                                         appHaptics.primaryAction();
@@ -393,19 +394,17 @@ export function Onboarding() {
                                         go(step + 1);
                                     }
                                 }}
-                                surface={{ face: colors.accent, edge: colors.edgeAccent }}
-                                depth={4}
-                                radius={17}
-                                containerStyle={styles.primaryContainer}
-                                style={styles.primary}
-                            >
-                                <Animated.Text style={[styles.primaryLabel, { color: colors.ink }, LABEL_SWAP, labelPlacement(!last, "above")]}>
-                                    {t("onboarding.continue")}
-                                </Animated.Text>
-                                <Animated.Text style={[styles.primaryLabel, { color: colors.ink }, LABEL_SWAP, labelPlacement(last, "below")]}>
-                                    {t("onboarding.getStarted")}
-                                </Animated.Text>
-                            </RaisedPressable>
+                                label={(textStyle) => (
+                                    <>
+                                        <Animated.Text style={[styles.primaryLabel, textStyle, LABEL_SWAP, labelPlacement(!last, "above")]}>
+                                            {t("onboarding.continue")}
+                                        </Animated.Text>
+                                        <Animated.Text style={[styles.primaryLabel, textStyle, LABEL_SWAP, labelPlacement(last, "below")]}>
+                                            {t("onboarding.getStarted")}
+                                        </Animated.Text>
+                                    </>
+                                )}
+                            />
                         </Animated.View>
                     </View>
                 </View>
@@ -472,19 +471,15 @@ const styles = StyleSheet.create({
         height: 8,
         borderRadius: 4,
     },
-    primaryContainer: {
-        alignSelf: "stretch",
-    },
     primary: {
-        height: 54,
         overflow: "hidden",
     },
     primaryLabel: {
         ...StyleSheet.absoluteFill,
         textAlign: "center",
         textAlignVertical: "center",
-        lineHeight: 52,
-        fontFamily: "Archivo-SemiBold",
-        fontSize: 15.5,
+        lineHeight: 54,
+        fontFamily: "Archivo-Bold",
+        fontSize: 16,
     },
 });

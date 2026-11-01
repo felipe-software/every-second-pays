@@ -47,7 +47,7 @@ export function PeriodButton({ period, onPress }: { period: EarningsPeriod; onPr
                 onPress();
             }}
             hitSlop={8}
-            surface="fill"
+            surface="card"
             depth={2}
             radius={8}
             squashKey={period}

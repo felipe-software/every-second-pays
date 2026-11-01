@@ -1,6 +1,6 @@
 import type { TrueSheet } from "@lodev09/react-native-true-sheet";
 import { type ReactNode, useRef, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AppSheet } from "@/components/app-sheet";
@@ -9,6 +9,8 @@ import { PopIn } from "@/components/elevated/pop-in";
 import { rippleConfig } from "@/components/elevated/ripple";
 import { LineIcon } from "@/components/line-icon";
 import { SettingsCard, SettingsRow } from "@/components/settings-card";
+import { Subheading } from "@/components/subheading";
+import { TextField } from "@/components/text-field";
 import { useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
@@ -77,14 +79,7 @@ function CurrencyRows({ label, rows, selected, onPick }: { label: string; rows: 
 }
 
 function Heading({ children, first = false }: { children: string; first?: boolean }) {
-    return (
-        <Text
-            accessibilityRole="header"
-            className={`${first ? "mt-4" : "mt-[26px]"} mb-[9px] ml-1 font-sans text-[13px] font-semibold text-muted`}
-        >
-            {children}
-        </Text>
-    );
+    return <Subheading className={`${first ? "mt-4" : "mt-[26px]"} mb-[9px] ml-1`}>{children}</Subheading>;
 }
 
 function CustomSymbol({ value, onPick }: { value: Currency; onPick: (currency: Currency) => void }) {
@@ -97,33 +92,27 @@ function CustomSymbol({ value, onPick }: { value: Currency; onPick: (currency: C
     return (
         <>
             <Heading first>{t("currency.customTitle")}</Heading>
-            <SettingsCard>
-                <View className="min-h-[60px] flex-row items-center gap-3 pr-4">
-                    <TextInput
-                        testID="currency-custom"
-                        accessibilityLabel={t("currency.customAccessibility")}
-                        value={text}
-                        onChangeText={setText}
-                        onSubmitEditing={() => {
-                            if (typed) onPick(typed);
-                        }}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        maxLength={12}
-                        returnKeyType="done"
-                        placeholder={t("currency.customPlaceholder")}
-                        placeholderTextColor={colors.muted}
-                        selectionColor={colors.accent}
-                        className="min-w-0 flex-1"
-                        style={{ height: 60, paddingHorizontal: 16, color: colors.ink, fontFamily: "Archivo-Medium", fontSize: 15.5 }}
-                    />
-                    <View className="h-5 w-5 items-center justify-center">
+            <TextField
+                testID="currency-custom"
+                accessibilityLabel={t("currency.customAccessibility")}
+                value={text}
+                onChangeText={setText}
+                onSubmitEditing={() => {
+                    if (typed) onPick(typed);
+                }}
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={12}
+                returnKeyType="done"
+                placeholder={t("currency.customPlaceholder")}
+                trailing={
+                    <View className="mr-2 h-5 w-5 items-center justify-center">
                         <PopIn visible={custom}>
                             <CheckIcon size={20} color={colors.accentDeep} />
                         </PopIn>
                     </View>
-                </View>
-            </SettingsCard>
+                }
+            />
             <Text accessibilityLiveRegion="polite" className="mt-2 px-1 font-sans text-[12.5px] leading-[18px] text-muted">
                 {typed && isCurrencyCode(typed)
                     ? t("currency.recognized", { name: currencyName(typed, locale) })
@@ -151,7 +140,7 @@ export function CurrencySheet({
     onDismiss: () => void;
 }) {
     const insets = useSafeAreaInsets();
-    const { colors, isDark } = useEarningsTheme();
+    const { colors } = useEarningsTheme();
     const { t, locale } = useI18n();
     const sheetRef = useRef<TrueSheet>(null);
     const [query, setQuery] = useState("");
@@ -187,26 +176,18 @@ export function CurrencySheet({
             closeTestID={closeTestID}
             onDidDismiss={onDismiss}
             headerAccessory={
-                <View
-                    className="mx-[22px] mb-1.5 h-12 flex-row items-center gap-2.5 rounded-[16px] pr-1.5 pl-3.5"
-                    style={{ backgroundColor: colors.cardFace, borderWidth: 1, borderColor: isDark ? colors.cardFace : colors.cardOutline }}
-                >
-                    <LineIcon d={SEARCH_PATH} color={colors.muted} size={18} strokeWidth={2} />
-                    <TextInput
-                        testID="currency-search"
-                        accessibilityLabel={t("currency.searchAccessibility")}
-                        value={query}
-                        onChangeText={setQuery}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        returnKeyType="search"
-                        placeholder={t("currency.searchPlaceholder")}
-                        placeholderTextColor={colors.muted}
-                        selectionColor={colors.accent}
-                        className="h-full min-w-0 flex-1"
-                        style={{ padding: 0, color: colors.ink, fontFamily: "Archivo", fontSize: 16 }}
-                    />
-                    {query ? (
+                <TextField
+                    testID="currency-search"
+                    accessibilityLabel={t("currency.searchAccessibility")}
+                    containerClassName="mx-[22px] mb-1.5"
+                    value={query}
+                    onChangeText={setQuery}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="search"
+                    placeholder={t("currency.searchPlaceholder")}
+                    leading={<LineIcon d={SEARCH_PATH} color={colors.muted} size={18} strokeWidth={2} />}
+                    trailing={query ? (
                         <Pressable
                             accessibilityRole="button"
                             accessibilityLabel={t("currency.clearSearch")}
@@ -217,8 +198,8 @@ export function CurrencySheet({
                         >
                             <LineIcon d={CLEAR_PATH} color={colors.muted} size={14} strokeWidth={2.6} />
                         </Pressable>
-                    ) : null}
-                </View>
+                    ) : undefined}
+                />
             }
         >
             <ScrollView

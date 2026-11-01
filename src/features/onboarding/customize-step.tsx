@@ -114,7 +114,7 @@ function Swatch({ palette, color, selected, onPress }: { palette: PaletteId; col
             />
             <Animated.View pointerEvents="none" style={[styles.swatchCheck, SWAP, { opacity: selected ? 1 : 0, transform: [{ scale: selected ? 1 : 0.3 }] }]}>
                 <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-                    <Path d="M20 6 9 17l-5-5" stroke="#FFFFFF" strokeWidth={3.4} strokeLinecap="round" strokeLinejoin="round" />
+                    <Path d="M20 6 9 17l-5-5" stroke={colors.onAccent} strokeWidth={3.4} strokeLinecap="round" strokeLinejoin="round" />
                 </Svg>
             </Animated.View>
         </Pressable>

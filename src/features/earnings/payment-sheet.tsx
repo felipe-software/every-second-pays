@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { Platform, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { PrimaryButton } from "@/components/elevated/primary-button";
 import { AppSheet } from "@/components/app-sheet";
 import { RiseIn } from "@/components/elevated/rise-in";
 import { DEFAULT_CURRENCY } from "@/features/currency/currencies";
@@ -20,11 +21,9 @@ import {
     sourceToDraft,
 } from "./model";
 import { PaymentEditor, type PaymentToken } from "./payment-editor";
-import { PrimaryButton } from "./payment-sheet-controls";
 import { PaymentSummary } from "./payment-summary";
 import { SheetHeaderButton } from "./sheet-header-button";
 
-export { PrimaryButton } from "./payment-sheet-controls";
 
 type PaymentSheetProps = {
     source?: PaymentSource;
@@ -130,7 +129,10 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
                     <PrimaryButton
                         label={submitLabel}
                         disabled={!valid || saving}
-                        onPress={() => void saveAndDismiss()}
+                        onPress={() => {
+                            appHaptics.primaryAction();
+                            void saveAndDismiss();
+                        }}
                         testID="save-source"
                     />
                 </View>

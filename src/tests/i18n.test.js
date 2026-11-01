@@ -202,7 +202,7 @@ test("formats translated empty, full and mixed weekday schedules", () => {
     expect(i18n.formatDays([])).toBe(i18n.t("days.none"));
     expect(i18n.formatDays([0, 1, 2, 3, 4, 5, 6])).toBe(i18n.t("days.everyDay"));
     const days = [5, 2, 1];
-    expect(i18n.formatDays(days)).toBe(`${i18n.weekdayName(1)}–${i18n.weekdayName(2)}, ${i18n.weekdayName(5)}`);
+    expect(i18n.formatDays(days)).toBe(`${i18n.weekdayName(1)}-${i18n.weekdayName(2)}, ${i18n.weekdayName(5)}`);
     expect(days).toEqual([5, 2, 1]);
 });
 
