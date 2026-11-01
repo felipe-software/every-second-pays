@@ -160,11 +160,9 @@ function AndroidTabBar() {
 }
 
 export default function AppTabs() {
-    const { colors } = useEarningsTheme();
-
     return (
         <Tabs>
-            <AndroidTabPager backgroundColor={colors.canvas}>
+            <AndroidTabPager>
                 <AndroidTabBar />
             </AndroidTabPager>
 

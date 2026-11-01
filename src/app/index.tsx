@@ -17,17 +17,20 @@ import { useEarningsStore } from "@/features/earnings/store";
 import { useI18n } from "@/features/i18n/i18n";
 import { useOnboardingStore } from "@/features/onboarding/store";
 
-function useLiveClock() {
+function useLiveClock(tickMs: number) {
     const [now, setNow] = useState(() => new Date());
 
     useEffect(() => {
-        const timer = setInterval(() => setNow(new Date()), 200);
+        const timer = setInterval(() => setNow(new Date()), tickMs);
         return () => clearInterval(timer);
-    }, []);
+    }, [tickMs]);
 
     return now;
 }
 
+const FOCUSED_TICK_MS = 200;
+// Stays mounted behind Settings and can be swiped into view, so it slows down instead of stopping.
+const HIDDEN_TICK_MS = 5000;
 const MIN_TRANSFER_INTERVAL = 950;
 const SOURCE_TRANSFER_STAGGER = 90;
 const MAX_SOURCE_TRANSFER_STAGGER = 450;
@@ -47,7 +50,7 @@ export default function EarningsScreen() {
     const isFocused = useIsFocused();
     const insets = useSafeAreaInsets();
     const { t, firstDayOfWeek } = useI18n();
-    const now = useLiveClock();
+    const now = useLiveClock(isFocused ? FOCUSED_TICK_MS : HIDDEN_TICK_MS);
     const period = usePeriodStore((state) => state.period);
     const sources = useEarningsStore((state) => state.sources);
     const ready = useEarningsStore((state) => state.ready);
