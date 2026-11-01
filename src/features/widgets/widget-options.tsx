@@ -100,10 +100,10 @@ export function CollapsibleCard({
     );
 }
 
-export function OptionGroup({ label, children }: { label: string; children: ReactNode }) {
+export function OptionGroup({ label, children, divider = true }: { label: string; children: ReactNode; divider?: boolean }) {
     return (
         <>
-            <CardDivider />
+            {divider ? <CardDivider /> : null}
             <View className="px-4 pt-3.5 pb-4">
                 <Text className="mb-3 font-sans text-[15.5px] font-medium text-ink">{label}</Text>
                 {children}
@@ -408,12 +408,14 @@ export function SwitchRow({
     value,
     onChange,
     disabled = false,
+    divider = true,
     testID,
 }: {
     label: string;
     value: boolean;
     onChange: (value: boolean) => void;
     disabled?: boolean;
+    divider?: boolean;
     testID?: string;
 }) {
     const { colors } = useEarningsTheme();
@@ -427,7 +429,7 @@ export function SwitchRow({
 
     return (
         <>
-            <CardDivider />
+            {divider ? <CardDivider /> : null}
             <Pressable
                 testID={testID}
                 accessibilityRole="switch"

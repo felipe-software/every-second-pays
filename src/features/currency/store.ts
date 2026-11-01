@@ -33,6 +33,16 @@ export function regionCurrency() {
     }
 }
 
+export async function readSavedCurrency() {
+    const [main, cachedRates] = await Promise.all([Storage.getItem(MAIN_KEY), Storage.getItem(RATES_KEY)]);
+    let rates: ExchangeRates | undefined;
+    try {
+        rates = cachedRates ? parseRates(JSON.parse(cachedRates), 0) : undefined;
+    } catch {
+    }
+    return { main: isCurrency(main) ? main : regionCurrency(), rates };
+}
+
 export const useCurrencyStore = create<CurrencyState>((set, get) => ({
     main: regionCurrency(),
     hydrated: false,
@@ -47,13 +57,8 @@ export const useCurrencyStore = create<CurrencyState>((set, get) => ({
         if (get().loading || (get().hydrated && !get().loadError)) return;
         set({ loading: true, loadError: false });
         try {
-            const [main, cachedRates] = await Promise.all([Storage.getItem(MAIN_KEY), Storage.getItem(RATES_KEY)]);
-            let rates: ExchangeRates | undefined;
-            try {
-                rates = cachedRates ? parseRates(JSON.parse(cachedRates), 0) : undefined;
-            } catch {
-            }
-            set({ main: isCurrency(main) ? main : regionCurrency(), rates: rates ?? get().rates });
+            const { main, rates } = await readSavedCurrency();
+            set({ main, rates: rates ?? get().rates });
         } catch {
             set({ loadError: true });
         } finally {
