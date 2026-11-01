@@ -1,0 +1,28 @@
+pre-commit:
+    parallel: true
+    commands:
+        fmt:
+            glob: "*.{js,jsx,ts,tsx,mjs,cjs,mts,json,md,yml,yaml}"
+            run: bunx oxfmt --no-error-on-unmatched-pattern {staged_files}
+            stage_fixed: true
+        lint:
+            run: bunx oxlint --type-aware --deny-warnings
+        lint-expo:
+            run: bunx expo lint
+        typecheck:
+            run: bunx tsc --noEmit
+        test:
+            run: bun test src/tests
+        lint-rules:
+            glob: "tools/oxlint/**"
+            run: node --test tools/oxlint/comment-policy/*.test.ts
+
+pre-push:
+    parallel: true
+    commands:
+        lint-legacy:
+            run: bun tools/oxlint/legacy-check.mts
+        audit:
+            run: bunx fallow audit --base origin/main
+        doctor:
+            run: bunx react-doctor --scope changed --base origin/main --blocking none

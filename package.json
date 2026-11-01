@@ -67,9 +67,16 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@oxlint/plugins": "1.90.0",
     "@types/react": "~19.2.2",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.2",
+    "fallow": "^3.38.1",
+    "lefthook": "^2.2.2",
+    "oxfmt": "^0.75.0",
+    "oxlint": "1.90.0",
+    "oxlint-tsgolint": "^7.0.2005",
+    "react-doctor": "^0.9.21",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -98,6 +105,7 @@
     "@lodev09/react-native-true-sheet@3.11.14": "src/patches/@lodev09%2Freact-native-true-sheet@3.11.14.patch"
   },
   "trustedDependencies": [
-    "@shopify/react-native-skia"
+    "@shopify/react-native-skia",
+    "lefthook"
   ]
 }

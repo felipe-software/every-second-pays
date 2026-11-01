@@ -1,0 +1,15 @@
+{
+    "$schema": "./node_modules/fallow/schema.json",
+    "entry": [
+        "src/tests/**/*.test.js",
+        "goldie/bin/*.mjs",
+        "goldie/goldie.config.ts",
+        "fingerprint.config.js",
+        "modules/noti/scripts/*",
+        "oxlint.config.mts",
+        "tools/oxlint/legacy-check.mts",
+        "tools/oxlint/sync-anti-slop.mts"
+    ],
+    "ignoreDependencies": ["@oxlint/plugins", "expo-system-ui"],
+    "ignorePatterns": ["tools/oxlint/anti-slop/**", "tools/oxlint/comment-policy/**"]
+}
