@@ -63,6 +63,8 @@ type MoneyBurst = {
 };
 
 const FLIGHT_DURATION = 640;
+// Where the eased flight sits at MONEY_IMPACT_DELAY, so bills reach the number before they fade.
+const LANDING_PROGRESS = 0.94;
 const COUNTER_IMPACT_SCALE: Record<MoneyTransfer["target"], number> = {
     cents: 1.045,
     whole: 1.1,
@@ -124,12 +126,12 @@ function createMoneyBurst(
 const FlyingMoney = memo(function FlyingMoney({ note }: { note: FlyingNote }) {
     const progress = useSharedValue(0);
     const animatedStyle = useAnimatedStyle(() => ({
-        opacity: interpolate(progress.get(), [0, 0.08, 0.82, 1], [0, 1, 1, 0], Extrapolation.CLAMP),
+        opacity: interpolate(progress.get(), [0, 0.08, LANDING_PROGRESS, 1], [0, 1, 1, 0], Extrapolation.CLAMP),
         transform: [
             {
                 translateX: interpolate(
                     progress.get(),
-                    [0, 0.52, 1],
+                    [0, 0.52, LANDING_PROGRESS],
                     [note.startX, note.startX * 0.48 + note.curveX, 0],
                     Extrapolation.CLAMP,
                 ),
@@ -137,7 +139,7 @@ const FlyingMoney = memo(function FlyingMoney({ note }: { note: FlyingNote }) {
             {
                 translateY: interpolate(
                     progress.get(),
-                    [0, 0.52, 1],
+                    [0, 0.52, LANDING_PROGRESS],
                     [note.startY, note.startY * 0.46 - 34, 0],
                     Extrapolation.CLAMP,
                 ),
@@ -145,13 +147,13 @@ const FlyingMoney = memo(function FlyingMoney({ note }: { note: FlyingNote }) {
             {
                 rotateZ: `${interpolate(
                     progress.get(),
-                    [0, 0.55, 1],
+                    [0, 0.55, LANDING_PROGRESS],
                     [note.startRotation, note.middleRotation, note.endRotation],
                     Extrapolation.CLAMP,
                 )}deg`,
             },
             {
-                scale: interpolate(progress.get(), [0, 0.12, 0.78, 1], [0.45, 1.04, 0.82, 0.28], Extrapolation.CLAMP),
+                scale: interpolate(progress.get(), [0, 0.12, 0.78, LANDING_PROGRESS, 1], [0.45, 1.04, 0.82, 0.5, 0.28], Extrapolation.CLAMP),
             },
             { scaleX: note.mirrorX },
         ],
