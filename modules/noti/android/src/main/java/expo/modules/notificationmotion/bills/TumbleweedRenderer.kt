@@ -120,8 +120,8 @@ internal class TumbleweedRenderer(private val context: Context) {
     val body = fitted(spec.body, surface.body, textWidth, regularFace, BODY_FLOOR)
     val block = title * LINE + body * LINE
     val top = if (surface.centered) surface.height - surface.textEdge - block else surface.textEdge
-    views.setViewLayoutWidth(R.id.ntw_text, textWidth, DIP)
     views.setViewLayoutMargin(R.id.ntw_text, RemoteViews.MARGIN_LEFT, TEXT_SIDE, DIP)
+    views.setViewLayoutMargin(R.id.ntw_text, RemoteViews.MARGIN_RIGHT, TEXT_SIDE, DIP)
     views.setViewLayoutMargin(R.id.ntw_text, RemoteViews.MARGIN_TOP, top, DIP)
     line(views, R.id.ntw_title, spec.title, title, surface.centered)
     line(views, R.id.ntw_body, spec.body, body, surface.centered)
@@ -159,7 +159,7 @@ internal class TumbleweedRenderer(private val context: Context) {
     private val WIND_RIGHT = listOf(0.1f, 0.34f)
 
     val EXPANDED = Surface(176f, 120f, 40f, 66f, 30f, 58f, 46f, 58f, 18f, 13.5f, 0.84f, 0.82f, 11f, true)
-    val POPUP = Surface(76f, 155f, 19f, 13f, 16f, 29f, 24f, 26f, 13f, 10.5f, 0.5f, 0.38f, 7f, false)
+    val POPUP = Surface(56f, 155f, 14f, 8f, 10f, 18f, 15f, 18f, 13f, 10.5f, 0.45f, 0.38f, 5f, false)
     val COLLAPSED = Surface(47f, 155f, 12f, 7f, 9f, 17f, 0f, 14f, 11.5f, 9.5f, 0.5f, 0.38f, 4f, false)
   }
 }

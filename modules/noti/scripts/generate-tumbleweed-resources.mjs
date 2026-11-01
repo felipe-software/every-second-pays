@@ -85,7 +85,7 @@ const gradient = (colors) =>
     `<gradient android:angle="270" android:startColor="${colors[0]}" ${colors[2] ? `android:centerColor="${colors[1]}" android:centerY="0.72" android:endColor="${colors[2]}"` : `android:endColor="${colors[1]}"`} />`;
 
 write('drawable/ntw_sky.xml', `<shape ${NS} android:shape="rectangle">${gradient(['#FFFFE6BC', '#FFFBC48D', '#FFF5AE7A'])}<corners android:radius="14dp" /></shape>`);
-write('drawable/ntw_ground.xml', `<shape ${NS} android:shape="rectangle">${gradient(['#FFD98A58', '#FFBF6F45'])}</shape>`);
+write('drawable/ntw_ground.xml', `<shape ${NS} android:shape="rectangle">${gradient(['#FFDE9263', '#FFCF8357'])}</shape>`);
 write('drawable/ntw_sun.xml', `<shape ${NS} android:shape="oval"><solid android:color="#FFFFF4D2" /></shape>`);
 write('drawable/ntw_board.xml', `<shape ${NS} android:shape="rectangle"><solid android:color="#FF8A5A33" /><corners android:radius="2.5dp" /></shape>`);
 write('drawable/ntw_post.xml', `<shape ${NS} android:shape="rectangle"><solid android:color="#FF6E4526" /></shape>`);
@@ -138,7 +138,7 @@ write('layout/ntw_root.xml', `<FrameLayout ${NS} android:id="@+id/ntw_stage" and
         </FrameLayout>`)}
     </FrameLayout>`)}
     ${LANDINGS.map((_, index) => flipper(`ntw_dust${index}_t`, `ntw_dust_${index}`, image(`ntw_dust${index}`, 'ntw_dust', sized('bottom|right')))).join('\n    ')}
-    <LinearLayout android:id="@+id/ntw_text" android:layout_width="100dp" android:layout_height="wrap_content" android:layout_gravity="top|left" android:orientation="vertical">
+    <LinearLayout android:id="@+id/ntw_text" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="top|left" android:orientation="vertical">
         ${textLine('ntw_title', 'sans-serif-medium', '#FF3A2212')}
         ${textLine('ntw_body', 'sans-serif', '#DB3A2212')}
     </LinearLayout>
