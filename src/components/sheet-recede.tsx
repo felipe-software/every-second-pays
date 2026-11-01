@@ -1,6 +1,6 @@
 import { ReanimatedTrueSheet, useReanimatedTrueSheet } from "@lodev09/react-native-true-sheet/reanimated";
 import { type ComponentProps, type PropsWithChildren, useEffect, useState } from "react";
-import { type ColorValue, Platform, StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import Animated, {
     Extrapolation,
     interpolate,
@@ -12,6 +12,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
+import { useEarningsTheme } from "@/features/earnings/theme";
+
 // iOS page sheets already recede the presenting screen natively.
 export const SHEET_RECEDE_ENABLED = Platform.OS === "android";
 export const SHEET_RECEDE_BACKDROP = "#000000";
@@ -19,10 +21,6 @@ export const SHEET_RECEDE_BACKDROP = "#000000";
 const RECEDED_SCALE = 0.92;
 const RECEDED_RADIUS = 28;
 export const SHEET_CORNER_RADIUS = 32;
-
-type SheetRecedeProps = PropsWithChildren<{
-    backgroundColor: ColorValue;
-}>;
 
 function useRecedeProgress() {
     const { animatedIndex } = useReanimatedTrueSheet();
@@ -42,7 +40,8 @@ function useProgressAbove(progress: SharedValue<number>, threshold: number) {
     return above;
 }
 
-export function SheetRecede({ backgroundColor, children }: SheetRecedeProps) {
+export function SheetRecede({ children }: PropsWithChildren) {
+    const { colors } = useEarningsTheme();
     const progress = useRecedeProgress();
     const active = useProgressAbove(progress, 0);
     const recededStyle = useAnimatedStyle(() => ({
@@ -54,7 +53,7 @@ export function SheetRecede({ backgroundColor, children }: SheetRecedeProps) {
 
     return (
         // Reanimated can sync a stale receded frame back through React after the sheet closes, so commit a plain style at rest.
-        <Animated.View style={[styles.page, { backgroundColor }, active ? recededStyle : styles.rest]}>
+        <Animated.View style={[styles.page, { backgroundColor: colors.canvas }, active ? recededStyle : styles.rest]}>
             {children}
         </Animated.View>
     );
@@ -67,6 +66,10 @@ export function RecedingSheet(props: ComponentProps<typeof ReanimatedTrueSheet>)
     useEffect(() => () => animatedIndex.set(withTiming(-1)), [animatedIndex]);
 
     return <ReanimatedTrueSheet cornerRadius={SHEET_RECEDE_ENABLED ? SHEET_CORNER_RADIUS : undefined} {...props} />;
+}
+
+export function useSheetOpen() {
+    return useProgressAbove(useRecedeProgress(), 0);
 }
 
 export function useSheetReceded() {

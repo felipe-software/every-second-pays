@@ -1,17 +1,12 @@
 import { Stack } from "expo-router";
 
-import { useEarningsTheme } from "@/features/earnings/theme";
+// Every screen paints its own canvas; a themed color here would rebuild the navigator on each theme change.
+const SCREEN_OPTIONS = {
+    headerShown: false,
+    animation: "slide_from_right",
+    contentStyle: { backgroundColor: "transparent" },
+} as const;
 
 export default function SettingsLayout() {
-    const { colors } = useEarningsTheme();
-
-    return (
-        <Stack
-            screenOptions={{
-                headerShown: false,
-                animation: "slide_from_right",
-                contentStyle: { backgroundColor: colors.canvas },
-            }}
-        />
-    );
+    return <Stack screenOptions={SCREEN_OPTIONS} />;
 }

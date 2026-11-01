@@ -53,7 +53,7 @@ function SettingsJellyIcon({ color, size }: TabsIconProps) {
 }
 
 function AndroidTabBar() {
-    const { colors, isDark } = useEarningsTheme();
+    const { colors } = useEarningsTheme();
     const { t } = useI18n();
     const insets = useSafeAreaInsets();
     const indexTab = useTabTrigger({ name: "index" });
@@ -122,7 +122,7 @@ function AndroidTabBar() {
                         colors={{
                             surface: "transparent",
                             selectedSurface: colors.accent,
-                            activeContent: isDark ? colors.canvas : "#FFFFFF",
+                            activeContent: colors.onAccent,
                             inactiveContent: colors.muted,
                         }}
                         config={{
@@ -160,11 +160,9 @@ function AndroidTabBar() {
 }
 
 export default function AppTabs() {
-    const { colors } = useEarningsTheme();
-
     return (
         <Tabs>
-            <AndroidTabPager backgroundColor={colors.canvas}>
+            <AndroidTabPager>
                 <AndroidTabBar />
             </AndroidTabPager>
 

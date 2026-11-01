@@ -3,7 +3,7 @@ import { Pressable, Text, View } from "react-native";
 import { CheckIcon } from "@/components/check-icon";
 import { PopIn } from "@/components/elevated/pop-in";
 import { Raised, usePressSink } from "@/components/elevated/raised";
-import { edgeColor } from "@/features/earnings/theme";
+import { edgeColor, useEarningsTheme } from "@/features/earnings/theme";
 import { useI18n } from "@/features/i18n/i18n";
 import type { TranslationKey } from "@/features/i18n/translations";
 
@@ -31,6 +31,7 @@ function Swatch({
     disabled: boolean;
     onPress: (origin: ThemeTransitionOrigin) => void;
 }) {
+    const { colors } = useEarningsTheme();
     const sink = usePressSink();
 
     return (
@@ -51,12 +52,12 @@ function Swatch({
                 depth={3}
                 radius={17}
                 selected={selected}
+                // No ripple: redrawing it during the theme render delays the reveal by about 250 ms on low-end Android.
                 pressed={sink.pressed}
-                ripple={sink.ripple}
                 className="h-[34px] w-[34px] items-center justify-center"
             >
                 <PopIn visible={selected}>
-                    <CheckIcon size={16} color="#FFFFFF" />
+                    <CheckIcon size={16} color={colors.onAccent} />
                 </PopIn>
             </Raised>
         </Pressable>

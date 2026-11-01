@@ -1,7 +1,8 @@
 diff --git a/android/src/main/java/com/margelo/nitro/nitrothemetransition/HybridThemeTransition.kt b/android/src/main/java/com/margelo/nitro/nitrothemetransition/HybridThemeTransition.kt
+index 8357a15..dd559a3 100644
 --- a/android/src/main/java/com/margelo/nitro/nitrothemetransition/HybridThemeTransition.kt
 +++ b/android/src/main/java/com/margelo/nitro/nitrothemetransition/HybridThemeTransition.kt
-@@ -13,7 +13,9 @@ import android.view.ViewAnimationUtils
+@@ -14,7 +14,9 @@ import android.view.ViewAnimationUtils
  import android.view.ViewGroup
  import android.view.animation.PathInterpolator
  import android.widget.FrameLayout
@@ -20,3 +21,148 @@ diff --git a/android/src/main/java/com/margelo/nitro/nitrothemetransition/Hybrid
  class HybridThemeTransition : HybridThemeTransitionSpec() {
  
    /** One in-flight transition: the snapshot and whatever is animating it. */
+@@ -99,7 +103,7 @@ class HybridThemeTransition : HybridThemeTransitionSpec() {
+      */
+     var mosaics: List<List<android.graphics.Bitmap>> = emptyList()
+ 
+-    /** Teardown for effects that are not an [Animator] — currently the fade. */
++    /** Teardown for effects that are not an [Animator]. */
+     var cancelEffect: (() -> Unit)? = null
+ 
+     /**
+@@ -1256,8 +1260,8 @@ class HybridThemeTransition : HybridThemeTransitionSpec() {
+   }
+ 
+   /**
+-   * Runs a 0→1 animation with the shared curve, retaining the animator on the
+-   * transition so it survives and can be cancelled.
++   * Runs a 0→1 animation with the shared curve, clocked from frame time because
++   * a [ValueAnimator]'s length follows the system's animator duration scale.
+    *
+    * `t` is already eased, so [onFrame] can interpolate linearly.
+    */
+@@ -1268,14 +1272,27 @@ class HybridThemeTransition : HybridThemeTransitionSpec() {
+     onFrame: (SnapshotView, Float) -> Unit,
+   ) {
+     val view = transition.view
+-    val animator = ValueAnimator.ofFloat(0f, 1f)
+-    animator.duration = duration
+-    animator.interpolator = curve()
+-    animator.addUpdateListener { onFrame(view, it.animatedValue as Float) }
+-    onEnd(animator, finish)
++    val interpolator = curve()
++    val choreographer = Choreographer.getInstance()
++    val durationNanos = duration * 1_000_000L
++    var startNanos = -1L
+ 
+-    transition.animator = animator
+-    animator.start()
++    lateinit var callback: Choreographer.FrameCallback
++    callback =
++      Choreographer.FrameCallback { frameNanos ->
++        if (startNanos < 0L) startNanos = frameNanos
++        val fraction = ((frameNanos - startNanos).toFloat() / durationNanos).coerceIn(0f, 1f)
++        onFrame(view, interpolator.getInterpolation(fraction))
++        if (fraction < 1f) {
++          choreographer.postFrameCallback(callback)
++        } else {
++          transition.cancelEffect = null
++          finish()
++        }
++      }
++
++    transition.cancelEffect = { choreographer.removeFrameCallback(callback) }
++    choreographer.postFrameCallback(callback)
+   }
+ 
+   /**
+diff --git a/android/src/main/java/com/margelo/nitro/nitrothemetransition/SnapshotView.kt b/android/src/main/java/com/margelo/nitro/nitrothemetransition/SnapshotView.kt
+index da7f348..e83c411 100644
+--- a/android/src/main/java/com/margelo/nitro/nitrothemetransition/SnapshotView.kt
++++ b/android/src/main/java/com/margelo/nitro/nitrothemetransition/SnapshotView.kt
+@@ -362,6 +362,8 @@ internal class SnapshotView(context: Context) : View(context) {
+     // few milliseconds of GPU wait, against a full-screen software
+     // rasterization on the alternative path.
+     lease.renderer.createRenderRequest().setWaitForPresent(true).syncAndDraw()
++    // Running RenderNodeAnimators (ripples) in the capture attach to this renderer; ticking them would block RenderThread on the reader's only slot.
++    lease.renderer.stop()
+ 
+     val image = lease.reader.acquireNextImage()
+     if (image == null) {
+@@ -902,7 +904,8 @@ internal object SurfacePool {
+     }
+   }
+ 
+-  private const val MAX_IDLE = 2
++  // A stopped renderer can't be reused: start() would re-post its frame callback.
++  private const val MAX_IDLE = 0
+   private const val TRIM_DELAY_MS = 3_000L
+ 
+   /** Roughly a quarter of a 1080p screen — below this, allocation is not the cost. */
+diff --git a/lib/commonjs/index.js b/lib/commonjs/index.js
+index 078c9a9..339bf94 100644
+--- a/lib/commonjs/index.js
++++ b/lib/commonjs/index.js
+@@ -139,15 +139,7 @@ function withThemeTransition(applyTheme, config = {}) {
+     });
+   };
+ 
+-  // Pixelize needs a second snapshot of the *already painted* new theme.
+-  // Yield two animation frames so React (useSyncExternalStore / context)
+-  // can commit before native settle + capture starts — otherwise old≈new.
+-  if (kind === 'pixlated') {
+-    requestAnimationFrame(() => {
+-      requestAnimationFrame(doCommit);
+-    });
+-  } else {
+-    doCommit();
+-  }
++  // React's render was queued by applyTheme, ahead of this, so the commit follows it instead of guessing with settleFrames.
++  queueMicrotask(doCommit);
+ }
+ //# sourceMappingURL=index.js.map
+\ No newline at end of file
+diff --git a/lib/module/index.js b/lib/module/index.js
+index d782f52..45d238d 100644
+--- a/lib/module/index.js
++++ b/lib/module/index.js
+@@ -134,15 +134,7 @@ export function withThemeTransition(applyTheme, config = {}) {
+     });
+   };
+ 
+-  // Pixelize needs a second snapshot of the *already painted* new theme.
+-  // Yield two animation frames so React (useSyncExternalStore / context)
+-  // can commit before native settle + capture starts — otherwise old≈new.
+-  if (kind === 'pixlated') {
+-    requestAnimationFrame(() => {
+-      requestAnimationFrame(doCommit);
+-    });
+-  } else {
+-    doCommit();
+-  }
++  // React's render was queued by applyTheme, ahead of this, so the commit follows it instead of guessing with settleFrames.
++  queueMicrotask(doCommit);
+ }
+ //# sourceMappingURL=index.js.map
+\ No newline at end of file
+diff --git a/src/index.ts b/src/index.ts
+index 34ed69e..12cfd24 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -289,14 +289,6 @@ export function withThemeTransition(applyTheme: () => void, config: ThemeTransit
+       });
+   };
+ 
+-  // Pixelize needs a second snapshot of the *already painted* new theme.
+-  // Yield two animation frames so React (useSyncExternalStore / context)
+-  // can commit before native settle + capture starts — otherwise old≈new.
+-  if (kind === 'pixlated') {
+-    requestAnimationFrame(() => {
+-      requestAnimationFrame(doCommit);
+-    });
+-  } else {
+-    doCommit();
+-  }
++  // React's render was queued by applyTheme, ahead of this, so the commit follows it instead of guessing with settleFrames.
++  queueMicrotask(doCommit);
+ }

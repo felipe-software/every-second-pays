@@ -2,12 +2,14 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Platform, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Circle, Defs, Ellipse, LinearGradient, RadialGradient, Rect, Stop } from "react-native-svg";
+import { Circle, Ellipse } from "react-native-svg";
 
+import { PrimaryButton } from "@/components/elevated/primary-button";
 import { RaisedPressable } from "@/components/elevated/raised";
 import { LargeTitleScrollView } from "@/components/large-title-scroll-view";
 import { LineIcon } from "@/components/line-icon";
 import { Card, SectionLabel } from "@/components/settings-card";
+import { withAlpha } from "@/features/appearance/color";
 import { PALETTES } from "@/features/appearance/palettes";
 import { currencyPrefix } from "@/features/currency/currencies";
 import { useCurrencyStore } from "@/features/currency/store";
@@ -137,35 +139,20 @@ function BackgroundArt({ background }: { background: MoneyWidgetConfig["backgrou
     const { colors } = useEarningsTheme();
     if (background === "solid") return null;
     if (background === "glow") {
-        return (
-            <Svg width="100%" height="100%" style={{ position: "absolute" }}>
-                <Defs>
-                    <RadialGradient id="glow-accent" cx="50%" cy="50%" r="50%">
-                        <Stop offset="0" stopColor={colors.accent} stopOpacity={0.5} />
-                        <Stop offset="1" stopColor={colors.accent} stopOpacity={0} />
-                    </RadialGradient>
-                    <RadialGradient id="glow-deep" cx="50%" cy="50%" r="50%">
-                        <Stop offset="0" stopColor={colors.accentDeep} stopOpacity={0.32} />
-                        <Stop offset="1" stopColor={colors.accentDeep} stopOpacity={0} />
-                    </RadialGradient>
-                </Defs>
-                <Ellipse cx="20%" cy="25%" rx="40%" ry="85%" fill="url(#glow-accent)" />
-                <Ellipse cx="85%" cy="105%" rx="35%" ry="75%" fill="url(#glow-deep)" />
-            </Svg>
-        );
+        const deepGlow = `radial-gradient(ellipse 35% 75% at 85% 105%, ${withAlpha(colors.accentDeep, 0.32)}, ${withAlpha(colors.accentDeep, 0)})`;
+        const accentGlow = `radial-gradient(ellipse 40% 85% at 20% 25%, ${withAlpha(colors.accent, 0.5)}, ${withAlpha(colors.accent, 0)})`;
+        return <View className="absolute inset-0" style={{ experimental_backgroundImage: `${deepGlow}, ${accentGlow}` }} />;
     }
     return (
         <>
-            <Svg width="100%" height="100%" style={{ position: "absolute" }}>
-                <Defs>
-                    <LinearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
-                        <Stop offset="0" stopColor={colors.accent} />
-                        <Stop offset="1" stopColor={colors.accentDeep} />
-                    </LinearGradient>
-                </Defs>
-                <Rect width="100%" height="100%" fill="url(#glass)" />
-                <Circle cx={21} cy={20} r={11} fill={colors.canvas} fillOpacity={0.55} />
-            </Svg>
+            <View
+                className="absolute inset-0"
+                style={{ experimental_backgroundImage: `linear-gradient(to bottom right, ${colors.accent}, ${colors.accentDeep})` }}
+            />
+            <View
+                className="absolute left-[10px] top-[9px] size-[22px] rounded-full"
+                style={{ backgroundColor: withAlpha(colors.canvas, 0.55) }}
+            />
             <View className="absolute inset-x-[9px] inset-y-[7px] rounded-[9px]" style={{ backgroundColor: `${colors.canvas}BD` }} />
         </>
     );
@@ -174,7 +161,7 @@ function BackgroundArt({ background }: { background: MoneyWidgetConfig["backgrou
 export default function WidgetsScreen() {
     const insets = useSafeAreaInsets();
     const { width: windowWidth } = useWindowDimensions();
-    const { colors, isDark } = useEarningsTheme();
+    const { colors } = useEarningsTheme();
     const { t, formatMoney } = useI18n();
     const supported = useWidgetStore((state) => state.supported);
     const pinSupported = useWidgetStore((state) => state.pinSupported);
@@ -186,7 +173,6 @@ export default function WidgetsScreen() {
     const [previewSize, setPreviewSize] = useState<PreviewSize>("wide");
     const [pinFailed, setPinFailed] = useState(false);
     const available = Platform.OS === "android" && supported !== false;
-    const ctaText = isDark ? colors.canvas : "#FFFFFF";
 
     useEffect(() => {
         void useWidgetStore.getState().load();
@@ -364,22 +350,13 @@ export default function WidgetsScreen() {
                             </CollapsibleCard>
 
                             <View className="mt-7">
-                                <RaisedPressable
+                                <PrimaryButton
                                     testID="widgets-add"
-                                    accessibilityRole="button"
-                                    onPress={() => void addWidget()}
+                                    label={t("widgets.add")}
+                                    icon={pinSupported ? (color) => <LineIcon d="M12 5v14M5 12h14" color={color} size={18} strokeWidth={2.2} /> : undefined}
                                     disabled={!pinSupported}
-                                    surface={pinSupported ? "accent" : "canvas"}
-                                    flat={!pinSupported}
-                                    depth={4}
-                                    radius={18}
-                                    className="min-h-[56px] flex-row items-center justify-center gap-2 px-5"
-                                >
-                                    {pinSupported ? <LineIcon d="M12 5v14M5 12h14" color={ctaText} size={18} strokeWidth={2.2} /> : null}
-                                    <Text className="font-sans text-[16px] font-bold" style={{ color: pinSupported ? ctaText : colors.muted }}>
-                                        {t("widgets.add")}
-                                    </Text>
-                                </RaisedPressable>
+                                    onPress={() => void addWidget()}
+                                />
                                 {!pinSupported || pinFailed ? (
                                     <Text accessibilityLiveRegion="polite" className="mt-3 px-1 text-center font-sans text-[13px] leading-5 text-muted">
                                         {t(pinSupported ? "widgets.pinError" : "widgets.pinUnsupported")}

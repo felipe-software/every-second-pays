@@ -61,8 +61,8 @@ function AppearancePreview({
                 depth={4}
                 radius={16}
                 selected={active}
+                // No ripple: redrawing it during the theme render delays the reveal by about 250 ms on low-end Android.
                 pressed={sink.pressed}
-                ripple={sink.ripple}
                 className="h-[108px]"
             >
                 <View className="flex-1 overflow-hidden rounded-[15px] border-[3px] p-[7px]" style={{ borderColor: border }}>
@@ -117,7 +117,7 @@ function AppearancePreview({
                     }}
                 >
                     <PopIn visible={active}>
-                        <CheckIcon size={12} color="#FFFFFF" />
+                        <CheckIcon size={12} color={preview.canvas} />
                     </PopIn>
                 </View>
                 <Text className="font-sans text-[13px] font-semibold text-ink">{label}</Text>

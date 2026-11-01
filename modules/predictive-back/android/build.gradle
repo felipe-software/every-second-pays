@@ -1,0 +1,24 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.predictiveback'
+version = '0.1.0'
+
+android {
+  namespace 'expo.modules.predictiveback'
+  defaultConfig {
+    versionCode 1
+    versionName '0.1.0'
+  }
+}
+
+dependencies {
+  implementation 'com.facebook.react:react-android'
+  implementation project(':react-native-screens')
+  implementation 'androidx.activity:activity:1.8.1'
+  implementation 'androidx.coordinatorlayout:coordinatorlayout:1.2.0'
+  implementation 'androidx.fragment:fragment:1.8.9'
+  implementation 'com.google.android.material:material:1.13.0'
+}

@@ -13,7 +13,7 @@ import {
     useEffect,
     useMemo,
 } from "react";
-import { type ColorValue, type LayoutChangeEvent, StyleSheet } from "react-native";
+import { type LayoutChangeEvent, StyleSheet } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
     cancelAnimation,
@@ -26,9 +26,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-type AndroidTabPagerProps = PropsWithChildren<{
-    backgroundColor: ColorValue;
-}>;
+import { useEarningsTheme } from "@/features/earnings/theme";
+import { useBackProgress } from "@/features/navigation/predictive-back";
 
 type PagerSceneProps = PropsWithChildren<{
     index: number;
@@ -45,6 +44,8 @@ const AndroidTabPagerContext = createContext<AndroidTabPagerContextValue | null>
 
 const LAST_PAGE_INDEX = 1;
 const VELOCITY_PROJECTION_SECONDS = 0.18;
+const BACK_GESTURE_REVEAL = 0.28;
+const BACK_CANCEL_SPRING = { damping: 28, overshootClamping: true, stiffness: 300 };
 
 function clampPagePosition(value: number) {
     "worklet";
@@ -84,7 +85,8 @@ export function useAndroidTabPagerProgress() {
     return context.position;
 }
 
-export function AndroidTabPager({ backgroundColor, children }: AndroidTabPagerProps) {
+export function AndroidTabPager({ children }: PropsWithChildren) {
+    const { colors } = useEarningsTheme();
     const indexTab = useTabTrigger({ name: "index" });
     const settingsTab = useTabTrigger({ name: "settings" });
     const selectedIndex = settingsTab.trigger?.isFocused ? 1 : 0;
@@ -102,6 +104,11 @@ export function AndroidTabPager({ backgroundColor, children }: AndroidTabPagerPr
             easing: Easing.out(Easing.cubic),
         }));
     }, [position, routerIndex, selectedIndex]);
+
+    useBackProgress(selectedIndex === LAST_PAGE_INDEX && !onSubpage, {
+        onProgress: (progress) => position.set(LAST_PAGE_INDEX - progress * BACK_GESTURE_REVEAL),
+        onCancel: () => position.set(withSpring(LAST_PAGE_INDEX, BACK_CANCEL_SPRING)),
+    });
 
     const switchToIndex = useCallback((index: number) => {
         const tab = index === 1 ? settingsTab : indexTab;
@@ -186,7 +193,7 @@ export function AndroidTabPager({ backgroundColor, children }: AndroidTabPagerPr
 
     return (
         <AndroidTabPagerContext.Provider value={contextValue}>
-            <Animated.View style={[styles.pager, { backgroundColor }]}>
+            <Animated.View style={[styles.pager, { backgroundColor: colors.canvas }]}>
                 <GestureDetector gesture={pan}>
                     <Animated.View onLayout={handleLayout} style={styles.viewport}>
                         <TabSlot

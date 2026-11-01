@@ -3,31 +3,36 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Platform, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { PrimaryButton } from "@/components/elevated/primary-button";
+import { appHaptics } from "@/features/haptics/haptics";
 import { useMainCurrencySources } from "@/features/currency/use-main-currency-sources";
 import { EarningsBackground } from "@/features/earnings/earnings-background";
 import { EarningsHeader } from "@/features/earnings/earnings-header";
 import { MONEY_IMPACT_DELAY, type MoneyTransfer } from "@/features/earnings/money-counter-celebration";
 import { EmptySourcesCallout, EmptySourcesMessage } from "@/features/earnings/empty-sources";
-import { type PaymentDraft, currentShift, earnedInPeriod, ratePerSecond } from "@/features/earnings/model";
+import { type PaymentDraft, currentShift, earnedInPeriod, earnedToday, ratePerSecond } from "@/features/earnings/model";
 import { usePaymentComposerStore } from "@/features/earnings/payment-composer-store";
-import { PaymentSheet, PrimaryButton } from "@/features/earnings/payment-sheet";
+import { PaymentSheet } from "@/features/earnings/payment-sheet";
 import { usePeriodStore } from "@/features/earnings/period-store";
 import { SourceRow } from "@/features/earnings/source-row";
 import { useEarningsStore } from "@/features/earnings/store";
 import { useI18n } from "@/features/i18n/i18n";
 import { useOnboardingStore } from "@/features/onboarding/store";
 
-function useLiveClock() {
+function useLiveClock(tickMs: number) {
     const [now, setNow] = useState(() => new Date());
 
     useEffect(() => {
-        const timer = setInterval(() => setNow(new Date()), 200);
+        const timer = setInterval(() => setNow(new Date()), tickMs);
         return () => clearInterval(timer);
-    }, []);
+    }, [tickMs]);
 
     return now;
 }
 
+const FOCUSED_TICK_MS = 200;
+// Stays mounted behind Settings and can be swiped into view, so it slows down instead of stopping.
+const HIDDEN_TICK_MS = 5000;
 const MIN_TRANSFER_INTERVAL = 950;
 const SOURCE_TRANSFER_STAGGER = 90;
 const MAX_SOURCE_TRANSFER_STAGGER = 450;
@@ -47,7 +52,7 @@ export default function EarningsScreen() {
     const isFocused = useIsFocused();
     const insets = useSafeAreaInsets();
     const { t, firstDayOfWeek } = useI18n();
-    const now = useLiveClock();
+    const now = useLiveClock(isFocused ? FOCUSED_TICK_MS : HIDDEN_TICK_MS);
     const period = usePeriodStore((state) => state.period);
     const sources = useEarningsStore((state) => state.sources);
     const ready = useEarningsStore((state) => state.ready);
@@ -59,6 +64,7 @@ export default function EarningsScreen() {
     const newSourceRequest = usePaymentComposerStore((state) => state.newSourceRequest);
     const revealed = useOnboardingStore((state) => state.revealed);
     const handledNewSourceRequest = useRef(0);
+    const pendingCelebrationSourceId = useRef<number | null>(null);
     const [sheetOpen, setSheetOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -145,23 +151,32 @@ export default function EarningsScreen() {
             clearUpdateTimers();
         }
 
+        const celebrationSourceId = pendingCelebrationSourceId.current;
+        const celebrating = celebrationSourceId != null;
+        pendingCelebrationSourceId.current = null;
+        if (celebrating) clearUpdateTimers();
+
         const displayedCents = displayedCentsRef.current;
-        if (calculatedCents <= displayedCents) {
-            if (calculatedCents < displayedCents) {
-                syncDisplayedTotal(calculatedCents);
+        if (!celebrating) {
+            if (calculatedCents <= displayedCents) {
+                if (calculatedCents < displayedCents) {
+                    syncDisplayedTotal(calculatedCents);
+                }
+                return;
             }
-            return;
+
+            if (updateTimers.current.length || Date.now() - lastTransferAt.current < MIN_TRANSFER_INTERVAL) return;
         }
 
-        if (updateTimers.current.length || Date.now() - lastTransferAt.current < MIN_TRANSFER_INTERVAL) return;
-
-        const activeSources = converted.filter((source) => currentShift(source, now));
-        if (!activeSources.length) {
+        const launchingSources = celebrating
+            ? sources.filter((source) => source.id === celebrationSourceId)
+            : converted.filter((source) => currentShift(source, now));
+        if (!launchingSources.length) {
             syncDisplayedTotal(calculatedCents);
             return;
         }
 
-        const origins = activeSources.flatMap((source, index) => {
+        const origins = launchingSources.flatMap((source, index) => {
             const node = sourceValueNodes.current.get(source.id);
             return node ? [{
                 delay: Math.min(index * SOURCE_TRANSFER_STAGGER, MAX_SOURCE_TRANSFER_STAGGER),
@@ -179,13 +194,15 @@ export default function EarningsScreen() {
         lastTransferAt.current = Date.now();
         const displayedWhole = Math.floor(displayedCents / 100);
         const calculatedWhole = Math.floor(calculatedCents / 100);
-        const transferTarget = displayedWhole === calculatedWhole
-            ? { target: "cents" as const }
-            : {
-                target: "whole" as const,
-                nextWhole: calculatedWhole,
-                changedDigitIndex: firstChangedDigitIndex(displayedWhole, calculatedWhole),
-            };
+        const transferTarget = celebrating
+            ? { target: "whole" as const, nextWhole: calculatedWhole, changedDigitIndex: 0 }
+            : displayedWhole === calculatedWhole
+                ? { target: "cents" as const }
+                : {
+                    target: "whole" as const,
+                    nextWhole: calculatedWhole,
+                    changedDigitIndex: firstChangedDigitIndex(displayedWhole, calculatedWhole),
+                };
 
         setMoneyTransfer({
             id: nextTransferId.current,
@@ -209,7 +226,7 @@ export default function EarningsScreen() {
             }, MONEY_IMPACT_DELAY + origin.delay);
             return timer;
         });
-    }, [calculatedTotal, clearUpdateTimers, converted, isFocused, now, period, ready, sheetOpen, syncDisplayedTotal, updateDisplayedTotal]);
+    }, [calculatedTotal, clearUpdateTimers, converted, isFocused, now, period, ready, sheetOpen, sources, syncDisplayedTotal, updateDisplayedTotal]);
 
     useEffect(() => () => {
         clearUpdateTimers();
@@ -236,7 +253,12 @@ export default function EarningsScreen() {
     const saveSource = async (draft: PaymentDraft, id?: number) => {
         if (useEarningsStore.getState().saving) return;
         try {
+            const isFirstJob = useEarningsStore.getState().sources.length === 0;
             await save(draft, id);
+            const created = id == null ? useEarningsStore.getState().sources.at(-1) : undefined;
+            if (created && (isFirstJob || earnedToday(created, new Date()) === 0)) {
+                pendingCelebrationSourceId.current = created.id;
+            }
         } catch {
             Alert.alert(t("home.saveErrorTitle"), t("home.saveErrorBody"));
             throw new Error("Could not save payment source");
@@ -279,7 +301,13 @@ export default function EarningsScreen() {
                         {loadError ? (
                             <View className="gap-3 py-4">
                                 <Text className="text-center font-sans text-[14px] text-muted">{t("home.loadError")}</Text>
-                                <PrimaryButton label={t("common.tryAgain")} onPress={() => void load()} />
+                                <PrimaryButton
+                                    label={t("common.tryAgain")}
+                                    onPress={() => {
+                                        appHaptics.primaryAction();
+                                        void load();
+                                    }}
+                                />
                             </View>
                         ) : ready && sources.length === 0 ? (
                             <EmptySourcesMessage />
