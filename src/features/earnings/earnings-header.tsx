@@ -17,7 +17,8 @@ const SWIPE_DISTANCE = 30;
 const WHOLE_MEASUREMENT_OVERHANG = 400;
 
 function wholeFontSize(characters: number) {
-    return characters <= 5 ? 88 : characters === 6 ? 74 : 62;
+    if (characters <= 5) return 88;
+    return characters === 6 ? 74 : 62;
 }
 
 function splitChangedWhole(formattedValue: string, changedDigitIndex: number) {
@@ -58,12 +59,13 @@ export function EarningsHeader({
     const cents = Math.round((displayTotal - whole) * 100) % 100;
     const wholeTargetRef = useRef<View>(null);
     const centsTargetRef = useRef<View>(null);
-    const changedWhole = moneyTransfer?.target === "whole"
-        ? splitChangedWhole(
-            formatNumber(moneyTransfer.nextWhole, { maximumFractionDigits: 0 }),
-            moneyTransfer.changedDigitIndex,
-        )
-        : null;
+    const changedWhole =
+        moneyTransfer?.target === "whole"
+            ? splitChangedWhole(
+                  formatNumber(moneyTransfer.nextWhole, { maximumFractionDigits: 0 }),
+                  moneyTransfer.changedDigitIndex,
+              )
+            : null;
     const wholeSize = wholeFontSize(formatNumber(whole, { maximumFractionDigits: 0 }).length);
     const centsSize = Math.round(wholeSize * 0.41);
     const centsTracking = -centsSize / 36;
@@ -75,9 +77,9 @@ export function EarningsHeader({
         letterSpacing: -wholeSize * 0.05,
     };
 
-    // Must activate sooner (±12) than the Android tab pager (±16) to win horizontal drags.
+    // oxlint-disable-next-line react/capitalized-calls
     const swipe = Gesture.Pan()
-        .activeOffsetX([-12, 12])
+        .activeOffsetX([-12, 12]) // Sooner than the Android tab pager (±16) to win horizontal drags.
         .failOffsetY([-14, 14])
         .runOnJS(true)
         .onEnd((event) => {
@@ -88,7 +90,7 @@ export function EarningsHeader({
     return (
         <View className="items-center pt-[54px]" style={{ zIndex: 10 }}>
             <GestureDetector gesture={swipe}>
-                {/* box-only: a swipe starting on NumberFlow's native Compose views makes Android cancel the next tap anywhere. */}
+                {/* box-only: a swipe starting on NumberFlow's Compose views makes Android cancel the next tap. */}
                 <View collapsable={false} pointerEvents="box-only" className="self-stretch">
                     <MoneyCounterCelebration
                         transfer={ready && !loadError ? moneyTransfer : null}
@@ -96,7 +98,9 @@ export function EarningsHeader({
                         centsTargetRef={centsTargetRef}
                         size={wholeSize}
                     >
-                        <Text className="mr-1 font-sans text-[32px] font-medium text-muted">{withTallDollar(currencyPrefix(currency).trim(), 32)}</Text>
+                        <Text className="mr-1 font-sans text-[32px] font-medium text-muted">
+                            {withTallDollar(currencyPrefix(currency).trim(), 32)}
+                        </Text>
                         <View collapsable={false}>
                             <NumberFlow
                                 value={whole}
@@ -153,7 +157,7 @@ export function EarningsHeader({
 }
 
 const styles = StyleSheet.create({
-    // Overhangs the current digits so a longer next value can't wrap, and centers because the row re-centers when it grows.
+    // Overhangs the digits so a longer next value can't wrap; centered as the row re-centers on growth.
     wholeMeasurement: {
         position: "absolute",
         top: 0,

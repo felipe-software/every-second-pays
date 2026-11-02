@@ -34,9 +34,15 @@ function ErrorNote({ message }: { message: string }) {
     return (
         <View className="mt-3 flex-row items-center gap-2 px-1">
             <SymbolView name="exclamationmark.circle.fill" size={14} tintColor={colors.danger} />
-            <Text accessibilityLiveRegion="polite" className="flex-1 font-sans text-[12.5px] leading-5 text-muted">{message}</Text>
+            <Text accessibilityLiveRegion="polite" className="flex-1 font-sans text-[12.5px] leading-5 text-muted">
+                {message}
+            </Text>
         </View>
     );
+}
+
+function tapTitle() {
+    if (useDeveloperStore.getState().tap()) appHaptics.primaryAction();
 }
 
 export default function SettingsScreen() {
@@ -54,10 +60,6 @@ export default function SettingsScreen() {
         void useDeveloperStore.getState().load();
     }, []);
 
-    const tapTitle = () => {
-        if (useDeveloperStore.getState().tap()) appHaptics.primaryAction();
-    };
-
     const change = async (value: Partial<Appearance>) => {
         setSaveError(false);
         try {
@@ -70,13 +72,26 @@ export default function SettingsScreen() {
     const changeMode = (mode: ThemeMode, origin: ThemeTransitionOrigin) => {
         if (mode === appearance.mode) return;
         appHaptics.themeMode();
-        runInterfaceTransition(() => { void change({ mode }); }, origin, reduceMotion);
+        runInterfaceTransition(
+            () => {
+                void change({ mode });
+            },
+            origin,
+            reduceMotion,
+        );
     };
 
     const changePalette = (palette: PaletteId, origin: ThemeTransitionOrigin) => {
         if (palette === appearance.palette) return;
         appHaptics.selection();
-        runInterfaceTransition(() => { void change({ palette }); }, origin, reduceMotion, { durationMs: 1000 });
+        runInterfaceTransition(
+            () => {
+                void change({ palette });
+            },
+            origin,
+            reduceMotion,
+            { durationMs: 1000 },
+        );
     };
 
     return (
@@ -96,8 +111,17 @@ export default function SettingsScreen() {
                         {widgetsVisible ? <WidgetsSettingsRow /> : null}
                         {notificationsRowVisible ? <NotificationsSettingsRow /> : null}
                     </SettingsCard>
-                    {loadError || saveError ? <ErrorNote message={t(loadError ? "settings.loadError" : "settings.saveError")} /> : null}
-                    {loadError ? <TryAgainButton onPress={() => void load()} className="mt-3" /> : null}
+                    {loadError || saveError ? (
+                        <ErrorNote message={t(loadError ? "settings.loadError" : "settings.saveError")} />
+                    ) : null}
+                    {loadError ? (
+                        <TryAgainButton
+                            onPress={() => {
+                                void load();
+                            }}
+                            className="mt-3"
+                        />
+                    ) : null}
 
                     <SectionLabel>{t("settings.languageRegion")}</SectionLabel>
                     <SettingsCard dividerInset={LIST_ICON_INSET}>
@@ -107,7 +131,14 @@ export default function SettingsScreen() {
                     {language.loadError || language.saveError ? (
                         <ErrorNote message={t(language.loadError ? "settings.loadError" : "settings.saveError")} />
                     ) : null}
-                    {language.loadError ? <TryAgainButton onPress={() => void language.load()} className="mt-3" /> : null}
+                    {language.loadError ? (
+                        <TryAgainButton
+                            onPress={() => {
+                                void language.load();
+                            }}
+                            className="mt-3"
+                        />
+                    ) : null}
 
                     <DevJobControls />
                 </LargeTitleScrollView>

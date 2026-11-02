@@ -9,7 +9,7 @@ import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 
 const SHEET_DETENT = 0.82;
-// Keep above STACKED_PARENT_PEEK_DP + STACKED_PARENT_DROP_DP in the TrueSheet patch so the parent peeks out.
+// Keep above STACKED_PARENT_PEEK_DP + STACKED_PARENT_DROP_DP in the TrueSheet patch.
 const STACKED_GAP_DP = 40;
 const TRANSPARENT = { backgroundColor: "transparent" };
 
@@ -48,7 +48,7 @@ export function AppSheet({
         detents: [nested ? SHEET_DETENT - STACKED_GAP_DP / height : SHEET_DETENT, 1],
         initialDetentIndex: 0,
         dimmed: true,
-        // A black dim hides the canvas-colored sheet in dark mode, so lift the backdrop unless the page recedes.
+        // A black dim hides the canvas-colored sheet in dark mode, so lift it unless the page recedes.
         dimmedColor: isDark && !SHEET_RECEDE_ENABLED ? colors.track : undefined,
         dismissible,
         draggable: dismissible,
@@ -63,7 +63,10 @@ export function AppSheet({
         header: (
             <View>
                 <View className={`flex-row items-center gap-3 px-[22px] pt-6 ${headerAccessory ? "pb-3.5" : "pb-4"}`}>
-                    <Text accessibilityRole="header" className="min-w-0 flex-1 font-sans text-[24px] font-bold tracking-[-0.65px] text-ink">
+                    <Text
+                        accessibilityRole="header"
+                        className="min-w-0 flex-1 font-sans text-[24px] font-bold tracking-[-0.65px] text-ink"
+                    >
                         {title}
                     </Text>
                     {headerActions}

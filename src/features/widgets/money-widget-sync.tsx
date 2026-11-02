@@ -30,22 +30,46 @@ function AndroidMoneyWidgetSync() {
     }, []);
 
     useEffect(() => {
-        if (!supported) return;
-        const subscription = Noti.moneyWidgets.addChangeListener(() => void useWidgetStore.getState().refresh());
+        if (!supported) return undefined;
+        const subscription = Noti.moneyWidgets.addChangeListener(() => {
+            void useWidgetStore.getState().refresh();
+        });
         return () => subscription.remove();
     }, [supported]);
 
     useEffect(() => {
-        if (!supported || !ready) return;
+        if (!supported || !ready) return undefined;
         // Coalesces bursts of changes, like a theme switch updating several stores.
         const timer = setTimeout(() => {
-            const data = buildWidgetData({ sources, currency, appPeriod: period, appearance, firstDayOfWeek, locale, decimalSeparator, t });
-            Noti.moneyWidgets.setData(data)
+            const data = buildWidgetData({
+                sources,
+                currency,
+                appPeriod: period,
+                appearance,
+                firstDayOfWeek,
+                locale,
+                decimalSeparator,
+                t,
+            });
+            Noti.moneyWidgets
+                .setData(data)
                 .then(() => useWidgetStore.getState().published())
                 .catch(() => {});
         }, 250);
         return () => clearTimeout(timer);
-    }, [appearance, currency, decimalSeparator, firstDayOfWeek, foregrounds, locale, period, ready, sources, supported, t]);
+    }, [
+        appearance,
+        currency,
+        decimalSeparator,
+        firstDayOfWeek,
+        foregrounds,
+        locale,
+        period,
+        ready,
+        sources,
+        supported,
+        t,
+    ]);
 
     return null;
 }

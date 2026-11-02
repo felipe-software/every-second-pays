@@ -2,6 +2,7 @@ import {
     advanceSharedSpring,
     getFrameDeltaSeconds,
     getMaxTabIndex,
+    type SharedSpring,
     type SpringConfig,
 } from "./animation";
 import type { SharedValue } from "react-native-reanimated";
@@ -9,23 +10,17 @@ import type { SharedValue } from "react-native-reanimated";
 type SharedNumber = SharedValue<number>;
 
 export interface PillJellyFrameState {
-    baseScaleX: SharedNumber;
-    baseScaleXRate: SharedNumber;
-    baseScaleY: SharedNumber;
-    baseScaleYRate: SharedNumber;
-    filteredVelocity: SharedNumber;
-    filteredVelocityRate: SharedNumber;
+    baseScaleX: SharedSpring;
+    baseScaleY: SharedSpring;
+    filteredVelocity: SharedSpring;
     isDragging: SharedNumber;
-    pressProgress: SharedNumber;
-    pressProgressRate: SharedNumber;
+    position: SharedSpring;
+    pressProgress: SharedSpring;
     pressTarget: SharedNumber;
-    rawPanelOffset: SharedNumber;
-    rawPanelOffsetVelocity: SharedNumber;
+    rawPanelOffset: SharedSpring;
     releasePending: SharedNumber;
     shapeTarget: SharedNumber;
     targetValue: SharedNumber;
-    value: SharedNumber;
-    valueVelocity: SharedNumber;
 }
 
 export interface PillJellyFrameConfig {
@@ -40,32 +35,16 @@ export interface PillJellyFrameConfig {
     };
 }
 
-const advancePosition = (
-    state: PillJellyFrameState,
-    config: PillJellyFrameConfig,
-    deltaSeconds: number,
-) => {
+const advancePosition = (state: PillJellyFrameState, config: PillJellyFrameConfig, deltaSeconds: number) => {
     "worklet";
 
-    advanceSharedSpring(
-        state.value,
-        state.valueVelocity,
-        state.targetValue.value,
-        config.springs.value,
-        deltaSeconds,
-    );
+    advanceSharedSpring(state.position, state.targetValue.value, config.springs.value, deltaSeconds);
 };
 
-const clampTargetValue = (
-    state: PillJellyFrameState,
-    tabCount: number,
-) => {
+const clampTargetValue = (state: PillJellyFrameState, tabCount: number) => {
     "worklet";
 
-    state.targetValue.value = Math.min(
-        Math.max(state.targetValue.value, 0),
-        getMaxTabIndex(tabCount),
-    );
+    state.targetValue.value = Math.min(Math.max(state.targetValue.value, 0), getMaxTabIndex(tabCount));
 };
 
 const advanceFilteredVelocity = (
@@ -77,58 +56,30 @@ const advanceFilteredVelocity = (
     "worklet";
 
     const maxTabIndex = getMaxTabIndex(tabCount);
-    const target =
-        state.isDragging.value === 1 && maxTabIndex > 0
-            ? state.valueVelocity.value / maxTabIndex
-            : 0;
+    const target = state.isDragging.value === 1 && maxTabIndex > 0 ? state.position.velocity.value / maxTabIndex : 0;
 
-    advanceSharedSpring(
-        state.filteredVelocity,
-        state.filteredVelocityRate,
-        target,
-        config.springs.velocity,
-        deltaSeconds,
-    );
+    advanceSharedSpring(state.filteredVelocity, target, config.springs.velocity, deltaSeconds);
 };
 
-const advancePanelReturn = (
-    state: PillJellyFrameState,
-    config: PillJellyFrameConfig,
-    deltaSeconds: number,
-) => {
+const advancePanelReturn = (state: PillJellyFrameState, config: PillJellyFrameConfig, deltaSeconds: number) => {
     "worklet";
 
     if (state.isDragging.value === 1) {
         return;
     }
 
-    advanceSharedSpring(
-        state.rawPanelOffset,
-        state.rawPanelOffsetVelocity,
-        0,
-        config.springs.panel,
-        deltaSeconds,
-    );
+    advanceSharedSpring(state.rawPanelOffset, 0, config.springs.panel, deltaSeconds);
 };
 
-const settleReleasedIndicator = (
-    state: PillJellyFrameState,
-    config: PillJellyFrameConfig,
-    tabCount: number,
-) => {
+const settleReleasedIndicator = (state: PillJellyFrameState, config: PillJellyFrameConfig, tabCount: number) => {
     "worklet";
 
     if (state.releasePending.value !== 1) {
         return;
     }
 
-    const releaseDistance =
-        Math.max(1, getMaxTabIndex(tabCount)) *
-        config.releaseDistanceFraction;
-    if (
-        Math.abs(state.value.value - state.targetValue.value) >=
-        releaseDistance
-    ) {
+    const releaseDistance = Math.max(1, getMaxTabIndex(tabCount)) * config.releaseDistanceFraction;
+    if (Math.abs(state.position.value.value - state.targetValue.value) >= releaseDistance) {
         return;
     }
 
@@ -137,44 +88,18 @@ const settleReleasedIndicator = (
     state.shapeTarget.value = 1;
 };
 
-const advancePress = (
-    state: PillJellyFrameState,
-    config: PillJellyFrameConfig,
-    deltaSeconds: number,
-) => {
+const advancePress = (state: PillJellyFrameState, config: PillJellyFrameConfig, deltaSeconds: number) => {
     "worklet";
 
-    advanceSharedSpring(
-        state.pressProgress,
-        state.pressProgressRate,
-        state.pressTarget.value,
-        config.springs.press,
-        deltaSeconds,
-    );
+    advanceSharedSpring(state.pressProgress, state.pressTarget.value, config.springs.press, deltaSeconds);
 };
 
-const advanceShape = (
-    state: PillJellyFrameState,
-    config: PillJellyFrameConfig,
-    deltaSeconds: number,
-) => {
+const advanceShape = (state: PillJellyFrameState, config: PillJellyFrameConfig, deltaSeconds: number) => {
     "worklet";
 
     const target = state.shapeTarget.value;
-    advanceSharedSpring(
-        state.baseScaleX,
-        state.baseScaleXRate,
-        target,
-        config.springs.scaleX,
-        deltaSeconds,
-    );
-    advanceSharedSpring(
-        state.baseScaleY,
-        state.baseScaleYRate,
-        target,
-        config.springs.scaleY,
-        deltaSeconds,
-    );
+    advanceSharedSpring(state.baseScaleX, target, config.springs.scaleX, deltaSeconds);
+    advanceSharedSpring(state.baseScaleY, target, config.springs.scaleY, deltaSeconds);
 };
 
 export const advancePillJellyFrame = (

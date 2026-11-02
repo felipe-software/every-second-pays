@@ -25,12 +25,30 @@ const { useCurrencyStore: store } = await import("../features/currency/store");
 const { earnedInPeriod } = await import("../features/earnings/model");
 
 const rates = { date: "2026-10-07", fetchedAt: 0, perDollar: { USD: 1, EUR: 0.8, BRL: 5 } };
-const job = (fields) => ({ id: 1, name: "Job", frequency: "hour", amount: 36, days: [1, 2, 3, 4, 5], shifts: [{ start: 540, end: 1020 }], ...fields });
+const job = (fields) => ({
+    id: 1,
+    name: "Job",
+    frequency: "hour",
+    amount: 36,
+    days: [1, 2, 3, 4, 5],
+    shifts: [{ start: 540, end: 1020 }],
+    ...fields,
+});
 
 beforeEach(() => {
     saved.clear();
     failRead = false;
-    store.setState({ main: "BRL", hydrated: false, loading: false, saving: false, loadError: false, rates: undefined, fetchingRates: false, ratesError: false, lastRatesAttempt: 0 });
+    store.setState({
+        main: "BRL",
+        hydrated: false,
+        loading: false,
+        saving: false,
+        loadError: false,
+        rates: undefined,
+        fetchingRates: false,
+        ratesError: false,
+        lastRatesAttempt: 0,
+    });
 });
 
 test("prefixes keep letter symbols off the digits", () => {
@@ -63,7 +81,11 @@ test("custom symbols only match themselves", () => {
     expect(convert(10, "₿", "₿", undefined)).toBe(10);
     expect(convert(10, "₿", "USD", rates)).toBeUndefined();
     expect(convert(10, "USD", "kr", rates)).toBeUndefined();
-    const { converted, unconverted } = toMainCurrency([job({ id: 1, currency: "kr" }), job({ id: 2, currency: "₿" })], "kr", rates);
+    const { converted, unconverted } = toMainCurrency(
+        [job({ id: 1, currency: "kr" }), job({ id: 2, currency: "₿" })],
+        "kr",
+        rates,
+    );
     expect(converted.map((source) => source.id)).toEqual([1]);
     expect(unconverted.map((source) => source.id)).toEqual([2]);
 });
@@ -79,12 +101,16 @@ test("converts through the dollar and waits for missing rates", () => {
 test("restates sources in the main currency, legacy ones included", () => {
     const sources = [job({ id: 1, currency: "EUR", amount: 8 }), job({ id: 2 }), job({ id: 3, currency: "GBP" })];
     const { converted, unconverted } = toMainCurrency(sources, "BRL", rates);
-    expect(converted.map((source) => [source.id, source.currency, source.amount])).toEqual([[1, "BRL", 50], [2, undefined, 36]]);
+    expect(converted.map((source) => [source.id, source.currency, source.amount])).toEqual([
+        [1, "BRL", 50],
+        [2, undefined, 36],
+    ]);
     expect(unconverted.map((source) => source.id)).toEqual([3]);
 
-    // Converting the amount converts the earnings too.
     const now = new Date(2026, 9, 7, 13);
-    expect(earnedInPeriod(converted[0], "week", now, 1)).toBeCloseTo(earnedInPeriod(sources[0], "week", now, 1) / 0.8 * 5);
+    expect(earnedInPeriod(converted[0], "week", now, 1)).toBeCloseTo(
+        (earnedInPeriod(sources[0], "week", now, 1) / 0.8) * 5,
+    );
 });
 
 test("parses the API response and the cached shape alike", () => {
@@ -105,7 +131,11 @@ test("falls back to the mirror when the first host fails", async () => {
     });
     expect(urls).toHaveLength(2);
     expect(result.perDollar.EUR).toBe(0.9);
-    await expect(fetchRates(async () => { throw new Error("offline"); })).rejects.toThrow("offline");
+    await expect(
+        fetchRates(async () => {
+            throw new Error("offline");
+        }),
+    ).rejects.toThrow("offline");
 });
 
 test("main currency defaults to the device's and survives rehydration", async () => {

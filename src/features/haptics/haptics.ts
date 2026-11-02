@@ -30,7 +30,12 @@ function haptic(hits: Hit[], rumble: [time: number, level: number][] = [], pitch
         discretePattern: hits.map(([time, amplitude, frequency]) => ({ time, amplitude, frequency })),
         continuousPattern: {
             amplitude: rumble.map(([time, value]) => ({ time, value })),
-            frequency: rumble.length ? [{ time: 0, value: pitch }, { time: rumble.at(-1)![0], value: pitch }] : [],
+            frequency: rumble.length
+                ? [
+                      { time: 0, value: pitch },
+                      { time: rumble.at(-1)![0], value: pitch },
+                  ]
+                : [],
         },
     };
     const { timings, amplitudes } = toWaveform(pattern);
@@ -47,30 +52,38 @@ export type ScoreHaptic =
     | { kind: "waveform"; waveform: Waveform }
     | { kind: "pattern"; pattern: Pattern };
 
-// The device's own primitives where it has them all: tuned to its actuator, they feel crisper
-// than any waveform.
+// A device's own primitives are tuned to its actuator, so they feel crisper than any waveform.
 export function scoreHaptic(score: readonly Note[]): ScoreHaptic {
-    if (PLAYER && DURATIONS && canCompose(score, DURATIONS)) return { kind: "composition", score, durations: DURATIONS };
+    if (PLAYER && DURATIONS && canCompose(score, DURATIONS))
+        return { kind: "composition", score, durations: DURATIONS };
     const pattern = toPattern(score);
     return WAVEFORM ? { kind: "waveform", waveform: toWaveform(pattern) } : { kind: "pattern", pattern };
 }
 
-export function useScoreHaptic(haptic: ScoreHaptic) {
-    const composer = usePatternComposer(haptic.kind === "pattern" ? haptic.pattern : SILENT);
-    // `late`: how far into the score it already is; only a composition can start partway.
+export function useScoreHaptic(scored: ScoreHaptic) {
+    const composer = usePatternComposer(scored.kind === "pattern" ? scored.pattern : SILENT);
+    // Only a composition can start partway through the score; the others ignore `late`.
     const play = (late = 0) => {
-        if (haptic.kind === "composition") PLAYER?.playScore(toChunks(haptic.score, haptic.durations, late));
-        else if (haptic.kind === "waveform") WAVEFORM?.playWaveform(haptic.waveform.timings, haptic.waveform.amplitudes);
+        if (scored.kind === "composition") PLAYER?.playScore(toChunks(scored.score, scored.durations, late));
+        else if (scored.kind === "waveform")
+            WAVEFORM?.playWaveform(scored.waveform.timings, scored.waveform.amplitudes);
         else composer.play();
     };
     const stop = () => {
-        if (haptic.kind === "pattern") composer.stop();
+        if (scored.kind === "pattern") composer.stop();
         else PLAYER?.stop();
     };
     return { play, stop };
 }
 
-const MONEY_LANDING = haptic([[0, 0.7, 0.8]], [[0, 0.45], [70, 0]], 0.6);
+const MONEY_LANDING = haptic(
+    [[0, 0.7, 0.8]],
+    [
+        [0, 0.45],
+        [70, 0],
+    ],
+    0.6,
+);
 
 const PRELOADED_PRESETS = ["Anvil", "Buzz", "Firecracker", "Strike", "Wisp"];
 
@@ -95,27 +108,53 @@ export function useMoneyLandingHaptic() {
     return useHaptic(MONEY_LANDING);
 }
 
-// Timings mirror the onboarding animations they accompany; keep them in sync with
-// `src/features/onboarding`.
+// Timings mirror the onboarding animations; keep them in sync with `src/features/onboarding`.
 const ONBOARDING_HAPTICS = {
-    // The widget settling into its home screen slot, then its small rebound.
-    widget: haptic([[0, 0.9, 0.5], [180, 0.5, 0.5]], [[0, 0.6], [140, 0.2], [180, 0.45], [320, 0]]),
-    // The padlock's shackle snapping shut.
-    lock: haptic([[0, 1, 0.95], [60, 0.6, 0.6]], [[0, 0.5], [160, 0]], 0.7),
-    // A privacy promise checking off.
-    tick: haptic([[0, 0.6, 0.85]], [[0, 0.3], [50, 0]], 0.7),
+    widget: haptic(
+        [
+            [0, 0.9, 0.5],
+            [180, 0.5, 0.5],
+        ],
+        [
+            [0, 0.6],
+            [140, 0.2],
+            [180, 0.45],
+            [320, 0],
+        ],
+    ),
+    lock: haptic(
+        [
+            [0, 1, 0.95],
+            [60, 0.6, 0.6],
+        ],
+        [
+            [0, 0.5],
+            [160, 0],
+        ],
+        0.7,
+    ),
+    tick: haptic(
+        [[0, 0.6, 0.85]],
+        [
+            [0, 0.3],
+            [50, 0],
+        ],
+        0.7,
+    ),
 };
 
 export type OnboardingHaptic = keyof typeof ONBOARDING_HAPTICS;
 
 export function useOnboardingHaptics() {
-    // Each player is stable, so the returned function is too.
     const widget = useHaptic(ONBOARDING_HAPTICS.widget);
     const lock = useHaptic(ONBOARDING_HAPTICS.lock);
     const tick = useHaptic(ONBOARDING_HAPTICS.tick);
     const landing = useMoneyLandingHaptic();
-    return useCallback((name: OnboardingHaptic | "landing") => {
-        const plays = { widget, lock, tick, landing };
-        plays[name]();
-    }, [widget, lock, tick, landing]);
+    return useCallback(
+        (name: OnboardingHaptic | "landing") => {
+            const plays = { widget, lock, tick, landing };
+            plays[name]();
+        },
+        [widget, lock, tick, landing],
+    );
 }

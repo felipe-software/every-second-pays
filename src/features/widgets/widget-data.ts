@@ -44,9 +44,13 @@ export function buildWidgetData({
     t: (key: TranslationKey) => string;
     now?: Date;
 }): MoneyWidgetData {
-    const schedules = Object.fromEntries(
-        PERIODS.map((period) => [period, buildEarningsSchedule(sources, period, now, firstDayOfWeek)]),
-    ) as MoneyWidgetData["schedules"];
+    const scheduleFor = (period: EarningsPeriod) => buildEarningsSchedule({ sources, period, now, firstDayOfWeek });
+    const schedules: MoneyWidgetData["schedules"] = {
+        today: scheduleFor("today"),
+        week: scheduleFor("week"),
+        month: scheduleFor("month"),
+        year: scheduleFor("year"),
+    };
     const palettes = Object.fromEntries(
         PALETTES.map(({ id }) => [id, { light: paletteColors(id, false), dark: paletteColors(id, true) }]),
     );
@@ -57,7 +61,12 @@ export function buildWidgetData({
         schedules,
         appearance,
         palettes,
-        format: { currency: currencyPrefix(currency).trim(), decimal: decimalSeparator, group: groupSeparator(locale), groupSize: 3 },
+        format: {
+            currency: currencyPrefix(currency).trim(),
+            decimal: decimalSeparator,
+            group: groupSeparator(locale),
+            groupSize: 3,
+        },
         labels: {
             ...Object.fromEntries(PERIODS.map((period) => [period, t(PERIOD_KEYS[period])])),
             rate: t("widgets.rateCaption"),

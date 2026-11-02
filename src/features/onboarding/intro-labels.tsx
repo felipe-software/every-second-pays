@@ -7,10 +7,11 @@ import { type Stage, WEEK } from "./intro-timeline";
 import { useOnboardingTheme } from "./look";
 import { EASE_SPRING } from "./motion";
 
-/**
- * The words the intro's illustration needs in the reader's own format: the day's first and last
- * hour, and the week's day letters, which move up over the calendar when the week becomes a month.
- */
+function dayOpacity(showDays: boolean, column: number) {
+    if (!showDays) return 0;
+    return column >= 5 ? 0.55 : 1;
+}
+
 export function IntroLabels({ stage, shift }: { stage: Stage; shift: SharedValue<number> }) {
     const { colors } = useOnboardingTheme();
     const shifted = useAnimatedStyle(() => ({ transform: [{ translateY: shift.get() }] }));
@@ -28,23 +29,28 @@ export function IntroLabels({ stage, shift }: { stage: Stage; shift: SharedValue
             <Animated.Text style={[styles.hour, { left: 41, color: colors.muted }, hourFade]}>
                 {formatHour(9 * 60)}
             </Animated.Text>
-            <Animated.Text style={[styles.hour, { left: 311, width: 60, textAlign: "right", color: colors.muted }, hourFade]}>
+            <Animated.Text
+                style={[styles.hour, { left: 311, width: 60, textAlign: "right", color: colors.muted }, hourFade]}
+            >
                 {formatHour(17 * 60)}
             </Animated.Text>
             {Array.from({ length: 7 }, (_, column) => (
                 <Animated.Text
                     key={column}
-                    style={[styles.day, {
-                        left: WEEK.x0 + WEEK.dx * column - 20,
-                        color: colors.muted,
-                        opacity: showDays ? (column >= 5 ? 0.55 : 1) : 0,
-                        // Moved by a transform, not `top`, so the move doesn't lay out every frame.
-                        transform: [{ translateY: stage >= 3 ? MONTH_DAYS_TOP - WEEK_DAYS_TOP : 0 }],
-                        transitionProperty: ["transform", "opacity"],
-                        transitionDuration: [820, 420],
-                        transitionTimingFunction: [EASE_SPRING, "ease"],
-                        transitionDelay: column * 20,
-                    }]}
+                    style={[
+                        styles.day,
+                        {
+                            left: WEEK.x0 + WEEK.dx * column - 20,
+                            color: colors.muted,
+                            opacity: dayOpacity(showDays, column),
+                            // Moved by a transform, not `top`, so the move doesn't lay out every frame.
+                            transform: [{ translateY: stage >= 3 ? MONTH_DAYS_TOP - WEEK_DAYS_TOP : 0 }],
+                            transitionProperty: ["transform", "opacity"],
+                            transitionDuration: [820, 420],
+                            transitionTimingFunction: [EASE_SPRING, "ease"],
+                            transitionDelay: column * 20,
+                        },
+                    ]}
                 >
                     {/* Monday first: the work week reads as one run, the weekend after it. */}
                     {weekdayName((column + 1) % 7, "narrow")}
@@ -54,7 +60,6 @@ export function IntroLabels({ stage, shift }: { stage: Stage; shift: SharedValue
     );
 }
 
-/** Where the day letters sit under the week's columns, and over the month's calendar. */
 const WEEK_DAYS_TOP = 530;
 const MONTH_DAYS_TOP = 296;
 

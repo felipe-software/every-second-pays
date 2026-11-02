@@ -7,7 +7,6 @@ import { rippleConfig } from "@/components/elevated/ripple";
 import { useSquash } from "@/components/elevated/use-squash";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
-import type { TranslationKey } from "@/features/i18n/translations";
 
 import { useEarningsTheme } from "./theme";
 
@@ -18,8 +17,21 @@ const DAY_SETS = [
     { id: "everyDay", days: [0, 1, 2, 3, 4, 5, 6] },
 ] as const;
 
+function byStringOrder(a: number, b: number) {
+    const left = String(a);
+    const right = String(b);
+    if (left < right) return -1;
+    return left > right ? 1 : 0;
+}
+
+function inStringOrder(days: readonly number[]) {
+    const sorted = [...days];
+    sorted.sort(byStringOrder);
+    return sorted;
+}
+
 function sameDays(a: readonly number[], b: readonly number[]) {
-    return [...a].sort().join() === [...b].sort().join();
+    return inStringOrder(a).join() === inStringOrder(b).join();
 }
 
 function DayToggle({
@@ -56,7 +68,10 @@ function DayToggle({
                 className="flex-1 items-center justify-center"
                 style={[{ backgroundColor: selected ? colors.accent : "transparent" }, squashStyle]}
             >
-                <Text className="font-sans text-[14px] font-semibold" style={selected ? colors.onAccentText : { color: colors.muted }}>
+                <Text
+                    className="font-sans text-[14px] font-semibold"
+                    style={selected ? colors.onAccentText : { color: colors.muted }}
+                >
                     {weekdayName(day, "narrow").toLocaleUpperCase(locale)}
                 </Text>
             </Animated.View>
@@ -70,7 +85,13 @@ export function DaysEditor({ days, onChange }: { days: number[]; onChange: (days
 
     return (
         <View className="gap-4">
-            <Raised surface="card" depth={3} radius={14} pressed={sink.pressed} className="h-14 flex-row overflow-hidden">
+            <Raised
+                surface="card"
+                depth={3}
+                radius={14}
+                pressed={sink.pressed}
+                className="h-14 flex-row overflow-hidden"
+            >
                 {DAY_ORDER.map((day) => {
                     const selected = days.includes(day);
                     return (
@@ -78,7 +99,11 @@ export function DaysEditor({ days, onChange }: { days: number[]; onChange: (days
                             key={day}
                             day={day}
                             selected={selected}
-                            onPress={() => onChange(selected ? days.filter((value) => value !== day) : [...days, day].sort())}
+                            onPress={() =>
+                                onChange(
+                                    selected ? days.filter((value) => value !== day) : inStringOrder([...days, day]),
+                                )
+                            }
                             onPressIn={sink.onPressIn}
                             onPressOut={sink.onPressOut}
                         />
@@ -91,7 +116,7 @@ export function DaysEditor({ days, onChange }: { days: number[]; onChange: (days
                     return (
                         <Chip
                             key={option.id}
-                            label={t(`payment.daySet.${option.id}` as TranslationKey)}
+                            label={t(`payment.daySet.${option.id}`)}
                             selected={selected}
                             onPress={() => onChange([...option.days])}
                         />

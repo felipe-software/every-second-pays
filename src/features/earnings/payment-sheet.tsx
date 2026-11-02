@@ -10,20 +10,13 @@ import { DEFAULT_CURRENCY } from "@/features/currency/currencies";
 import { CurrencySheet } from "@/features/currency/currency-sheet";
 import { useCurrencyStore } from "@/features/currency/store";
 import { useI18n } from "@/features/i18n/i18n";
+import type { TranslationKey } from "@/features/i18n/translations";
 import { appHaptics } from "@/features/haptics/haptics";
 
-import {
-    EMPTY_DRAFT,
-    type PaymentDraft,
-    type PaymentSource,
-    hoursPerDay,
-    parseAmount,
-    sourceToDraft,
-} from "./model";
+import { EMPTY_DRAFT, type PaymentDraft, type PaymentSource, hoursPerDay, parseAmount, sourceToDraft } from "./model";
 import { PaymentEditor, type PaymentToken } from "./payment-editor";
 import { PaymentSummary } from "./payment-summary";
 import { SheetHeaderButton } from "./sheet-header-button";
-
 
 type PaymentSheetProps = {
     source?: PaymentSource;
@@ -41,6 +34,12 @@ function cloneEmptyDraft(): PaymentDraft {
     };
 }
 
+function submitLabelKey(saving: boolean, editing: boolean, recurring: boolean): TranslationKey {
+    if (saving) return "payment.saving";
+    if (editing) return "payment.saveChanges";
+    return recurring ? "payment.startCounting" : "payment.addPayment";
+}
+
 export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSave }: PaymentSheetProps) {
     const insets = useSafeAreaInsets();
     const { t } = useI18n();
@@ -56,8 +55,7 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
     const amount = parseAmount(draft.amount);
     const recurring = draft.frequency !== "once";
     const missingRequired = !draft.name.trim() || !(amount > 0);
-    const valid = !missingRequired
-        && (!recurring || (draft.days.length > 0 && hoursPerDay(draft) > 0));
+    const valid = !missingRequired && (!recurring || (draft.days.length > 0 && hoursPerDay(draft) > 0));
 
     const dismiss = () => {
         if (saving) return;
@@ -85,13 +83,7 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
         }
     };
 
-    const submitLabel = saving
-        ? t("payment.saving")
-        : source
-            ? t("payment.saveChanges")
-            : recurring
-                ? t("payment.startCounting")
-                : t("payment.addPayment");
+    const submitLabel = t(submitLabelKey(saving, Boolean(source), recurring));
 
     return (
         <AppSheet
@@ -102,19 +94,21 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
             onDidDismiss={onDismiss}
             // Android's IME inset already includes the navigation bar that the footer pads for.
             footerOptions={Platform.OS === "android" ? { keyboardOffset: -insets.bottom } : undefined}
-            headerActions={source ? (
-                <SheetHeaderButton
-                    accessibilityLabel={t("payment.deleteAccessibility")}
-                    disabled={saving}
-                    kind="delete"
-                    label={t("payment.delete")}
-                    onPress={() => {
-                        appHaptics.destructiveAction();
-                        void deleteAndDismiss();
-                    }}
-                    testID="delete-source"
-                />
-            ) : null}
+            headerActions={
+                source ? (
+                    <SheetHeaderButton
+                        accessibilityLabel={t("payment.deleteAccessibility")}
+                        disabled={saving}
+                        kind="delete"
+                        label={t("payment.delete")}
+                        onPress={() => {
+                            appHaptics.destructiveAction();
+                            void deleteAndDismiss();
+                        }}
+                        testID="delete-source"
+                    />
+                ) : null
+            }
             footer={
                 <View
                     onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
@@ -122,7 +116,10 @@ export function PaymentSheet({ source, saving = false, onDismiss, onDelete, onSa
                     style={{ paddingBottom: 12 + (Platform.OS === "android" ? insets.bottom : 0) }}
                 >
                     {missingRequired ? (
-                        <Text accessibilityLiveRegion="polite" className="mb-3 text-center font-sans text-[12.5px] leading-[17px] text-muted">
+                        <Text
+                            accessibilityLiveRegion="polite"
+                            className="mb-3 text-center font-sans text-[12.5px] leading-[17px] text-muted"
+                        >
                             {t("payment.requiredHint")}
                         </Text>
                     ) : null}

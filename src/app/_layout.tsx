@@ -38,7 +38,7 @@ import { useOnboardingStore } from "@/features/onboarding/store";
 import { NotificationSync } from "@/features/notifications/notification-sync";
 import { MoneyWidgetSync } from "@/features/widgets/money-widget-sync";
 
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync();
 
 function SystemBars() {
     const { isDark } = useEarningsTheme();
@@ -83,10 +83,18 @@ export default function RootLayout() {
         "Archivo-Bold": Archivo_700Bold,
     });
 
-    useEffect(() => { void loadLanguage(); }, [loadLanguage]);
-    useEffect(() => { void loadPeriod(); }, [loadPeriod]);
-    useEffect(() => { void loadCurrency(); }, [loadCurrency]);
-    useEffect(() => { void loadOnboarding(); }, [loadOnboarding]);
+    useEffect(() => {
+        void loadLanguage();
+    }, [loadLanguage]);
+    useEffect(() => {
+        void loadPeriod();
+    }, [loadPeriod]);
+    useEffect(() => {
+        void loadCurrency();
+    }, [loadCurrency]);
+    useEffect(() => {
+        void loadOnboarding();
+    }, [loadOnboarding]);
 
     const ready =
         fontsLoaded && appearanceReady && languageReady && periodReady && currencyReady && onboarding !== "unknown";
@@ -94,7 +102,7 @@ export default function RootLayout() {
     // The onboarding hides it itself, once its first illustration is ready to play.
     const splashDone = ready && onboarding !== "pending";
     useEffect(() => {
-        if (splashDone) SplashScreen.hideAsync();
+        if (splashDone) void SplashScreen.hideAsync();
     }, [splashDone]);
 
     if (!ready) return null;
@@ -111,7 +119,7 @@ export default function RootLayout() {
                         <SystemBars />
                         <SystemBackRouting />
                         <KeyboardProvider>
-                            {/* Mounted from the start, under the onboarding: mounting it while the onboarding plays stalls its animations. */}
+                            {/* Mounted under the onboarding from the start: mounting it later stalls its animations. */}
                             <SheetRecede>
                                 <View
                                     accessibilityElementsHidden={covered}

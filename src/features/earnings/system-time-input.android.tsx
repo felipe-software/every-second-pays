@@ -12,6 +12,24 @@ import type { SystemTimeInputProps } from "./system-time-input";
 import { INLINE_TIME_PADDING } from "./hours/arc-geometry";
 import { useEarningsTheme } from "./theme";
 
+const INLINE_BUTTON = {
+    hitSlop: 8,
+    containerClassName: "min-w-0 shrink",
+    surface: "chip",
+    radius: 7,
+    className: "items-center justify-center py-0.5",
+    style: { paddingHorizontal: INLINE_TIME_PADDING },
+} as const;
+
+const FIELD_BUTTON = {
+    hitSlop: undefined,
+    containerClassName: undefined,
+    surface: "card",
+    radius: 13,
+    className: "h-11 items-center justify-center",
+    style: undefined,
+} as const;
+
 export function SystemTimeInput({ label, value, onChange, variant = "field", fontSize = 20 }: SystemTimeInputProps) {
     const [open, setOpen] = useState(false);
     const { t, formatTime } = useI18n();
@@ -23,7 +41,9 @@ export function SystemTimeInput({ label, value, onChange, variant = "field", fon
     return (
         <View className={inline ? undefined : "min-w-0 flex-1 gap-1.5"}>
             {inline ? null : (
-                <Text className="font-sans text-[10px] font-semibold tracking-[1.2px] text-muted uppercase">{label}</Text>
+                <Text className="font-sans text-[10px] font-semibold tracking-[1.2px] text-muted uppercase">
+                    {label}
+                </Text>
             )}
             <RaisedPressable
                 accessibilityRole="button"
@@ -33,17 +53,16 @@ export function SystemTimeInput({ label, value, onChange, variant = "field", fon
                     appHaptics.selection();
                     setOpen(true);
                 }}
-                hitSlop={inline ? 8 : undefined}
-                containerClassName={inline ? "min-w-0 shrink" : undefined}
-                surface={inline ? "chip" : "card"}
+                {...(inline ? INLINE_BUTTON : FIELD_BUTTON)}
                 depth={2}
-                radius={inline ? 7 : 13}
-                className={inline ? "items-center justify-center py-0.5" : "h-11 items-center justify-center"}
-                style={inline ? { paddingHorizontal: INLINE_TIME_PADDING } : undefined}
             >
                 <Text
                     numberOfLines={1}
-                    className={inline ? "font-sans font-bold text-ink tabular-nums" : "font-sans text-[13px] font-semibold text-ink tabular-nums"}
+                    className={
+                        inline
+                            ? "font-sans font-bold text-ink tabular-nums"
+                            : "font-sans text-[13px] font-semibold text-ink tabular-nums"
+                    }
                     style={inline ? { fontSize, letterSpacing: -fontSize * 0.02 } : undefined}
                 >
                     {formatTime(value)}

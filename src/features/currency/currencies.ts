@@ -45,7 +45,17 @@ export type CurrencyCode = (typeof CURRENCIES)[number]["code"];
 
 export type Currency = CurrencyCode | (string & {});
 
-export const POPULAR_CURRENCIES: readonly CurrencyCode[] = ["USD", "EUR", "GBP", "BRL", "CAD", "AUD", "MXN", "JPY", "CHF"];
+export const POPULAR_CURRENCIES: readonly CurrencyCode[] = [
+    "USD",
+    "EUR",
+    "GBP",
+    "BRL",
+    "CAD",
+    "AUD",
+    "MXN",
+    "JPY",
+    "CHF",
+];
 
 export const DEFAULT_CURRENCY: CurrencyCode = "USD";
 
@@ -56,12 +66,17 @@ export function isCurrencyCode(value: unknown): value is CurrencyCode {
 }
 
 export function isCurrency(value: unknown): value is Currency {
-    return isCurrencyCode(value)
-        || (typeof value === "string" && value.trim() === value && value.length > 0 && [...value].length <= CUSTOM_SYMBOL_MAX);
+    return (
+        isCurrencyCode(value) ||
+        (typeof value === "string" &&
+            value.trim() === value &&
+            value.length > 0 &&
+            Array.from(value).length <= CUSTOM_SYMBOL_MAX)
+    );
 }
 
 export function resolveCurrency(input: string): Currency | undefined {
-    const text = [...input.trim()].slice(0, CUSTOM_SYMBOL_MAX).join("");
+    const text = Array.from(input.trim()).slice(0, CUSTOM_SYMBOL_MAX).join("");
     if (!text) return undefined;
     const upper = text.toUpperCase();
     const known = CURRENCIES.find((currency) => currency.code === upper || currency.symbol.toUpperCase() === upper);
@@ -80,7 +95,8 @@ export function currencyPrefix(currency: Currency) {
 const displayNames = new Map<string, Intl.DisplayNames>();
 
 export function currencyName(currency: Currency, locale: string) {
-    if (!isCurrencyCode(currency)) return currency;
+    const known = CURRENCIES.find((item) => item.code === currency);
+    if (!known) return currency;
     try {
         if (typeof Intl.DisplayNames === "function") {
             let names = displayNames.get(locale);
@@ -88,12 +104,11 @@ export function currencyName(currency: Currency, locale: string) {
                 names = new Intl.DisplayNames([locale], { type: "currency" });
                 displayNames.set(locale, names);
             }
-            const name = names.of(currency);
-            if (name && name !== currency) return name;
+            const name = names.of(known.code);
+            if (name && name !== known.code) return name;
         }
-    } catch {
-    }
-    return CURRENCIES.find((item) => item.code === currency)?.name ?? currency;
+    } catch {}
+    return known.name;
 }
 
 export function deviceCurrency(currencyCode: string | null | undefined): CurrencyCode {

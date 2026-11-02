@@ -22,13 +22,16 @@ import { useNotificationStore } from "./store";
 const ASK_DELAY = 1_600;
 
 function openTappedNotification(goHome: boolean) {
-    void Noti.bills.takeOpenedPeriod().then((opened) => {
-        const period = PERIODS.find((item) => item === opened);
-        if (period) usePeriodStore.getState().peek(period);
-        else if (opened === ADD_SOURCE_TAP) usePaymentComposerStore.getState().requestNewSource();
-        else return;
-        if (goHome) router.navigate("/");
-    }).catch(() => {});
+    void Noti.bills
+        .takeOpenedPeriod()
+        .then((opened) => {
+            const period = PERIODS.find((item) => item === opened);
+            if (period) usePeriodStore.getState().peek(period);
+            else if (opened === ADD_SOURCE_TAP) usePaymentComposerStore.getState().requestNewSource();
+            else return;
+            if (goHome) router.navigate("/");
+        })
+        .catch(() => {});
 }
 
 function AndroidNotificationSync() {
@@ -50,9 +53,11 @@ function AndroidNotificationSync() {
         void useEarningsStore.getState().load();
         void useNotificationStore.getState().load();
         const refreshFeedback = () => {
-            void applyPendingFeedback().then((settings) => {
-                if (settings) useNotificationStore.setState({ settings });
-            }).catch(() => {});
+            void applyPendingFeedback()
+                .then((settings) => {
+                    if (settings) useNotificationStore.setState({ settings });
+                })
+                .catch(() => {});
         };
         const markOpened = () => updateState((state) => ({ ...state, lastOpenedAt: Date.now() })).catch(() => {});
         refreshFeedback();
@@ -80,7 +85,13 @@ function AndroidNotificationSync() {
             const next = { ...state, lastOpenedAt: firstPass ? now.getTime() : state.lastOpenedAt };
             if (firstPass && !fresh) return next;
             const { main, rates } = useCurrencyStore.getState();
-            return markCrossedHandled(next, toMainCurrency(sources, main, rates).converted, period, now, firstDayOfWeek);
+            return markCrossedHandled({
+                state: next,
+                sources: toMainCurrency(sources, main, rates).converted,
+                period,
+                now,
+                firstDayOfWeek,
+            });
         }).catch(() => {});
     }, [firstDayOfWeek, period, ready, sources]);
 
@@ -94,7 +105,7 @@ function AndroidNotificationSync() {
     }, [hasSources, onboarded, ready]);
 
     useEffect(() => {
-        if (!ready || !onboarded) return;
+        if (!ready || !onboarded) return undefined;
         let cancelled = false;
         const timer = setTimeout(() => {
             void (async () => {
@@ -103,7 +114,12 @@ function AndroidNotificationSync() {
                 await markPermissionAsked();
                 Alert.alert(t("notifications.ask.title"), t("notifications.ask.body"), [
                     { text: t("notifications.ask.no"), style: "cancel" },
-                    { text: t("notifications.ask.yes"), onPress: () => void Noti.requestPermission() },
+                    {
+                        text: t("notifications.ask.yes"),
+                        onPress: () => {
+                            void Noti.requestPermission();
+                        },
+                    },
                 ]);
             })().catch(() => {});
         }, ASK_DELAY);
@@ -116,4 +132,5 @@ function AndroidNotificationSync() {
     return null;
 }
 
-export const NotificationSync = Platform.OS === "android" && Noti.bills.isSupported() ? AndroidNotificationSync : () => null;
+export const NotificationSync =
+    Platform.OS === "android" && Noti.bills.isSupported() ? AndroidNotificationSync : () => null;

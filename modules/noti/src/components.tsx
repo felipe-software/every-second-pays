@@ -12,25 +12,30 @@ import type {
     TextProps,
     ViewFlipperProps,
     ViewProps,
-} from './types';
+} from "./types";
 
-function primitive<P extends NotiProps>(kind: string, name: string) {
+type NotiPrimitive<P> = ((props: P) => null) & {
+    notificationPrimitive: string;
+    displayName: string;
+};
+
+function primitive<P extends NotiProps>(kind: string, name: string): NotiPrimitive<P> {
     const component = (_props: P) => null;
     return Object.assign(component, { notificationPrimitive: kind, displayName: `Noti.${name}` });
 }
 
 export const NotiPrimitives = {
-    View: primitive<ViewProps>('view', 'View'),
-    Grid: primitive<GridProps>('grid', 'Grid'),
-    Text: primitive<TextProps>('text', 'Text'),
-    Button: primitive<ButtonProps>('button', 'Button'),
-    Image: primitive<ImageProps>('image', 'Image'),
-    Spacer: primitive<SpacerProps>('spacer', 'Spacer'),
-    Progress: primitive<ProgressProps>('progress', 'Progress'),
-    Chronometer: primitive<ChronometerProps>('chronometer', 'Chronometer'),
-    ScrollView: primitive<ScrollViewProps>('scroll', 'ScrollView'),
-    ViewFlipper: primitive<ViewFlipperProps>('flipper', 'ViewFlipper'),
-    Loop: primitive<LoopProps>('loop', 'Loop'),
-    AnimatePresence: primitive<AnimatePresenceProps>('presence', 'AnimatePresence'),
-    Crossfade: primitive<AnimatePresenceProps>('crossfade', 'Crossfade'),
+    View: primitive<ViewProps>("view", "View"),
+    Grid: primitive<GridProps>("grid", "Grid"),
+    Text: primitive<TextProps>("text", "Text"),
+    Button: primitive<ButtonProps>("button", "Button"),
+    Image: primitive<ImageProps>("image", "Image"),
+    Spacer: primitive<SpacerProps>("spacer", "Spacer"),
+    Progress: primitive<ProgressProps>("progress", "Progress"),
+    Chronometer: primitive<ChronometerProps>("chronometer", "Chronometer"),
+    ScrollView: primitive<ScrollViewProps>("scroll", "ScrollView"),
+    ViewFlipper: primitive<ViewFlipperProps>("flipper", "ViewFlipper"),
+    Loop: primitive<LoopProps>("loop", "Loop"),
+    AnimatePresence: primitive<AnimatePresenceProps>("presence", "AnimatePresence"),
+    Crossfade: primitive<AnimatePresenceProps>("crossfade", "Crossfade"),
 };

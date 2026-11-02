@@ -19,22 +19,19 @@ function rumbleAt(points: Pattern["continuousPattern"]["amplitude"], time: numbe
     return from.value + ((to.value - from.value) * (time - from.time)) / (to.time - from.time);
 }
 
-// Android can't layer a pattern's sharp hits over its rumble, so both become one amplitude
-// curve: each hit a short full-strength step that stands out of the rumble under it.
+// Android can't layer a pattern's hits over its rumble, so both become one amplitude curve.
 export function toWaveform(pattern: Pattern): Waveform {
     const rumble = pattern.continuousPattern.amplitude;
     const hits = pattern.discretePattern;
-    const end = Math.max(
-        rumble.at(-1)?.time ?? 0,
-        ...hits.map((hit) => hit.time + hitLength(hit.frequency)),
-    );
+    const end = Math.max(rumble.at(-1)?.time ?? 0, ...hits.map((hit) => hit.time + hitLength(hit.frequency)));
 
     const timings: number[] = [];
     const amplitudes: number[] = [];
     for (let time = 0; time < end; time += STEP) {
-        const hit = Math.max(0, ...hits
-            .filter((h) => time >= h.time && time < h.time + hitLength(h.frequency))
-            .map((h) => h.amplitude));
+        const hit = Math.max(
+            0,
+            ...hits.filter((h) => time >= h.time && time < h.time + hitLength(h.frequency)).map((h) => h.amplitude),
+        );
         const level = Math.min(1, Math.max(hit, rumbleAt(rumble, time)));
         const amplitude = Math.round(level * MAX_AMPLITUDE);
         const length = Math.min(STEP, end - time);

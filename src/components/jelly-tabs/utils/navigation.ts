@@ -10,14 +10,8 @@ import { StyleSheet } from "react-native";
 
 const EmptyIcon: TabsIcon = () => null;
 
-/**
- * The tab's name, whether or not the label is drawn. Kept separate from
- * `resolveLabel` so hiding the label cannot also remove the accessible name.
- */
-const resolveAccessibleName = (
-    routeName: string,
-    options: JellyNavigationOptions,
-) => {
+// Separate from resolveLabel so hiding the label cannot also remove the accessible name.
+const resolveAccessibleName = (routeName: string, options: JellyNavigationOptions) => {
     if (typeof options.tabBarLabel === "string") {
         return options.tabBarLabel;
     }
@@ -33,15 +27,9 @@ const resolveLabel = (routeName: string, options: JellyNavigationOptions) => {
 
 type TabBarIconRenderer = NonNullable<JellyNavigationOptions["tabBarIcon"]>;
 
-const iconWrappers = new WeakMap<
-    TabBarIconRenderer,
-    { active: TabsIcon; inactive: TabsIcon }
->();
+const iconWrappers = new WeakMap<TabBarIconRenderer, { active: TabsIcon; inactive: TabsIcon }>();
 
-const resolveIcon = (
-    options: JellyNavigationOptions,
-    focused: boolean,
-): TabsIcon => {
+const resolveIcon = (options: JellyNavigationOptions, focused: boolean): TabsIcon => {
     const renderIcon = options.tabBarIcon;
     if (!renderIcon) {
         return EmptyIcon;
@@ -50,10 +38,8 @@ const resolveIcon = (
     let wrappers = iconWrappers.get(renderIcon);
     if (!wrappers) {
         wrappers = {
-            active: ({ color, size }) =>
-                renderIcon({ color, focused: true, size }),
-            inactive: ({ color, size }) =>
-                renderIcon({ color, focused: false, size }),
+            active: ({ color, size }) => renderIcon({ color, focused: true, size }),
+            inactive: ({ color, size }) => renderIcon({ color, focused: false, size }),
         };
         iconWrappers.set(renderIcon, wrappers);
     }
@@ -61,11 +47,7 @@ const resolveIcon = (
     return focused ? wrappers.active : wrappers.inactive;
 };
 
-/**
- * Expo Router consumes `href: null` and exposes it to custom JavaScript tab bars
- * as `tabBarItemStyle: { display: "none" }`. Keep supporting `href: null`
- * directly for navigation integrations that preserve it.
- */
+// Expo Router turns `href: null` into `display: none`; other navigators preserve `href: null`.
 export const getVisibleRoutes = (
     routes: readonly JellyNavigationRoute[],
     descriptors: Readonly<Record<string, JellyNavigationDescriptor>>,
@@ -73,10 +55,7 @@ export const getVisibleRoutes = (
     routes.filter((route) => {
         const options = descriptors[route.key]?.options;
 
-        return (
-            options?.href !== null &&
-            StyleSheet.flatten(options?.tabBarItemStyle)?.display !== "none"
-        );
+        return options?.href !== null && StyleSheet.flatten(options?.tabBarItemStyle)?.display !== "none";
     });
 
 export const getVisibleSelectedIndex = (
@@ -91,9 +70,7 @@ export const getNavigationItems = (
     visibleRoutes.map((route) => {
         const options = descriptors[route.key]?.options ?? {};
         return {
-            accessibilityLabel:
-                options.tabBarAccessibilityLabel ??
-                resolveAccessibleName(route.name, options),
+            accessibilityLabel: options.tabBarAccessibilityLabel ?? resolveAccessibleName(route.name, options),
             activeBadgeStyle: options.tabBarActiveBadgeStyle,
             activeIcon: resolveIcon(options, true),
             badge: options.tabBarBadge,
@@ -130,7 +107,7 @@ export const pressNavigationTab = ({
         canPreventDefault: true,
         target: route.key,
         type: "tabPress",
-    }) as { defaultPrevented?: boolean };
+    });
 
     if (event.defaultPrevented) {
         return false;
@@ -157,11 +134,7 @@ interface LongPressNavigationTabOptions {
     visibleRoutes: readonly JellyNavigationRoute[];
 }
 
-export const longPressNavigationTab = ({
-    index,
-    navigation,
-    visibleRoutes,
-}: LongPressNavigationTabOptions) => {
+export const longPressNavigationTab = ({ index, navigation, visibleRoutes }: LongPressNavigationTabOptions) => {
     const route = visibleRoutes[index];
     if (!route) {
         return;

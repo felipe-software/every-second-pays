@@ -1,18 +1,6 @@
 import { usePathname } from "expo-router";
-import {
-    TabSlot,
-    type TabsDescriptor,
-    type TabsSlotRenderOptions,
-    useTabTrigger,
-} from "expo-router/ui";
-import {
-    createContext,
-    type PropsWithChildren,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-} from "react";
+import { TabSlot, type TabsDescriptor, type TabsSlotRenderOptions, useTabTrigger } from "expo-router/ui";
+import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo } from "react";
 import { type LayoutChangeEvent, StyleSheet } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -52,11 +40,19 @@ function clampPagePosition(value: number) {
     return Math.min(Math.max(value, 0), LAST_PAGE_INDEX);
 }
 
+function getRoutePageIndex(routeName: string) {
+    if (routeName === "index") return 0;
+    if (routeName === "settings") return 1;
+    return null;
+}
+
 function PagerScene({ children, index, isFocused, pageWidth, position }: PagerSceneProps) {
     const animatedStyle = useAnimatedStyle(() => ({
-        transform: [{
-            translateX: (index - position.get()) * pageWidth.get(),
-        }],
+        transform: [
+            {
+                translateX: (index - position.get()) * pageWidth.get(),
+            },
+        ],
     }));
 
     return (
@@ -99,10 +95,12 @@ export function AndroidTabPager({ children }: PropsWithChildren) {
 
     useEffect(() => {
         routerIndex.set(selectedIndex);
-        position.set(withTiming(selectedIndex, {
-            duration: 260,
-            easing: Easing.out(Easing.cubic),
-        }));
+        position.set(
+            withTiming(selectedIndex, {
+                duration: 260,
+                easing: Easing.out(Easing.cubic),
+            }),
+        );
     }, [position, routerIndex, selectedIndex]);
 
     useBackProgress(selectedIndex === LAST_PAGE_INDEX && !onSubpage, {
@@ -110,15 +108,22 @@ export function AndroidTabPager({ children }: PropsWithChildren) {
         onCancel: () => position.set(withSpring(LAST_PAGE_INDEX, BACK_CANCEL_SPRING)),
     });
 
-    const switchToIndex = useCallback((index: number) => {
-        const tab = index === 1 ? settingsTab : indexTab;
-        tab.switchTab(index === 1 ? "settings" : "index", {});
-    }, [indexTab, settingsTab]);
+    const switchToIndex = useCallback(
+        (index: number) => {
+            const tab = index === 1 ? settingsTab : indexTab;
+            tab.switchTab(index === 1 ? "settings" : "index", {});
+        },
+        [indexTab, settingsTab],
+    );
 
-    const handleLayout = useCallback((event: LayoutChangeEvent) => {
-        pageWidth.set(event.nativeEvent.layout.width);
-    }, [pageWidth]);
+    const handleLayout = useCallback(
+        (event: LayoutChangeEvent) => {
+            pageWidth.set(event.nativeEvent.layout.width);
+        },
+        [pageWidth],
+    );
 
+    // oxlint-disable-next-line react/capitalized-calls
     const pan = Gesture.Pan()
         .enabled(!onSubpage)
         .activeOffsetX([-16, 16])
@@ -132,75 +137,67 @@ export function AndroidTabPager({ children }: PropsWithChildren) {
             const width = pageWidth.get();
             if (width <= 0) return;
 
-            position.set(clampPagePosition(
-                gestureStartPosition.get() - event.translationX / width,
-            ));
+            position.set(clampPagePosition(gestureStartPosition.get() - event.translationX / width));
         })
         .onEnd((event) => {
             const width = pageWidth.get();
             if (width <= 0) return;
 
-            const projectedPosition = position.get()
-                - (event.velocityX / width) * VELOCITY_PROJECTION_SECONDS;
+            const projectedPosition = position.get() - (event.velocityX / width) * VELOCITY_PROJECTION_SECONDS;
             const targetIndex = Math.round(clampPagePosition(projectedPosition));
 
-            position.set(withSpring(targetIndex, {
-                damping: 28,
-                mass: 0.8,
-                overshootClamping: true,
-                stiffness: 300,
-                velocity: -event.velocityX / width,
-            }, (finished) => {
-                if (finished && targetIndex !== routerIndex.get()) {
-                    scheduleOnRN(switchToIndex, targetIndex);
-                }
-            }));
+            position.set(
+                withSpring(
+                    targetIndex,
+                    {
+                        damping: 28,
+                        mass: 0.8,
+                        overshootClamping: true,
+                        stiffness: 300,
+                        velocity: -event.velocityX / width,
+                    },
+                    (finished) => {
+                        if (finished && targetIndex !== routerIndex.get()) {
+                            scheduleOnRN(switchToIndex, targetIndex);
+                        }
+                    },
+                ),
+            );
         })
         .onFinalize((_event, success) => {
             if (success) return;
-            position.set(withSpring(routerIndex.get(), {
-                damping: 28,
-                overshootClamping: true,
-                stiffness: 300,
-            }));
+            position.set(
+                withSpring(routerIndex.get(), {
+                    damping: 28,
+                    overshootClamping: true,
+                    stiffness: 300,
+                }),
+            );
         });
 
-    const renderScene = useCallback((
-        descriptor: TabsDescriptor,
-        options: TabsSlotRenderOptions,
-    ) => {
-        const index = descriptor.route.name === "index"
-            ? 0
-            : descriptor.route.name === "settings"
-                ? 1
-                : null;
+    const renderScene = useCallback(
+        (descriptor: TabsDescriptor, options: TabsSlotRenderOptions) => {
+            const index = getRoutePageIndex(descriptor.route.name);
 
-        if (index === null) {
-            return options.isFocused ? descriptor.render() : null;
-        }
+            if (index === null) {
+                return options.isFocused ? descriptor.render() : null;
+            }
 
-        return (
-            <PagerScene
-                index={index}
-                isFocused={options.isFocused}
-                pageWidth={pageWidth}
-                position={position}
-            >
-                {descriptor.render()}
-            </PagerScene>
-        );
-    }, [pageWidth, position]);
+            return (
+                <PagerScene index={index} isFocused={options.isFocused} pageWidth={pageWidth} position={position}>
+                    {descriptor.render()}
+                </PagerScene>
+            );
+        },
+        [pageWidth, position],
+    );
 
     return (
         <AndroidTabPagerContext.Provider value={contextValue}>
             <Animated.View style={[styles.pager, { backgroundColor: colors.canvas }]}>
                 <GestureDetector gesture={pan}>
                     <Animated.View onLayout={handleLayout} style={styles.viewport}>
-                        <TabSlot
-                            detachInactiveScreens={false}
-                            renderFn={renderScene}
-                            style={styles.slot}
-                        />
+                        <TabSlot detachInactiveScreens={false} renderFn={renderScene} style={styles.slot} />
                     </Animated.View>
                 </GestureDetector>
                 {children}

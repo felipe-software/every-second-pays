@@ -5,6 +5,18 @@ import { type Currency, isCurrency } from "@/features/currency/currencies";
 import { deletePaymentSource, loadPaymentSources, writePaymentSource } from "./database";
 import type { PaymentDraft, PaymentSource } from "./model";
 
+// Drafts built from a saved source still carry its id and paidAt at runtime.
+type CarriedDraft = PaymentDraft & Partial<Pick<PaymentSource, "id" | "paidAt">>;
+
+function landed(source?: Pick<PaymentSource, "frequency" | "when">) {
+    return source?.frequency === "once" && source.when === "today";
+}
+
+function resolvePaidAt(draft: PaymentDraft, previous: PaymentSource | undefined) {
+    if (!landed(draft)) return undefined;
+    return landed(previous) ? previous?.paidAt : Date.now();
+}
+
 type EarningsState = {
     sources: PaymentSource[];
     ready: boolean;
@@ -42,22 +54,23 @@ export const useEarningsStore = create<EarningsState>((set, get) => ({
         }
         if (draft.currency != null && !isCurrency(draft.currency)) throw new Error("Unknown currency.");
         const previous = id == null ? undefined : get().sources.find((source) => source.id === id);
-        const landed = (source?: Pick<PaymentSource, "frequency" | "when">) => source?.frequency === "once" && source.when === "today";
-        const paidAt = landed(draft) ? (landed(previous) ? previous?.paidAt : Date.now()) : undefined;
-        // Drafts built from a saved source still carry its id and paidAt at runtime.
-        const { paidAt: _paidAt, id: _id, ...fields } = draft as PaymentDraft & Partial<Pick<PaymentSource, "id" | "paidAt">>;
+        const paidAt = resolvePaidAt(draft, previous);
+        const carried: CarriedDraft = draft;
+        const { paidAt: _paidAt, id: _id, ...fields } = carried;
         set({ saving: true });
         try {
-            const record = await writePaymentSource({
+            const fieldsToWrite: Omit<PaymentSource, "id"> = {
                 ...fields,
-                ...(paidAt == null ? {} : { paidAt }),
                 name: draft.name.trim(),
                 amount,
                 days: [...draft.days],
                 shifts: draft.shifts.map((shift) => ({ ...shift })),
-            }, id);
+            };
+            if (paidAt != null) fieldsToWrite.paidAt = paidAt;
+            const record = await writePaymentSource(fieldsToWrite, id);
             set(({ sources }) => ({
-                sources: id == null ? [...sources, record] : sources.map((source) => source.id === id ? record : source),
+                sources:
+                    id == null ? [...sources, record] : sources.map((source) => (source.id === id ? record : source)),
             }));
         } finally {
             set({ saving: false });
@@ -81,7 +94,7 @@ export const useEarningsStore = create<EarningsState>((set, get) => ({
         try {
             for (const { id, ...source } of missing) {
                 const record = await writePaymentSource({ ...source, currency }, id);
-                set(({ sources }) => ({ sources: sources.map((item) => item.id === id ? record : item) }));
+                set(({ sources }) => ({ sources: sources.map((item) => (item.id === id ? record : item)) }));
             }
         } finally {
             set({ saving: false });

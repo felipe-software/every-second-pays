@@ -32,14 +32,42 @@ const PREVIEWS: { id: string; label: string; candidate: RoutineCandidate }[] = [
     { id: "50", label: "50%", candidate: progress(50, 25, 2012) },
     { id: "90", label: "90%", candidate: progress(90, 50, 3608) },
     { id: "100", label: "100%", candidate: progress(100, 0, 4000) },
-    { id: "week", label: "Week", candidate: { kind: "week", key: "preview:week", start: OCTOBER, days: [1, 2, 3, 4, 5], amount: 923, goal: 923 } },
+    {
+        id: "week",
+        label: "Week",
+        candidate: { kind: "week", key: "preview:week", start: OCTOBER, days: [1, 2, 3, 4, 5], amount: 923, goal: 923 },
+    },
     {
         id: "decile",
         label: "Year 40%",
-        candidate: { kind: "progress", scope: "year", key: "preview:decile", start: new Date(2026, 0, 1).getTime(), mark: 40, from: 30, marks: YEAR_MARKS, amount: 19_200, goal: 48_000 },
+        candidate: {
+            kind: "progress",
+            scope: "year",
+            key: "preview:decile",
+            start: new Date(2026, 0, 1).getTime(),
+            mark: 40,
+            from: 30,
+            marks: YEAR_MARKS,
+            amount: 19_200,
+            goal: 48_000,
+        },
     },
-    { id: "year", label: "Year", candidate: { kind: "year", key: "preview:year", year: 2026, amount: 48_000, goal: 48_000 } },
-    { id: "meter", label: "Meter", candidate: { kind: "meter", key: "preview:meter", since: Date.now() - 14 * 86_400_000, amount: 2310, goal: 2310 } },
+    {
+        id: "year",
+        label: "Year",
+        candidate: { kind: "year", key: "preview:year", year: 2026, amount: 48_000, goal: 48_000 },
+    },
+    {
+        id: "meter",
+        label: "Meter",
+        candidate: {
+            kind: "meter",
+            key: "preview:meter",
+            since: Date.now() - 14 * 86_400_000,
+            amount: 2310,
+            goal: 2310,
+        },
+    },
     { id: "setup", label: "Setup", candidate: { kind: "setup", key: "preview:setup" } },
 ];
 
@@ -64,7 +92,11 @@ export function DevNotificationControls() {
                         key={id}
                         testID={`notification-preview-${id}`}
                         accessibilityRole="button"
-                        onPress={() => setTimeout(() => void preview(candidate), 2000)}
+                        onPress={() =>
+                            setTimeout(() => {
+                                void preview(candidate);
+                            }, 2000)
+                        }
                         surface="canvas"
                         depth={4}
                         radius={15}
@@ -76,7 +108,14 @@ export function DevNotificationControls() {
                 <RaisedPressable
                     testID="notification-reset"
                     accessibilityRole="button"
-                    onPress={() => void updateState((state) => ({ ...EMPTY_STATE, lastOpenedAt: state.lastOpenedAt, handled: state.handled, onboardedAt: state.onboardedAt }))}
+                    onPress={() => {
+                        void updateState((state) => ({
+                            ...EMPTY_STATE,
+                            lastOpenedAt: state.lastOpenedAt,
+                            handled: state.handled,
+                            onboardedAt: state.onboardedAt,
+                        }));
+                    }}
                     surface="canvas"
                     depth={4}
                     radius={15}
@@ -87,7 +126,11 @@ export function DevNotificationControls() {
                 <RaisedPressable
                     testID="notification-run-task"
                     accessibilityRole="button"
-                    onPress={() => setTimeout(() => void BackgroundTask.triggerTaskWorkerForTestingAsync(), TASK_DELAY)}
+                    onPress={() =>
+                        setTimeout(() => {
+                            void BackgroundTask.triggerTaskWorkerForTestingAsync();
+                        }, TASK_DELAY)
+                    }
                     surface="accent"
                     depth={4}
                     radius={15}
