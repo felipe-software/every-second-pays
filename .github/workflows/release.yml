@@ -74,8 +74,25 @@ jobs:
           set -euo pipefail
 
           git checkout -B "${RELEASE_BRANCH}" "origin/${RELEASE_BRANCH}"
-          git -c user.name="${BOT_NAME}" -c user.email="${BOT_EMAIL}" \
-            merge --no-edit -m "Merge branch 'main' into ${RELEASE_BRANCH}" "${GITHUB_SHA}"
+          release_version=$(bun pm pkg get version | tr -d '"')
+          merge_message="Merge branch 'main' into ${RELEASE_BRANCH}"
+          git_as_bot=(git -c user.name="${BOT_NAME}" -c user.email="${BOT_EMAIL}")
+
+          if "${git_as_bot[@]}" merge --no-edit -m "${merge_message}" "${GITHUB_SHA}"; then
+            exit 0
+          fi
+
+          # release differs from main only by the version semantic-release bumps, so edits next to that line conflict.
+          conflicts=$(git diff --name-only --diff-filter=U)
+          if [ "${conflicts}" != "package.json" ]; then
+            echo "::error::Unexpected merge conflicts: ${conflicts:-none}"
+            exit 1
+          fi
+
+          git checkout --theirs package.json
+          bun pm pkg set version="${release_version}"
+          git add package.json
+          "${git_as_bot[@]}" commit -m "${merge_message}"
 
       # Kept out of package.json so release tooling can't change the app's dependency tree.
       - name: Install semantic-release
