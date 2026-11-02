@@ -3,7 +3,6 @@ import { StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
 
 import { PALETTES } from "@/features/appearance/palettes";
-import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 
 import { type ArtboardPoint, BAR, MODE_AT, swatchAt } from "./customize-layout";
@@ -34,7 +33,7 @@ export function CustomizeStep({
     reduced: boolean;
     board: Look;
     onPreview: (look: Look, at: ArtboardPoint) => void;
-    onPick: (look: Look, at: ArtboardPoint) => void;
+    onPick: (change: (current: Look) => Look, at: ArtboardPoint) => void;
 }) {
     const { colors, look } = useOnboardingTheme();
     const { t } = useI18n();
@@ -74,9 +73,9 @@ export function CustomizeStep({
         return () => timers.forEach(clearTimeout);
     }, [demo]);
 
-    const pick = (next: Look, at: ArtboardPoint) => {
+    const pick = (change: (current: Look) => Look, at: ArtboardPoint) => {
         setPicked(true);
-        onPick(next, at);
+        onPick(change, at);
     };
 
     return (
@@ -95,11 +94,8 @@ export function CustomizeStep({
                                 color={palette.accent}
                                 selected={look.palette === palette.id}
                                 onPress={() => {
-                                    appHaptics.selection();
                                     // A color keeps the mode on show, even one the demo switched to.
-                                    if (look.palette !== palette.id)
-                                        pick({ ...look, palette: palette.id }, swatchAt(palette.id));
-                                    else setPicked(true);
+                                    pick((current) => ({ ...current, palette: palette.id }), swatchAt(palette.id));
                                 }}
                             />
                         ))}
@@ -107,8 +103,7 @@ export function CustomizeStep({
                     <View style={[styles.divider, { backgroundColor: colors.track }]} />
                     <CustomizeModeButton
                         onPress={() => {
-                            appHaptics.themeMode();
-                            pick({ ...look, dark: !look.dark }, MODE_AT);
+                            pick((current) => ({ ...current, dark: !current.dark }), MODE_AT);
                         }}
                     />
                 </Animated.View>

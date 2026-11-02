@@ -32,7 +32,7 @@ function Swatch({
     onPress: (origin: ThemeTransitionOrigin) => void;
 }) {
     const { colors } = useEarningsTheme();
-    const sink = usePressSink();
+    const sink = usePressSink({ haptic: false });
 
     return (
         <Pressable

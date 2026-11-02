@@ -8,13 +8,8 @@ import { LargeTitleScrollView } from "@/components/large-title-scroll-view";
 import { TryAgainButton } from "@/components/try-again-button";
 import { AccentColorPicker } from "@/features/appearance/accent-color-picker";
 import { AppearanceSelector } from "@/features/appearance/appearance-selector";
-import type { Appearance, PaletteId, ThemeMode } from "@/features/appearance/palettes";
 import { useAppearanceStore } from "@/features/appearance/store";
-import {
-    runInterfaceTransition,
-    type ThemeTransitionOrigin,
-    useReduceMotion,
-} from "@/features/appearance/theme-transition";
+import { useAppearanceChange } from "@/features/appearance/use-appearance-change";
 import { CurrencyRow } from "@/features/currency/currency-selector";
 import { MainCurrencySheet } from "@/features/currency/main-currency-sheet";
 import { useDeveloperStore } from "@/features/developer/store";
@@ -48,51 +43,16 @@ function tapTitle() {
 export default function SettingsScreen() {
     const insets = useSafeAreaInsets();
     const { t } = useI18n();
-    const { appearance, saving, loading, loadError, update, load } = useAppearanceStore();
+    const { appearance, loading, loadError, load } = useAppearanceStore();
     const language = useLanguageSetting();
-    const reduceMotion = useReduceMotion();
-    const [saveError, setSaveError] = useState(false);
+    const { saveError, changeMode, changePalette } = useAppearanceChange();
     const [currencyOpen, setCurrencyOpen] = useState(false);
     const widgetsVisible = useWidgetsRowVisible();
-    const disabled = saving || loading || loadError;
+    const disabled = loading || loadError;
 
     useEffect(() => {
         void useDeveloperStore.getState().load();
     }, []);
-
-    const change = async (value: Partial<Appearance>) => {
-        setSaveError(false);
-        try {
-            await update(value);
-        } catch {
-            setSaveError(true);
-        }
-    };
-
-    const changeMode = (mode: ThemeMode, origin: ThemeTransitionOrigin) => {
-        if (mode === appearance.mode) return;
-        appHaptics.themeMode();
-        runInterfaceTransition(
-            () => {
-                void change({ mode });
-            },
-            origin,
-            reduceMotion,
-        );
-    };
-
-    const changePalette = (palette: PaletteId, origin: ThemeTransitionOrigin) => {
-        if (palette === appearance.palette) return;
-        appHaptics.selection();
-        runInterfaceTransition(
-            () => {
-                void change({ palette });
-            },
-            origin,
-            reduceMotion,
-            { durationMs: 1000 },
-        );
-    };
 
     return (
         <View className="flex-1 items-center bg-canvas">
