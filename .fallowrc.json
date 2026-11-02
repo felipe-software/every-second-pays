@@ -1,0 +1,16 @@
+{
+    "$schema": "./node_modules/fallow/schema.json",
+    "entry": [
+        "src/tests/**/*.test.js",
+        "goldie/bin/*.mjs",
+        "goldie/goldie.config.ts",
+        "fingerprint.config.js",
+        "modules/noti/scripts/*",
+        "scripts/onboarding-lottie/service-bell.mjs",
+        "oxlint.config.mts",
+        "tools/oxlint/legacy-check.mts",
+        "tools/oxlint/sync-anti-slop.mts"
+    ],
+    "ignoreDependencies": ["@oxlint/plugins", "expo-modules-core", "expo-system-ui"],
+    "ignorePatterns": ["scripts/jelly-bench/**", "tools/oxlint/anti-slop/**", "tools/oxlint/comment-policy/**"]
+}

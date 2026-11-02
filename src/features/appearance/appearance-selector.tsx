@@ -61,11 +61,14 @@ function AppearancePreview({
                 depth={4}
                 radius={16}
                 selected={active}
-                // No ripple: redrawing it during the theme render delays the reveal by about 250 ms on low-end Android.
+                // No ripple: redrawing it during the theme render delays the reveal ~250 ms on low-end Android.
                 pressed={sink.pressed}
                 className="h-[108px]"
             >
-                <View className="flex-1 overflow-hidden rounded-[15px] border-[3px] p-[7px]" style={{ borderColor: border }}>
+                <View
+                    className="flex-1 overflow-hidden rounded-[15px] border-[3px] p-[7px]"
+                    style={{ borderColor: border }}
+                >
                     {followsDevice ? (
                         <View
                             pointerEvents="none"
@@ -94,11 +97,17 @@ function AppearancePreview({
                     <View className="mt-2 gap-1">
                         <View
                             className="h-[15px] rounded-[6px]"
-                            style={{ backgroundColor: followsDevice ? preview.accent : preview.row, opacity: followsDevice ? 0.28 : 1 }}
+                            style={{
+                                backgroundColor: followsDevice ? preview.accent : preview.row,
+                                opacity: followsDevice ? 0.28 : 1,
+                            }}
                         />
                         <View
                             className="h-[15px] rounded-[6px]"
-                            style={{ backgroundColor: followsDevice ? preview.accent : preview.active, opacity: followsDevice ? 0.5 : 1 }}
+                            style={{
+                                backgroundColor: followsDevice ? preview.accent : preview.active,
+                                opacity: followsDevice ? 0.5 : 1,
+                            }}
                         />
                     </View>
                     <View

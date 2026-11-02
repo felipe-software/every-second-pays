@@ -39,7 +39,7 @@ function pick<T extends string>(value: unknown, allowed: readonly T[], fallback:
 }
 
 export function parseWidgetConfig(value: unknown): MoneyWidgetConfig {
-    const data = value && typeof value === "object" ? value as Partial<MoneyWidgetConfig> : {};
+    const data: Partial<MoneyWidgetConfig> = value && typeof value === "object" ? value : {};
     return {
         template: pick(data.template, TEMPLATES, DEFAULT_WIDGET_CONFIG.template),
         effect: pick(data.effect, EFFECTS, DEFAULT_WIDGET_CONFIG.effect),

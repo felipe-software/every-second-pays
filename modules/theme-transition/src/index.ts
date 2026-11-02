@@ -1,2 +1,2 @@
 export { ThemeTransitionBoundary } from "./boundary";
-export { flushLookBurst, revealChange, shownLook, transitionLook, type ThemeTransitionOrigin } from "./transition";
+export { createLookTransition, flushLookBurst, revealChange, type ThemeTransitionOrigin } from "./transition";

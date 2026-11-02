@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 
-// Every screen paints its own canvas; a themed color here would rebuild the navigator on each theme change.
+// Screens paint their own canvas; a themed color here would rebuild the navigator on theme change.
 const SCREEN_OPTIONS = {
     headerShown: false,
     animation: "slide_from_right",

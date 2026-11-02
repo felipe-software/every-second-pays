@@ -6,16 +6,22 @@ export const PALETTES = [
     { id: "lavender", name: "Lavender", accent: "#A38ADE" },
 ] as const;
 
-export type PaletteId = typeof PALETTES[number]["id"];
+export type PaletteId = (typeof PALETTES)[number]["id"];
 export type ThemeMode = "system" | "light" | "dark";
 export type Appearance = { mode: ThemeMode; palette: PaletteId };
 export const DEFAULT_APPEARANCE: Appearance = { mode: "system", palette: "green" };
 
+function isPaletteId(value: unknown): value is PaletteId {
+    return PALETTES.some((palette) => palette.id === value);
+}
+
 export function parseAppearance(value: unknown): Appearance {
-    const data = value && typeof value === "object" ? value as Partial<Appearance> : {};
+    const data = value && typeof value === "object" ? value : {};
+    const mode = "mode" in data ? data.mode : undefined;
+    const palette = "palette" in data ? data.palette : undefined;
     return {
-        mode: data.mode === "light" || data.mode === "dark" ? data.mode : "system",
-        palette: PALETTES.some((palette) => palette.id === data.palette) ? data.palette! : "green",
+        mode: mode === "light" || mode === "dark" ? mode : "system",
+        palette: isPaletteId(palette) ? palette : "green",
     };
 }
 

@@ -12,8 +12,7 @@ type ThemeTransitionNative = {
 
 type RevealOptions = { durationMs?: number; frameKey?: string };
 
-type LookChange<T> = {
-    look: T;
+type LookFlip = {
     from: string;
     to: string;
     apply: () => void;
@@ -22,7 +21,9 @@ type LookChange<T> = {
     durationMs?: number;
 };
 
-type Burst = { look: unknown; live: string; shown: string; apply: () => void; finalizing: string | null };
+type LookChange<T> = LookFlip & { look: T };
+
+type Burst = { live: string; shown: string; apply: () => void; finalizing: string | null };
 
 const NATIVE = requireOptionalNativeModule<ThemeTransitionNative>("ThemeTransition");
 
@@ -68,9 +69,13 @@ function reveal(apply: () => void, origin: ThemeTransitionOrigin | undefined, op
     apply();
 }
 
-function settleBurst() {
+function clearQuietTimer() {
     if (quietTimer) clearTimeout(quietTimer);
     quietTimer = null;
+}
+
+function settleBurst() {
+    clearQuietTimer();
     if (!burst) return;
     if (burst.shown === burst.live) {
         NATIVE?.endBurst(0, COVER_FADE_MS);
@@ -84,10 +89,6 @@ function settleBurst() {
 
 export function flushLookBurst() {
     settleBurst();
-}
-
-export function shownLook<T>(committed: T): T {
-    return burst ? (burst.look as T) : committed;
 }
 
 // Runs inside the boundary's getSnapshotBeforeUpdate: rendered, but not yet committed.
@@ -122,7 +123,13 @@ export function revealChange(
     reveal(apply, origin, options);
 }
 
-export function transitionLook<T>({ look, from, to, apply, origin, reduceMotion, durationMs = REVEAL_DURATION_MS }: LookChange<T>) {
+function extendBurst(from: string, to: string, apply: () => void, quietMs: number) {
+    burst = { live: burst?.live ?? from, shown: to, apply, finalizing: burst?.finalizing ?? null };
+    clearQuietTimer();
+    quietTimer = setTimeout(settleBurst, quietMs);
+}
+
+function flipLook({ from, to, apply, origin, reduceMotion, durationMs = REVEAL_DURATION_MS }: LookFlip) {
     if (reduceMotion || !scheduleCommit || !NATIVE) {
         settleBurst();
         apply();
@@ -134,14 +141,22 @@ export function transitionLook<T>({ look, from, to, apply, origin, reduceMotion,
     keepFrames(Math.max(FRAME_LIFETIME_MS, durationMs + QUIET_AFTER_REVEAL_MS * 2));
 
     if (NATIVE.flip(shown, to, originX(origin), originY(origin), durationMs)) {
-        burst = { look, live: burst?.live ?? from, shown: to, apply, finalizing: burst?.finalizing ?? null };
-        if (quietTimer) clearTimeout(quietTimer);
-        quietTimer = setTimeout(settleBurst, durationMs + QUIET_AFTER_REVEAL_MS);
+        extendBurst(from, to, apply, durationMs + QUIET_AFTER_REVEAL_MS);
         return;
     }
 
-    if (quietTimer) clearTimeout(quietTimer);
-    quietTimer = null;
+    clearQuietTimer();
     burst = null;
     reveal(apply, origin, { durationMs, frameKey: shown });
+}
+
+export function createLookTransition<T>() {
+    let flipped: { look: T } | null = null;
+    return {
+        shownLook: (committed: T) => (burst && flipped ? flipped.look : committed),
+        transitionLook: ({ look, ...flip }: LookChange<T>) => {
+            flipped = { look };
+            flipLook(flip);
+        },
+    };
 }

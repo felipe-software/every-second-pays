@@ -16,7 +16,9 @@ mock.module("expo-sqlite", () => ({
         },
         runAsync: async (sql, ...params) => {
             if (holdAppearanceWrite && sql.includes("app_preferences")) {
-                await new Promise((resolve) => { releaseAppearanceWrite = resolve; });
+                await new Promise((resolve) => {
+                    releaseAppearanceWrite = resolve;
+                });
             }
             if (failWrite) throw new Error("write failed");
             const result = sqlite.query(sql).run(...params);
@@ -34,14 +36,16 @@ const draft = {
     days: [1, 2, 3, 4, 5],
     shifts: [{ start: 540, end: 1020 }],
 };
-const resetMemory = () => store.setState({ sources: [], ready: false, loading: false, saving: false, loadError: false });
-const resetAppearance = () => appearanceStore.setState({
-    appearance: { mode: "system", palette: "green" },
-    hydrated: false,
-    loading: false,
-    saving: false,
-    loadError: false,
-});
+const resetMemory = () =>
+    store.setState({ sources: [], ready: false, loading: false, saving: false, loadError: false });
+const resetAppearance = () =>
+    appearanceStore.setState({
+        appearance: { mode: "system", palette: "green" },
+        hydrated: false,
+        loading: false,
+        saving: false,
+        loadError: false,
+    });
 
 beforeEach(async () => {
     failRead = false;

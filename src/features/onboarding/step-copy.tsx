@@ -7,10 +7,6 @@ import { rise, wordIn } from "./motion";
 
 const WORD_STAGGER = 60;
 
-/**
- * A page's title and line: the title tips in word by word, then the line rises under it.
- * `top` is where the copy starts on the design artboard.
- */
 export function StepCopy({
     top,
     title,
@@ -42,9 +38,7 @@ export function StepCopy({
                     </Animated.Text>
                 ))}
             </View>
-            <Animated.Text style={[styles.body, { color: colors.muted }, rise(bodyDelay, 14)]}>
-                {body}
-            </Animated.Text>
+            <Animated.Text style={[styles.body, { color: colors.muted }, rise(bodyDelay, 14)]}>{body}</Animated.Text>
             {children}
         </View>
     );

@@ -8,7 +8,7 @@ import { useI18n } from "@/features/i18n/i18n";
 import { ONBOARDING_ART } from "./art/sources";
 import { StepArt } from "./art/step-art";
 import { BELL_HAPTICS } from "./bell-haptics";
-import type { BellCue } from "./bell-timeline";
+import { BELL_CUES, type BellCue } from "./bell-timeline";
 import { useOnboardingTheme } from "./look";
 import { rise } from "./motion";
 import { DEPTH, PageLayer } from "./pager";
@@ -21,6 +21,10 @@ const SCENES: Record<NotificationAnswer, { intro: string; loop?: string; cues: r
     allowed: { intro: "allowed", cues: ["allowed"] },
     declined: { intro: "declined", cues: ["declined"] },
 };
+
+function isBellCue(name: string): name is BellCue {
+    return name in BELL_CUES;
+}
 
 export function NotificationsStep({
     index,
@@ -38,10 +42,7 @@ export function NotificationsStep({
     const art = ONBOARDING_ART.notifications();
     const scene = SCENES[answer];
     // Only this scene's: answering jumps the timeline forward, past the moments of the others.
-    const cues = useMemo(
-        () => art.cues.filter((cue) => (scene.cues as readonly string[]).includes(cue.name)),
-        [art, scene],
-    );
+    const cues = useMemo(() => art.cues.filter((cue) => scene.cues.some((name) => name === cue.name)), [art, scene]);
 
     const haptics: Record<BellCue, ReturnType<typeof useScoreHaptic>> = {
         enter: useScoreHaptic(BELL_HAPTICS.enter),
@@ -53,6 +54,7 @@ export function NotificationsStep({
     const stopHaptics = useEffectEvent(() => Object.values(haptics).forEach((haptic) => haptic.stop()));
     useEffect(() => {
         if (playing) return () => stopHaptics();
+        return undefined;
     }, [answer, playing]);
 
     return (
@@ -67,7 +69,7 @@ export function NotificationsStep({
                     replay={answer === "ask" ? 0 : 1}
                     cues={cues}
                     onCue={(name, late) => {
-                        if (playing) haptics[name as BellCue].play(late);
+                        if (playing && isBellCue(name)) haptics[name].play(late);
                     }}
                 />
                 <View

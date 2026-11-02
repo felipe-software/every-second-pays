@@ -30,21 +30,53 @@ const CLEAR_PATH = "M6 6l12 12M18 6 6 18";
 const PICK_SETTLE_MS = 220;
 
 type Row = { currency: Currency; name: string; detail: string };
+type Translate = ReturnType<typeof useI18n>["t"];
 
 const sortedRows = new Map<string, Row[]>();
 
 function allRows(locale: string) {
     let rows = sortedRows.get(locale);
     if (!rows) {
-        rows = CURRENCIES
-            .map(({ code }) => ({ currency: code, name: currencyName(code, locale), detail: code }))
-            .sort((a, b) => a.name.localeCompare(b.name, locale));
+        rows = CURRENCIES.map(({ code }) => ({ currency: code, name: currencyName(code, locale), detail: code }));
+        rows.sort((a, b) => a.name.localeCompare(b.name, locale));
         sortedRows.set(locale, rows);
     }
     return rows;
 }
 
-function CurrencyRows({ label, rows, selected, onPick }: { label: string; rows: Row[]; selected: Currency; onPick: (currency: Currency) => void }) {
+function suggestionRows(region: Currency, value: Currency, locale: string, t: Translate) {
+    const suggestedCodes = [...new Set<Currency>([region, value])].filter(isCurrencyCode);
+    const suggested: Row[] = suggestedCodes.map((currency) => ({
+        currency,
+        name: currencyName(currency, locale),
+        detail: currency === region ? t("currency.yourRegion", { code: currency }) : currency,
+    }));
+    const popular: Row[] = POPULAR_CURRENCIES.filter((code) => !suggestedCodes.includes(code)).map((code) => ({
+        currency: code,
+        name: currencyName(code, locale),
+        detail: code,
+    }));
+    return { suggested, popular };
+}
+
+function searchRows(search: string, locale: string) {
+    if (!search) return [];
+    return allRows(locale).filter(
+        (row) => row.name.toLocaleLowerCase(locale).includes(search) || row.currency.toLowerCase().includes(search),
+    );
+}
+
+function CurrencyRows({
+    label,
+    rows,
+    selected,
+    onPick,
+}: {
+    label: string;
+    rows: Row[];
+    selected: Currency;
+    onPick: (currency: Currency) => void;
+}) {
     const { colors } = useEarningsTheme();
     return (
         <View accessibilityRole="radiogroup" accessibilityLabel={label}>
@@ -62,8 +94,12 @@ function CurrencyRows({ label, rows, selected, onPick }: { label: string; rows: 
                             minHeight={60}
                         >
                             <View className="min-w-0 flex-1 gap-0.5">
-                                <Text numberOfLines={1} className="font-sans text-[15.5px] font-medium text-ink">{row.name}</Text>
-                                <Text numberOfLines={1} className="font-sans text-[12.5px] text-muted">{row.detail}</Text>
+                                <Text numberOfLines={1} className="font-sans text-[15.5px] font-medium text-ink">
+                                    {row.name}
+                                </Text>
+                                <Text numberOfLines={1} className="font-sans text-[12.5px] text-muted">
+                                    {row.detail}
+                                </Text>
                             </View>
                             <View className="h-5 w-5 items-center justify-center">
                                 <PopIn visible={checked}>
@@ -113,7 +149,10 @@ function CustomSymbol({ value, onPick }: { value: Currency; onPick: (currency: C
                     </View>
                 }
             />
-            <Text accessibilityLiveRegion="polite" className="mt-2 px-1 font-sans text-[12.5px] leading-[18px] text-muted">
+            <Text
+                accessibilityLiveRegion="polite"
+                className="mt-2 px-1 font-sans text-[12.5px] leading-[18px] text-muted"
+            >
                 {typed && isCurrencyCode(typed)
                     ? t("currency.recognized", { name: currencyName(typed, locale) })
                     : t("currency.customHint")}
@@ -144,29 +183,44 @@ export function CurrencySheet({
     const { t, locale } = useI18n();
     const sheetRef = useRef<TrueSheet>(null);
     const [query, setQuery] = useState("");
-    const dismiss = () => void sheetRef.current?.dismiss().catch(() => undefined);
+    const dismiss = () => {
+        void sheetRef.current?.dismiss().catch(() => undefined);
+    };
 
-    const region = regionCurrency();
-    const suggestedCodes = [...new Set<Currency>([region, value])].filter(isCurrencyCode);
-    const suggested: Row[] = suggestedCodes.map((currency) => ({
-        currency,
-        name: currencyName(currency, locale),
-        detail: currency === region ? t("currency.yourRegion", { code: currency }) : currency,
-    }));
-    const popular: Row[] = POPULAR_CURRENCIES
-        .filter((code) => !suggestedCodes.includes(code))
-        .map((code) => ({ currency: code, name: currencyName(code, locale), detail: code }));
+    const { suggested, popular } = suggestionRows(regionCurrency(), value, locale, t);
 
     const search = query.trim().toLocaleLowerCase(locale);
-    const results = search
-        ? allRows(locale).filter((row) => row.name.toLocaleLowerCase(locale).includes(search) || row.currency.toLowerCase().includes(search))
-        : [];
+    const results = searchRows(search, locale);
 
     const pick = (currency: Currency) => {
         if (disabled) return;
         appHaptics.selection();
         if (currency !== value) onChange(currency);
         setTimeout(dismiss, PICK_SETTLE_MS);
+    };
+
+    const renderSearchContent = () => {
+        if (results.length) {
+            return (
+                <>
+                    <Heading first>{t("currency.results")}</Heading>
+                    <CurrencyRows
+                        label={t("currency.resultsAccessibility")}
+                        rows={results}
+                        selected={value}
+                        onPick={pick}
+                    />
+                </>
+            );
+        }
+        return (
+            <Text
+                accessibilityLiveRegion="polite"
+                className="mx-3 mt-9 text-center font-sans text-[14px] leading-5 text-muted"
+            >
+                {t("currency.noResults", { query: query.trim() })}
+            </Text>
+        );
     };
 
     return (
@@ -187,18 +241,20 @@ export function CurrencySheet({
                     returnKeyType="search"
                     placeholder={t("currency.searchPlaceholder")}
                     leading={<LineIcon d={SEARCH_PATH} color={colors.muted} size={18} strokeWidth={2} />}
-                    trailing={query ? (
-                        <Pressable
-                            accessibilityRole="button"
-                            accessibilityLabel={t("currency.clearSearch")}
-                            onPress={() => setQuery("")}
-                            hitSlop={4}
-                            android_ripple={rippleConfig(colors.ink, 18)}
-                            className="h-9 w-9 items-center justify-center rounded-full"
-                        >
-                            <LineIcon d={CLEAR_PATH} color={colors.muted} size={14} strokeWidth={2.6} />
-                        </Pressable>
-                    ) : undefined}
+                    trailing={
+                        query ? (
+                            <Pressable
+                                accessibilityRole="button"
+                                accessibilityLabel={t("currency.clearSearch")}
+                                onPress={() => setQuery("")}
+                                hitSlop={4}
+                                android_ripple={rippleConfig(colors.ink, 18)}
+                                className="h-9 w-9 items-center justify-center rounded-full"
+                            >
+                                <LineIcon d={CLEAR_PATH} color={colors.muted} size={14} strokeWidth={2.6} />
+                            </Pressable>
+                        ) : undefined
+                    }
                 />
             }
         >
@@ -212,16 +268,7 @@ export function CurrencySheet({
             >
                 {notice}
                 {search ? (
-                    results.length ? (
-                        <>
-                            <Heading first>{t("currency.results")}</Heading>
-                            <CurrencyRows label={t("currency.resultsAccessibility")} rows={results} selected={value} onPick={pick} />
-                        </>
-                    ) : (
-                        <Text accessibilityLiveRegion="polite" className="mx-3 mt-9 text-center font-sans text-[14px] leading-5 text-muted">
-                            {t("currency.noResults", { query: query.trim() })}
-                        </Text>
-                    )
+                    renderSearchContent()
                 ) : (
                     <>
                         <CustomSymbol value={value} onPick={pick} />

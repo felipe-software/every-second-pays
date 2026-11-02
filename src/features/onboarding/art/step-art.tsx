@@ -19,7 +19,6 @@ import { useOnboardingTheme } from "../look";
 import { afterFramesSettle, primeArt } from "./prime";
 import { type Cue, type OnboardingAnimation, onboardingSkottie } from "./skottie";
 
-/** The frame rate every onboarding animation is exported at. */
 export const FPS = 60;
 
 function runTo(from: number, to: number) {
@@ -27,20 +26,24 @@ function runTo(from: number, to: number) {
     return withTiming(to, { duration: ((to - from) * 1000) / FPS, easing: Easing.linear });
 }
 
-/** The text variants the illustrations take: the reader's language and decimal separator. */
 export function useArtVariants() {
     const { language, decimalSeparator } = useI18n();
-    return useMemo(() => ({ lang: language, decimal: decimalSeparator === "," ? "," : "." }), [language, decimalSeparator]);
+    return useMemo(
+        () => ({ lang: language, decimal: decimalSeparator === "," ? "," : "." }),
+        [language, decimalSeparator],
+    );
 }
 
-function useCueReaction(
-    frame: SharedValue<number>,
-    cues: Cue[] | undefined,
-    onCue: ((name: string, late: number) => void) | undefined,
-    reduced: boolean,
-    loopStart: number,
-    loopEnd: number,
-) {
+type CueReactionOptions = {
+    frame: SharedValue<number>;
+    cues: Cue[] | undefined;
+    onCue: ((name: string, late: number) => void) | undefined;
+    reduced: boolean;
+    loopStart: number;
+    loopEnd: number;
+};
+
+function useCueReaction({ frame, cues, onCue, reduced, loopStart, loopEnd }: CueReactionOptions) {
     // Both threads' `performance.now()` read the same clock.
     const cueCrossed = (name: string, crossedAt: number) => onCue?.(name, performance.now() - crossedAt);
     useAnimatedReaction(
@@ -48,8 +51,7 @@ function useCueReaction(
         (current, previous) => {
             if (!cues || !onCue || previous == null || reduced) return;
             const now = performance.now();
-            // The loop jumping back to its start runs on from there, so cues past `previous`
-            // to the loop's end and from its start up to `current` have both been crossed.
+            // A wrap crosses cues from `previous` to the loop's end and from its start to `current`.
             const wrapped = current < previous;
             for (const cue of cues) {
                 const beforeWrap = wrapped && cue.frame > previous;
@@ -64,12 +66,6 @@ function useCueReaction(
     );
 }
 
-/**
- * A step's illustration, drawn by Skia's Skottie from the exported design animation and laid
- * over the artboard. It plays the `intro` segment once, then repeats `loop`; it pauses while
- * `playing` is off and resumes where it stopped. Each new `replay` plays the intro again from
- * its start. With reduced motion it shows the settled frame.
- */
 export function StepArt({
     source,
     overlays,
@@ -85,7 +81,6 @@ export function StepArt({
     onReady,
 }: {
     source: OnboardingAnimation;
-    /** Animations of the same timeline drawn over `source` (the intro's total and its period). */
     overlays?: OnboardingAnimation[];
     intro: string;
     loop?: string;
@@ -93,11 +88,10 @@ export function StepArt({
     reduced: boolean;
     replay?: number;
     frame?: SharedValue<number>;
-    /** Moments to act on (haptics), by frame. */
     cues?: Cue[];
     onCue?: (name: string, late: number) => void;
     prime?: readonly number[];
-    onReady?: () => Promise<unknown> | void;
+    onReady?: () => Promise<void> | void;
 }) {
     const { artLook: look } = useOnboardingTheme();
     const variants = useArtVariants();
@@ -122,10 +116,11 @@ export function StepArt({
             void ready();
             return;
         }
-        // Primed once the screen is mounted, and played once its first draw is over.
-        afterFramesSettle(() => primeArt([animation, ...overlaid], prime ?? [], () => {
-            void ready().finally(() => afterFramesSettle(() => setPrimed(true)));
-        }));
+        const playAfterFirstDraw = () => afterFramesSettle(() => setPrimed(true));
+        const readyThenPlay = () => {
+            void ready().finally(playAfterFirstDraw);
+        };
+        afterFramesSettle(() => primeArt([animation, ...overlaid], prime ?? [], readyThenPlay));
     });
     useEffect(() => getReady(), []);
 
@@ -133,33 +128,37 @@ export function StepArt({
         if (reduced) {
             cancelAnimation(frame);
             frame.set(settled);
-            return;
+            return undefined;
         }
         if (!playing || !primed) {
             cancelAnimation(frame);
-            return;
+            return undefined;
         }
-        // Rewinding by setting the frame first wouldn't do: the set lands on the UI thread
-        // after this reads it, so the old frame would be read back.
+        // Setting the frame first wouldn't rewind: it lands on the UI thread after this read.
         const rewind = replayed.current !== replay;
         replayed.current = replay;
         const now = rewind ? introStart : frame.get();
         const repeat = loopSpan
             ? withRepeat(withSequence(withTiming(loopSpan[0], { duration: 0 }), runTo(loopSpan[0], loopSpan[1])), -1)
             : null;
-        const toEnd = rewind ? withSequence(withTiming(introStart, { duration: 0 }), runTo(now, introEnd)) : runTo(now, introEnd);
+        const toEnd = rewind
+            ? withSequence(withTiming(introStart, { duration: 0 }), runTo(now, introEnd))
+            : runTo(now, introEnd);
         if (now < introEnd) frame.set(repeat ? withSequence(toEnd, repeat) : toEnd);
-        else if (loopSpan && repeat) frame.set(now < loopSpan[1] ? withSequence(runTo(now, loopSpan[1]), repeat) : repeat);
+        else if (loopSpan && repeat)
+            frame.set(now < loopSpan[1] ? withSequence(runTo(now, loopSpan[1]), repeat) : repeat);
         return () => cancelAnimation(frame);
     }, [frame, introEnd, introStart, loopSpan, playing, primed, reduced, replay, settled]);
 
     const [loopStart, loopEnd] = loopSpan ?? [introEnd, introEnd];
-    useCueReaction(frame, cues, onCue, reduced, loopStart, loopEnd);
+    useCueReaction({ frame, cues, onCue, reduced, loopStart, loopEnd });
 
     return (
         <Canvas pointerEvents="none" style={StyleSheet.absoluteFill}>
             <Skottie animation={animation} frame={frame} />
-            {overlaid.map((overlay, index) => <Skottie key={index} animation={overlay} frame={frame} />)}
+            {overlaid.map((overlay, index) => (
+                <Skottie key={index} animation={overlay} frame={frame} />
+            ))}
         </Canvas>
     );
 }

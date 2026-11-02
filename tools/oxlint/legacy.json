@@ -1,0 +1,8 @@
+{
+    "eslint/complexity": [
+        "modules/noti/plugin/compiler.js"
+    ],
+    "typescript/no-unsafe-unary-minus": [
+        "modules/noti/plugin/compiler.js"
+    ]
+}

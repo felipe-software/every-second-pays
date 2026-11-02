@@ -1,509 +1,144 @@
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
-import { BackHandler, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, {
-    cancelAnimation,
-    type CSSTransitionProperties,
-    css,
-    cubicBezier,
-    interpolateColor,
-    type SharedValue,
-    useAnimatedStyle,
-    useReducedMotion,
-    useSharedValue,
-    withTiming,
-} from "react-native-reanimated";
-import * as SplashScreen from "expo-splash-screen";
+import { useMemo } from "react";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
+import { GestureDetector } from "react-native-gesture-handler";
+import Animated, { css, useAnimatedStyle, useReducedMotion } from "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { scheduleOnRN } from "react-native-worklets";
-import { flushLookBurst, revealChange, shownLook, transitionLook } from "theme-transition";
 
-import { PrimaryButton } from "@/components/elevated/primary-button";
-import { rippleConfig } from "@/components/elevated/ripple";
 import { useAppearanceStore } from "@/features/appearance/store";
-import { useThemeHaptics } from "@/features/appearance/theme-haptics";
-import { getEarningsColors, useEarningsTheme } from "@/features/earnings/theme";
-import { appHaptics, useOnboardingHaptics } from "@/features/haptics/haptics";
-import { useI18n } from "@/features/i18n/i18n";
+import { useEarningsTheme } from "@/features/earnings/theme";
+import { useOnboardingHaptics } from "@/features/haptics/haptics";
 
-import { onboardingSkottie } from "./art/skottie";
-import { ONBOARDING_ART } from "./art/sources";
-import { useArtVariants } from "./art/step-art";
-import { type ArtboardPoint, CustomizeStep } from "./customize-step";
-import { OnboardingHapticsContext } from "./haptics-context";
-import { IntroStep } from "./intro-step";
-import { type Look, OnboardingLookProvider, sameLook, useOnboardingTheme } from "./look";
-import { ARTBOARD, EASE_SOFT_FN, EASE_SPRING } from "./motion";
-import { notificationsAllowed, rememberNotificationsAsked, requestNotifications } from "./notification-permission";
-import { type NotificationAnswer, NotificationsStep } from "./notifications-step";
-import { OnboardingBackground, type PageId } from "./onboarding-background";
-import { PagerContext } from "./pager";
-import { PrivacyStep } from "./privacy-step";
-import { useOnboardingStore } from "./store";
-import { WidgetStep } from "./widget-step";
+import { fitArtboard } from "./artboard-fit";
+import { type Look, OnboardingLookProvider } from "./look";
+import { ARTBOARD } from "./motion";
+import { OnboardingBackground } from "./onboarding-background";
+import { OnboardingFooter } from "./onboarding-footer";
+import { LAST_PAGE, NOTIFICATIONS_PAGE, PAGE_WIDTH, PAGES } from "./onboarding-pages";
+import { OnboardingSkip } from "./onboarding-skip";
+import { OnboardingStage } from "./onboarding-stage";
+import { useIntroProgress } from "./use-intro-progress";
+import { useLookPreview } from "./use-look-preview";
+import { useNotificationAnswer } from "./use-notification-answer";
+import { REVEAL_DELAY, REVEAL_DURATION, useOnboardingExit } from "./use-onboarding-exit";
+import { useBackThroughPages, useOnboardingPager } from "./use-onboarding-pager";
+import { usePrebuiltArt } from "./use-prebuilt-art";
 
-const PAGE_WIDTH = ARTBOARD.width;
-/** A drag past this far (or flicked faster than this, in points per ms) turns the page. */
-const SWIPE_DISTANCE = 80;
-const SWIPE_VELOCITY = 0.45;
-/** How much of a drag past the first or last page still moves it. */
-const RUBBER_BAND = 0.3;
-
-const EXIT_DURATION = 700;
-/** The backdrop starts fading once the content has mostly gone, uncovering the app. */
-const REVEAL_DELAY = 380;
-const REVEAL_DURATION = 420;
-
-const EXIT = css.keyframes({
-    to: { opacity: 0, transform: [{ scale: 0.94 }] },
-});
 const REVEAL = css.keyframes({
     to: { opacity: 0 },
 });
 
-/** Live widgets need Android 12; elsewhere the step would promise something the app can't do. */
-const HAS_WIDGETS = Platform.OS === "android" && Number(Platform.Version) >= 31;
-const HAS_NOTIFICATIONS = Platform.OS === "android" && Number(Platform.Version) >= 26;
-const PAGES: PageId[] = [
-    "intro",
-    ...(HAS_WIDGETS ? (["widget"] as const) : []),
-    "privacy",
-    ...(HAS_NOTIFICATIONS ? (["notifications"] as const) : []),
-    "customize",
-];
-const LAST_PAGE = PAGES.length - 1;
-const CUSTOMIZE_PAGE = PAGES.indexOf("customize");
-const NOTIFICATIONS_PAGE = PAGES.indexOf("notifications");
-const ART_LOOK_SETTLE_MS = 600;
-
-const lookFrameKey = ({ palette, dark }: Look) => `onboarding:${palette}:${dark}`;
-
-function useSettledLook(look: Look) {
-    const [settled, setSettled] = useState(look);
-    useEffect(() => {
-        const timer = setTimeout(() => setSettled(look), ART_LOOK_SETTLE_MS);
-        return () => clearTimeout(timer);
-    }, [look]);
-    return settled;
-}
-
-function Dot({ index, position }: { index: number; position: SharedValue<number> }) {
-    const { colors } = useOnboardingTheme();
-    const style = useAnimatedStyle(() => {
-        const focus = Math.max(0, 1 - Math.abs(index - position.get()));
-        return {
-            width: 8 + 16 * focus,
-            backgroundColor: interpolateColor(focus, [0, 1], [colors.track, colors.accent]),
-        };
-    });
-    return <Animated.View style={[styles.dot, style]} />;
-}
-
-const LABEL_SWAP: CSSTransitionProperties = {
-    transitionProperty: ["opacity", "transform"],
-    transitionDuration: [300, 560],
-    transitionTimingFunction: ["ease", EASE_SPRING],
-};
-
-/** Labels trade places in the button: the outgoing one slides away as the other slides in. */
-function labelPlacement(shown: boolean, from: "above" | "below") {
-    return { opacity: shown ? 1 : 0, transform: [{ translateY: shown ? 0 : from === "above" ? -18 : 18 }] };
-}
-
-/**
- * The first-launch walkthrough, drawn over the app: what the app does, the home screen
- * widget, privacy, notifications, and picking the app's look. Swipe or tap through; it fades
- * into the app.
- */
 export function Onboarding() {
     const { isDark } = useEarningsTheme();
     const palette = useAppearanceStore((state) => state.appearance.palette);
     const updateAppearance = useAppearanceStore((state) => state.update);
     const appLook = useMemo<Look>(() => ({ palette, dark: isDark }), [palette, isDark]);
-    // A look the customization step is showing off, worn by the whole onboarding until it ends.
-    const [preview, setPreview] = useState<Look | null>(null);
-    // Uniwind reports a mode change a moment after the store, so a picked look holds the screen until it has.
-    if (preview && sameLook(preview, appLook)) setPreview(null);
-    const look = preview ?? appLook;
-    const modePicked = useRef(false);
-    const colors = getEarningsColors(look.palette, look.dark);
-    const { t } = useI18n();
     const insets = useSafeAreaInsets();
     const window = useWindowDimensions();
     const reduced = useReducedMotion();
     const playHaptic = useOnboardingHaptics();
-    const themeHaptics = useThemeHaptics();
-    const complete = useOnboardingStore((state) => state.complete);
-    const uncover = useOnboardingStore((state) => state.uncover);
-    const reveal = useOnboardingStore((state) => state.reveal);
-
-    const [step, setStep] = useState(0);
-    const [visited, setVisited] = useState(() => PAGES.map((_, index) => index === 0));
-    const settledLook = useSettledLook(appLook);
-    const artLook = step === CUSTOMIZE_PAGE ? settledLook : appLook;
-    const [skipReady, setSkipReady] = useState(false);
-    const [introDone, setIntroDone] = useState(false);
-    const [exiting, setExiting] = useState(false);
-    const [flare, setFlare] = useState({ count: 0, big: false });
-    const [introLifted, setIntroLifted] = useState(reduced);
-    const [notifications, setNotifications] = useState<NotificationAnswer>("ask");
-    const [askingSystem, setAskingSystem] = useState(false);
-
-    const position = useSharedValue(0);
-    const lagging = useSharedValue(0);
-    const backdrop = useSharedValue(0);
-    const current = useSharedValue(0);
-    const dragFrom = useSharedValue(0);
-    const pager = useMemo(() => ({ position, lagging }), [position, lagging]);
-
-    // Fit the artboard to the screen; the chrome stays clear of the system bars.
-    const scale = Math.min(window.width / ARTBOARD.width, window.height / ARTBOARD.height);
-    const offsetX = (window.width - ARTBOARD.width * scale) / 2;
-    const offsetY = (window.height - ARTBOARD.height * scale) / 2;
-    const skipTop = Math.max(34, (insets.top + 4 - offsetY) / scale);
-    const footerBottom = Math.max(28, ARTBOARD.height - (window.height - insets.bottom - 8 - offsetY) / scale);
-    const last = step === LAST_PAGE;
-    const onNotificationsPage = step === NOTIFICATIONS_PAGE;
-    const awaitingAnswer = onNotificationsPage && notifications === "ask";
-    const primaryAction = awaitingAnswer ? "allow" : last ? "start" : "continue";
-    const primaryLabel = {
-        allow: t("onboarding.notifications.allow"),
-        start: t("onboarding.getStarted"),
-        continue: t("onboarding.continue"),
-    }[primaryAction];
-
-    const settleTo = (target: number) => {
-        "worklet";
-        current.set(target);
-        position.set(withTiming(target, { duration: 780, easing: EASE_SOFT_FN }));
-        lagging.set(withTiming(target, { duration: 940, easing: EASE_SOFT_FN }));
-        backdrop.set(withTiming(target, { duration: 1500, easing: EASE_SOFT_FN }));
-    };
-
-    const visit = (...pages: number[]) => {
-        flushLookBurst();
-        setVisited((seen) =>
-            pages.some((page) => page >= 0 && page <= LAST_PAGE && !seen[page])
-                ? seen.map((value, index) => value || pages.includes(index))
-                : seen);
-    };
-
-    const go = (target: number) => {
-        const next = Math.max(0, Math.min(LAST_PAGE, target));
-        if (next === step || exiting) return;
-        visit(next);
-        setStep(next);
-        settleTo(next);
-    };
-
-    const swiped = (target: number) => {
-        visit(target);
-        setStep(target);
-        appHaptics.selection();
-    };
-
-    const exit = () => {
-        if (exiting) return;
-        flushLookBurst();
-        setExiting(true);
-        reveal();
-        uncover();
-        setTimeout(complete, REVEAL_DELAY + REVEAL_DURATION);
-    };
-
-    useEffect(() => {
-        if (!HAS_NOTIFICATIONS) return;
-        void notificationsAllowed().then((allowed) => {
-            if (allowed) setNotifications("allowed");
-        });
-    }, []);
-
-    const askForNotifications = async () => {
-        setAskingSystem(true);
-        const allowed = await requestNotifications();
-        setAskingSystem(false);
-        setNotifications(allowed ? "allowed" : "declined");
-    };
-
-    const declineNotifications = () => {
-        appHaptics.dismiss();
-        rememberNotificationsAsked();
-        setNotifications("declined");
-    };
-
-    // Looks change the way the app's theme switch does: revealed in a circle from the tap.
-    const toScreen = (at: ArtboardPoint) => ({ x: offsetX + at.x * scale, y: offsetY + at.y * scale });
-    const previewLook = (next: Look, at: ArtboardPoint) => {
-        if (sameLook(next, look)) return;
-        revealChange(() => setPreview(sameLook(next, appLook) ? null : next), toScreen(at), reduced);
-    };
-    const pickLook = (change: (current: Look) => Look, at: ArtboardPoint) => {
-        const current = shownLook(look);
-        const next = change(current);
-        if (sameLook(next, current)) return;
-        if (next.dark !== current.dark) {
-            modePicked.current = true;
-            themeHaptics.mode();
-        } else {
-            themeHaptics.palette();
-        }
-        transitionLook({
-            look: next,
-            from: lookFrameKey(look),
-            to: lookFrameKey(next),
-            apply: () => {
-                setPreview(next);
-                // Only an explicit mode change replaces "follow the system".
-                const mode = modePicked.current ? { mode: next.dark ? "dark" as const : "light" as const } : {};
-                updateAppearance({ palette: next.palette, ...mode }).catch(() => undefined);
-            },
-            origin: toScreen(at),
-            reduceMotion: reduced,
-        });
-    };
-    // Build the later steps' illustrations while the intro's promise is read, so turning a
-    // page doesn't stall on it.
-    const artVariants = useArtVariants();
-    useEffect(() => {
-        if (!introDone) return;
-        const later = PAGES.filter((page) => page === "widget" || page === "privacy" || page === "notifications");
-        const timers = later.map((page, order) => setTimeout(
-            () => onboardingSkottie(ONBOARDING_ART[page](), artLook, artVariants),
-            600 + order * 400,
-        ));
-        return () => timers.forEach(clearTimeout);
-    }, [artLook, artVariants, introDone]);
-
-    // The demo's looks were only a show: leaving the step puts the app's look back.
-    const unpreview = useEffectEvent(() => {
-        if (preview && !exiting) revealChange(() => setPreview(null), { x: window.width / 2, y: window.height / 2 }, reduced);
+    const { exiting, exit, reveal } = useOnboardingExit();
+    const { skipReady, introDone, flare, introLifted, introEvents } = useIntroProgress(reduced, reveal);
+    const fit = fitArtboard(window, insets);
+    const { scale, offsetX, offsetY } = fit;
+    const { step, visited, position, backdrop, pager, go, pan } = useOnboardingPager({ exiting, introDone, scale });
+    const { notifications, askingSystem, askForNotifications, declineNotifications } = useNotificationAnswer();
+    const { look, artLook, previewLook, pickLook } = useLookPreview({
+        appLook,
+        updateAppearance,
+        step,
+        exiting,
+        reduced,
+        window,
+        fit,
     });
-    useEffect(() => {
-        if (step !== CUSTOMIZE_PAGE) unpreview();
-    }, [step]);
-
-    // Android's back steps back through the pages, and leaves the app from the first one.
-    const back = useEffectEvent(() => {
-        if (exiting) return true;
-        if (step === 0) return false;
-        go(step - 1);
-        return true;
-    });
-    useEffect(() => {
-        const subscription = BackHandler.addEventListener("hardwareBackPress", back);
-        return () => subscription.remove();
-    }, []);
-
-    const pan = Gesture.Pan()
-        .enabled(introDone && !exiting)
-        .activeOffsetX([-10, 10])
-        .failOffsetY([-10, 10])
-        .onStart(() => {
-            cancelAnimation(position);
-            cancelAnimation(lagging);
-            cancelAnimation(backdrop);
-            dragFrom.set(position.get());
-            const page = current.get();
-            scheduleOnRN(visit, page - 1, page + 1);
-        })
-        .onUpdate((event) => {
-            let next = dragFrom.get() - event.translationX / scale / PAGE_WIDTH;
-            if (next < 0) next *= RUBBER_BAND;
-            if (next > LAST_PAGE) next = LAST_PAGE + (next - LAST_PAGE) * RUBBER_BAND;
-            position.set(next);
-            lagging.set(next);
-            backdrop.set(next);
-        })
-        .onEnd((event) => {
-            const page = current.get();
-            const dragged = (page - position.get()) * PAGE_WIDTH;
-            const velocity = event.velocityX / scale / 1000;
-            let target = page;
-            if (dragged < -SWIPE_DISTANCE || velocity < -SWIPE_VELOCITY) target += 1;
-            else if (dragged > SWIPE_DISTANCE || velocity > SWIPE_VELOCITY) target -= 1;
-            target = Math.max(0, Math.min(LAST_PAGE, target));
-            settleTo(target);
-            if (target !== page) scheduleOnRN(swiped, target);
-        });
-
+    usePrebuiltArt(artLook, introDone);
+    useBackThroughPages({ exiting, step, go });
     const trackStyle = useAnimatedStyle(() => ({
         transform: [{ translateX: -position.get() * PAGE_WIDTH }],
     }));
 
-    const renderStep = (page: PageId, index: number) => {
-        const playing = step === index && !exiting;
-        if (page === "intro") {
-            return (
-                <IntroStep
-                    index={index}
-                    playing={playing}
-                    reduced={reduced}
-                    onSkipReady={() => setSkipReady(true)}
-                    onImpact={(big) => setFlare((value) => ({ count: value.count + 1, big }))}
-                    onLift={setIntroLifted}
-                    onReplay={() => setIntroDone(false)}
-                    onDone={() => {
-                        setIntroDone(true);
-                        reveal();
-                    }}
-                    onArtReady={() => SplashScreen.hideAsync()}
-                />
-            );
-        }
-        if (page === "widget") return <WidgetStep index={index} playing={playing} reduced={reduced} />;
-        if (page === "privacy") return <PrivacyStep index={index} playing={playing} reduced={reduced} />;
-        if (page === "notifications") {
-            return <NotificationsStep index={index} playing={playing && !askingSystem} reduced={reduced} answer={notifications} />;
-        }
-        return (
-            <CustomizeStep
-                index={index}
-                playing={playing}
-                reduced={reduced}
-                board={appLook}
-                onPreview={previewLook}
-                onPick={pickLook}
-            />
-        );
-    };
-
+    const last = step === LAST_PAGE;
+    const onNotificationsPage = step === NOTIFICATIONS_PAGE;
+    const awaitingAnswer = onNotificationsPage && notifications === "ask";
     const footerShown = introDone && !exiting;
     const skipShown = skipReady && !last && !exiting && (!onNotificationsPage || awaitingAnswer);
 
     return (
         <OnboardingLookProvider look={look} artLook={artLook}>
-        <StatusBar style={look.dark ? "light" : "dark"} />
-        <Animated.View
-            pointerEvents={exiting ? "none" : "auto"}
-            style={[StyleSheet.absoluteFill, styles.overlay, exiting && {
-                animationName: REVEAL,
-                animationDuration: REVEAL_DURATION,
-                animationDelay: REVEAL_DELAY,
-                animationTimingFunction: "ease-in",
-                animationFillMode: "forwards",
-            }]}
-        >
-            <OnboardingBackground pages={PAGES} position={backdrop} flare={flare} flareLifted={introLifted} scale={scale} offsetX={offsetX} offsetY={offsetY} />
-            <GestureDetector gesture={pan}>
-                <View style={StyleSheet.absoluteFill}>
-                    <View
-                        style={[styles.artboard, {
-                            transform: [{ translateX: offsetX }, { translateY: offsetY }, { scale }],
-                        }]}
-                    >
-                        <Animated.View
-                            style={[StyleSheet.absoluteFill, styles.stage, exiting && {
-                                animationName: EXIT,
-                                animationDuration: EXIT_DURATION,
-                                animationTimingFunction: cubicBezier(0.4, 0, 0.7, 0.2),
-                                animationFillMode: "forwards",
-                            }]}
+            <StatusBar style={look.dark ? "light" : "dark"} />
+            <Animated.View
+                pointerEvents={exiting ? "none" : "auto"}
+                style={[
+                    StyleSheet.absoluteFill,
+                    styles.overlay,
+                    exiting && {
+                        animationName: REVEAL,
+                        animationDuration: REVEAL_DURATION,
+                        animationDelay: REVEAL_DELAY,
+                        animationTimingFunction: "ease-in",
+                        animationFillMode: "forwards",
+                    },
+                ]}
+            >
+                <OnboardingBackground
+                    pages={PAGES}
+                    position={backdrop}
+                    flare={flare}
+                    flareLifted={introLifted}
+                    scale={scale}
+                    offsetX={offsetX}
+                    offsetY={offsetY}
+                />
+                <GestureDetector gesture={pan}>
+                    <View style={StyleSheet.absoluteFill}>
+                        <View
+                            style={[
+                                styles.artboard,
+                                {
+                                    transform: [{ translateX: offsetX }, { translateY: offsetY }, { scale }],
+                                },
+                            ]}
                         >
-                            <OnboardingHapticsContext.Provider value={playHaptic}>
-                            <PagerContext.Provider value={pager}>
-                                <Animated.View style={[styles.track, { width: PAGE_WIDTH * PAGES.length }, trackStyle]}>
-                                    {PAGES.map((page, index) => (
-                                        <View
-                                            key={page}
-                                            accessibilityElementsHidden={index !== step}
-                                            importantForAccessibility={index === step ? "auto" : "no-hide-descendants"}
-                                            pointerEvents={index === step ? "box-none" : "none"}
-                                            style={[styles.page, { left: index * PAGE_WIDTH }]}
-                                        >
-                                            {visited[index] ? renderStep(page, index) : null}
-                                        </View>
-                                    ))}
-                                </Animated.View>
-                            </PagerContext.Provider>
-                            </OnboardingHapticsContext.Provider>
-                        </Animated.View>
-
-                        <Animated.View
-                            pointerEvents={skipShown ? "auto" : "none"}
-                            style={[styles.skip, {
-                                top: skipTop,
-                                opacity: skipShown ? 1 : 0,
-                                transform: [{ translateY: skipShown ? 0 : -6 }],
-                                transitionProperty: ["opacity", "transform"],
-                                transitionDuration: [400, 600],
-                                transitionTimingFunction: ["ease", EASE_SPRING],
-                            }]}
-                        >
-                            <Pressable
-                                testID="onboarding-skip"
-                                accessibilityRole="button"
-                                hitSlop={8}
-                                onPress={() => {
-                                    if (awaitingAnswer) {
-                                        declineNotifications();
-                                        return;
-                                    }
-                                    appHaptics.dismiss();
-                                    exit();
-                                }}
-                                android_ripple={rippleConfig(colors.ink, 28)}
-                                style={styles.skipButton}
-                            >
-                                <Text style={[styles.skipLabel, { color: colors.muted }]}>
-                                    {awaitingAnswer ? t("onboarding.notifications.notNow") : t("onboarding.skip")}
-                                </Text>
-                            </Pressable>
-                        </Animated.View>
-
-                        <Animated.View
-                            pointerEvents={footerShown ? "box-none" : "none"}
-                            style={[styles.footer, {
-                                bottom: footerBottom,
-                                opacity: footerShown ? 1 : 0,
-                                transform: [{ translateY: footerShown ? 0 : 28 }],
-                                transitionProperty: ["opacity", "transform"],
-                                transitionDuration: [500, 900],
-                                transitionTimingFunction: ["ease", EASE_SPRING],
-                            }]}
-                        >
-                            <View
-                                accessible
-                                accessibilityRole="progressbar"
-                                accessibilityLabel={t("onboarding.step", { step: step + 1, count: PAGES.length })}
-                                style={styles.dots}
-                            >
-                                {PAGES.map((page, index) => <Dot key={page} index={index} position={position} />)}
-                            </View>
-                            <PrimaryButton
-                                testID="onboarding-continue"
-                                accessibilityLabel={primaryLabel}
-                                colors={colors}
-                                style={styles.primary}
-                                onPress={() => {
-                                    if (primaryAction === "allow") {
-                                        void askForNotifications();
-                                    } else if (last) {
-                                        appHaptics.primaryAction();
-                                        exit();
-                                    } else {
-                                        go(step + 1);
-                                    }
-                                }}
-                                label={(textStyle) => (
-                                    <>
-                                        <Animated.Text style={[styles.primaryLabel, textStyle, LABEL_SWAP, labelPlacement(primaryAction === "continue", "above")]}>
-                                            {t("onboarding.continue")}
-                                        </Animated.Text>
-                                        <Animated.Text style={[styles.primaryLabel, textStyle, LABEL_SWAP, labelPlacement(primaryAction === "allow", "below")]}>
-                                            {t("onboarding.notifications.allow")}
-                                        </Animated.Text>
-                                        <Animated.Text style={[styles.primaryLabel, textStyle, LABEL_SWAP, labelPlacement(primaryAction === "start", "below")]}>
-                                            {t("onboarding.getStarted")}
-                                        </Animated.Text>
-                                    </>
-                                )}
+                            <OnboardingStage
+                                exiting={exiting}
+                                playHaptic={playHaptic}
+                                pager={pager}
+                                trackStyle={trackStyle}
+                                step={step}
+                                visited={visited}
+                                reduced={reduced}
+                                introEvents={introEvents}
+                                askingSystem={askingSystem}
+                                notifications={notifications}
+                                board={appLook}
+                                onPreview={previewLook}
+                                onPick={pickLook}
                             />
-                        </Animated.View>
+
+                            <OnboardingSkip
+                                shown={skipShown}
+                                top={fit.skipTop}
+                                awaitingAnswer={awaitingAnswer}
+                                onDecline={declineNotifications}
+                                onExit={exit}
+                            />
+
+                            <OnboardingFooter
+                                shown={footerShown}
+                                bottom={fit.footerBottom}
+                                step={step}
+                                last={last}
+                                awaitingAnswer={awaitingAnswer}
+                                position={position}
+                                onAllow={askForNotifications}
+                                onExit={exit}
+                                onGo={go}
+                            />
+                        </View>
                     </View>
-                </View>
-            </GestureDetector>
-        </Animated.View>
+                </GestureDetector>
+            </Animated.View>
         </OnboardingLookProvider>
     );
 }
@@ -519,61 +154,5 @@ const styles = StyleSheet.create({
         width: ARTBOARD.width,
         height: ARTBOARD.height,
         transformOrigin: "0% 0%",
-    },
-    stage: {
-        transformOrigin: "50% 40%",
-    },
-    track: {
-        position: "absolute",
-        left: 0,
-        top: 0,
-        bottom: 0,
-    },
-    page: {
-        position: "absolute",
-        top: 0,
-        bottom: 0,
-        width: PAGE_WIDTH,
-    },
-    skip: {
-        position: "absolute",
-        right: 12,
-        zIndex: 30,
-    },
-    skipButton: {
-        height: 44,
-        justifyContent: "center",
-        paddingHorizontal: 14,
-    },
-    skipLabel: {
-        fontFamily: "Archivo-SemiBold",
-        fontSize: 15,
-    },
-    footer: {
-        position: "absolute",
-        left: 24,
-        right: 24,
-        zIndex: 30,
-        alignItems: "center",
-    },
-    dots: {
-        flexDirection: "row",
-        gap: 6,
-        marginBottom: 22,
-    },
-    dot: {
-        height: 8,
-        borderRadius: 4,
-    },
-    primary: {
-        overflow: "hidden",
-    },
-    primaryLabel: {
-        ...StyleSheet.absoluteFill,
-        textAlign: "center",
-        textAlignVertical: "center",
-        lineHeight: 54,
-        fontFamily: "Archivo-Bold",
-        fontSize: 16,
     },
 });

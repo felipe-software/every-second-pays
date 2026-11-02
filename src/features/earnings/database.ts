@@ -1,5 +1,7 @@
 import { openDatabaseAsync, type SQLiteDatabase } from "expo-sqlite";
 
+import { parseAppearance, type Appearance } from "../appearance/palettes";
+
 import type { PaymentSource } from "./model";
 
 let database: Promise<SQLiteDatabase> | undefined;
@@ -56,12 +58,12 @@ export async function deletePaymentSource(id: number) {
     await db.runAsync("DELETE FROM payment_sources WHERE id = ?", id);
 }
 
-export async function loadAppearancePreference(): Promise<unknown> {
+export async function loadAppearancePreference(): Promise<Appearance> {
     const db = await getDatabase();
     const rows = await db.getAllAsync<{ payload: string }>(
         "SELECT payload FROM app_preferences WHERE key = 'appearance'",
     );
-    return rows.length ? JSON.parse(rows[0].payload) : undefined;
+    return parseAppearance(rows.length ? JSON.parse(rows[0].payload) : undefined);
 }
 
 export async function writeAppearancePreference(value: { mode: string; palette: string }) {
