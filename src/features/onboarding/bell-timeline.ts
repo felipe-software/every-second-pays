@@ -1,5 +1,4 @@
-// In ms. `scripts/onboarding-lottie/service-bell.mjs` builds the illustration from these and
-// `bell-haptics.ts` scores against them, so regenerate the art after changing one.
+// In ms. `service-bell.mjs` builds the art from these: regenerate it after changing one.
 export const ENTER = 700;
 export const COIN_EVERY = 3000;
 export const COIN = { hit: 420, bounce: 1020, hop: 1280, gone: 1750 };

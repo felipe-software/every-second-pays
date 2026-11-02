@@ -13,6 +13,7 @@ export const ARC_STROKE = 16;
 export const ARC_STEP = 15;
 export const MIN_SHIFT = 15;
 export const INLINE_TIME_PADDING = 5;
+export const HANDLE_RADIUS = 11;
 
 export type ArcGeometry = {
     width: number;
@@ -66,8 +67,7 @@ export function minutesAt(geometry: ArcGeometry, x: number, y: number) {
 
 export function isOnArc(geometry: ArcGeometry, x: number, y: number) {
     const distance = Math.hypot(x - geometry.centerX, y - geometry.centerY);
-    return Math.abs(distance - geometry.radius) <= ARC_STROKE
-        && Math.abs(angleAt(geometry, x, y)) <= HALF_SWEEP;
+    return Math.abs(distance - geometry.radius) <= ARC_STROKE && Math.abs(angleAt(geometry, x, y)) <= HALF_SWEEP;
 }
 
 export function arcHours(geometry: ArcGeometry) {

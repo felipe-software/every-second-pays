@@ -10,7 +10,7 @@ const SETTLE_FRAMES = 3;
 let pendingReveal: ThemeTransitionConfig | null = null;
 let scheduleCapture: (() => void) | null = null;
 
-// Captures once the change has rendered but before it commits, so press feedback stays live during the render.
+// Captures after the change renders but before it commits, so press feedback stays live.
 export class InterfaceTransitionBoundary extends Component<PropsWithChildren> {
     componentDidMount() {
         scheduleCapture = () => this.forceUpdate();
@@ -59,20 +59,20 @@ export function runInterfaceTransition(
     applyChange: () => void,
     origin: ThemeTransitionOrigin | undefined,
     reduceMotion: boolean,
-    config?: Partial<ThemeTransitionConfig>
+    config?: Partial<ThemeTransitionConfig>,
 ) {
     if (reduceMotion || !scheduleCapture) {
         applyChange();
         return;
     }
 
-    pendingReveal = {
+    const reveal: ThemeTransitionConfig = {
         kind: "circularRevealInverse",
         settleFrames: SETTLE_FRAMES,
         durationMs: REVEAL_DURATION_MS,
-        ...(origin ? { origin } : {}),
-        ...config,
     };
+    if (origin) reveal.origin = origin;
+    pendingReveal = { ...reveal, ...config };
     scheduleCapture();
     applyChange();
 }

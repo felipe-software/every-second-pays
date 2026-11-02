@@ -1,0 +1,24 @@
+{
+    "$schema": "./node_modules/oxfmt/configuration_schema.json",
+    "tabWidth": 4,
+    "printWidth": 120,
+    "ignorePatterns": [
+        "bun.lock",
+        "goldie/build/**",
+        "goldie/out/**",
+        "package.json",
+        "privacy-policy-site/**",
+        "src/patches/**",
+        "src/uniwind-types.d.ts",
+        "tools/oxlint/anti-slop/**",
+        "tools/oxlint/legacy.json"
+    ],
+    "overrides": [
+        {
+            "files": [".github/**"],
+            "options": {
+                "tabWidth": 2
+            }
+        }
+    ]
+}

@@ -1,6 +1,5 @@
 #!/bin/sh
-# Goldie only captures pixel_9_pro/pixel_10_pro AVDs, but renaming the Pixel 8 AVD's
-# profile changes its screen, so fake Goldie's profile lookup instead.
+# Goldie only captures pixel_9/10_pro AVDs; renaming Pixel 8's profile changes its screen, so fake it.
 BIN_DIR=$(cd "$(dirname "$0")" && pwd)
 REAL=$(PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -vx "$BIN_DIR" | paste -sd: -) command -v adb)
 if [ "$1" = "-s" ] && [ "$3 $4 $5" = "emu avd path" ]; then

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Platform, Text, View } from "react-native";
 import Animated, {
+    createAnimatedComponent,
     Easing,
     FadeIn,
     FadeOut,
@@ -16,7 +17,7 @@ import { useI18n } from "@/features/i18n/i18n";
 
 import { useEarningsTheme } from "./theme";
 
-const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedPath = createAnimatedComponent(Path);
 const ARROW_CURVE_LENGTH = 180;
 const ARROW_HEAD_LENGTH = 64;
 const ARROW_CURVE_DELAY = 180;
@@ -44,16 +45,26 @@ function FirstSourceArrow({ color, onPress }: { color: string; onPress: () => vo
     }));
 
     useEffect(() => {
-        curveOffset.set(withDelay(ARROW_CURVE_DELAY, withTiming(0, {
-            duration: ARROW_CURVE_DURATION,
-            easing: Easing.out(Easing.cubic),
-            reduceMotion: ReduceMotion.System,
-        })));
-        headProgress.set(withDelay(ARROW_HEAD_DELAY, withTiming(1, {
-            duration: ARROW_HEAD_DURATION,
-            easing: Easing.out(Easing.cubic),
-            reduceMotion: ReduceMotion.System,
-        })));
+        curveOffset.set(
+            withDelay(
+                ARROW_CURVE_DELAY,
+                withTiming(0, {
+                    duration: ARROW_CURVE_DURATION,
+                    easing: Easing.out(Easing.cubic),
+                    reduceMotion: ReduceMotion.System,
+                }),
+            ),
+        );
+        headProgress.set(
+            withDelay(
+                ARROW_HEAD_DELAY,
+                withTiming(1, {
+                    duration: ARROW_HEAD_DURATION,
+                    easing: Easing.out(Easing.cubic),
+                    reduceMotion: ReduceMotion.System,
+                }),
+            ),
+        );
     }, [curveOffset, headProgress]);
 
     return (
@@ -111,9 +122,7 @@ export function EmptySourcesCallout({ bottomInset }: { bottomInset: number }) {
     const { colors } = useEarningsTheme();
     const { t } = useI18n();
     const [animationKey, setAnimationKey] = useState(0);
-    const bottom = Platform.OS === "android"
-        ? Math.max(bottomInset, 20) + 80
-        : Math.max(bottomInset + 4, 12);
+    const bottom = Platform.OS === "android" ? Math.max(bottomInset, 20) + 80 : Math.max(bottomInset + 4, 12);
 
     return (
         <Animated.View
@@ -129,8 +138,7 @@ export function EmptySourcesCallout({ bottomInset }: { bottomInset: number }) {
                 key={`first-source-text-${animationKey}`}
                 className="mr-10 max-w-[250px] font-sans text-[15px] font-medium text-accent-deep"
                 style={{ transform: [{ rotate: "-4deg" }] }}
-                entering={FadeIn
-                    .delay(TEXT_ENTER_DELAY)
+                entering={FadeIn.delay(TEXT_ENTER_DELAY)
                     .duration(TEXT_ENTER_DURATION)
                     .reduceMotion(ReduceMotion.System)}
                 onPress={() => setAnimationKey((current) => current + 1)}

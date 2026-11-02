@@ -7,17 +7,13 @@ const STORAGE_KEY = "onboarding";
 const COMPLETED = "done";
 
 type OnboardingState = {
-    /** `unknown` until loaded; the app waits on it so the first frame is the right one. */
     status: "unknown" | "pending" | "done";
-    // The app underneath isn't drawn while the onboarding covers all of it.
     covering: boolean;
-    // The app's own entrance (its first-source hint) waits for the intro to end, or for an early exit.
     revealed: boolean;
     load: () => Promise<void>;
     reveal: () => void;
     uncover: () => void;
     complete: () => void;
-    /** Shows the onboarding again; for the developer controls. */
     replay: () => void;
 };
 
@@ -36,7 +32,7 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
     load: async () => {
         if (get().status !== "unknown") return;
         try {
-            if (await Storage.getItem(STORAGE_KEY) === COMPLETED) {
+            if ((await Storage.getItem(STORAGE_KEY)) === COMPLETED) {
                 set({ status: "done", revealed: true });
                 return;
             }

@@ -14,17 +14,24 @@ const RATE_URLS = [
     "https://latest.currency-api.pages.dev/v1/currencies/usd.min.json",
 ];
 
+type JsonValue = string | number | boolean | null | undefined | readonly JsonValue[] | JsonObject;
+type JsonObject = { readonly [key: string]: JsonValue };
+
+function isJsonObject(value: unknown): value is JsonObject {
+    return Boolean(value) && typeof value === "object";
+}
+
 export function parseRates(value: unknown, fetchedAt: number): ExchangeRates | undefined {
-    if (!value || typeof value !== "object") return undefined;
-    const { date, usd, perDollar } = value as { date?: unknown; usd?: unknown; perDollar?: unknown };
-    const table = (perDollar ?? usd) as Record<string, unknown> | undefined;
-    if (typeof date !== "string" || !table || typeof table !== "object") return undefined;
+    if (!isJsonObject(value)) return undefined;
+    const { date, usd, perDollar } = value;
+    const table = perDollar ?? usd;
+    if (typeof date !== "string" || !isJsonObject(table)) return undefined;
     const rates: ExchangeRates["perDollar"] = { USD: 1 };
     for (const { code } of CURRENCIES) {
         const rate = table[code] ?? table[code.toLowerCase()];
         if (typeof rate === "number" && Number.isFinite(rate) && rate > 0) rates[code] = rate;
     }
-    const cachedAt = (value as { fetchedAt?: unknown }).fetchedAt;
+    const cachedAt = value.fetchedAt;
     return { date, fetchedAt: typeof cachedAt === "number" ? cachedAt : fetchedAt, perDollar: rates };
 }
 
@@ -61,11 +68,7 @@ export function convertible(from: Currency, to: Currency) {
     return from !== to && isCurrencyCode(from) && isCurrencyCode(to);
 }
 
-export function toMainCurrency(
-    sources: readonly PaymentSource[],
-    main: Currency,
-    rates: ExchangeRates | undefined,
-) {
+export function toMainCurrency(sources: readonly PaymentSource[], main: Currency, rates: ExchangeRates | undefined) {
     const converted: PaymentSource[] = [];
     const unconverted: PaymentSource[] = [];
     for (const source of sources) {

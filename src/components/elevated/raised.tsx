@@ -1,5 +1,12 @@
 import type { ReactNode, RefObject } from "react";
-import { type GestureResponderEvent, Pressable, type PressableProps, type StyleProp, View, type ViewStyle } from "react-native";
+import {
+    type GestureResponderEvent,
+    Pressable,
+    type PressableProps,
+    type StyleProp,
+    View,
+    type ViewStyle,
+} from "react-native";
 import Animated, {
     Easing,
     ReduceMotion,
@@ -48,7 +55,7 @@ const EDGE_TOKENS = {
 export type RaisedDepth = 2 | 3 | 4;
 
 type RaisedProps = {
-    /** Faces must be opaque: the edge sits right behind them. */
+    // Faces must be opaque: the edge sits right behind them.
     surface: RaisedTone | { face: string; edge: string; outline?: string };
     depth?: RaisedDepth;
     flat?: boolean;
@@ -61,6 +68,11 @@ type RaisedProps = {
     style?: StyleProp<ViewStyle>;
     children?: ReactNode;
 };
+
+function getOutline(surface: RaisedProps["surface"], edge: string, cardOutline: string) {
+    if (typeof surface !== "string") return surface.outline ?? edge;
+    return surface === "card" ? cardOutline : edge;
+}
 
 export function Raised({
     surface,
@@ -78,9 +90,7 @@ export function Raised({
     const { colors } = useEarningsTheme();
     const face = typeof surface === "string" ? colors[FACE_TOKENS[surface]] : surface.face;
     const edge = typeof surface === "string" ? colors[EDGE_TOKENS[surface]] : surface.edge;
-    const outline = typeof surface === "string"
-        ? surface === "card" ? colors.cardOutline : edge
-        : surface.outline ?? edge;
+    const outline = getOutline(surface, edge, colors.cardOutline);
     const squashStyle = useSquash(selected, squashKey);
     const sinkStyle = useAnimatedStyle(() => ({
         transform: [{ translateY: flat ? 0 : (pressed?.get() ?? 0) * depth }],
@@ -126,11 +136,14 @@ export function Raised({
 export function usePressSink() {
     const pressed = useSharedValue(0);
     const { overlay, show, hide } = useRippleOverlay();
-    const sink = (value: number) => pressed.set(withTiming(value, {
-        duration: PRESS_DURATION,
-        easing: Easing.out(Easing.quad),
-        reduceMotion: ReduceMotion.System,
-    }));
+    const sink = (value: number) =>
+        pressed.set(
+            withTiming(value, {
+                duration: PRESS_DURATION,
+                easing: Easing.out(Easing.quad),
+                reduceMotion: ReduceMotion.System,
+            }),
+        );
     const onPressIn = (event?: GestureResponderEvent) => {
         appHaptics.press();
         sink(1);
@@ -158,10 +171,11 @@ export function RaisedPressable({
     onPressIn,
     onPressOut,
     ...pressableProps
-}: Omit<RaisedProps, "pressed" | "ripple"> & Omit<PressableProps, "style" | "children"> & {
-    containerClassName?: string;
-    containerStyle?: StyleProp<ViewStyle>;
-}) {
+}: Omit<RaisedProps, "pressed" | "ripple"> &
+    Omit<PressableProps, "style" | "children"> & {
+        containerClassName?: string;
+        containerStyle?: StyleProp<ViewStyle>;
+    }) {
     const sink = usePressSink();
 
     return (

@@ -6,8 +6,7 @@ import {
     ratePerSecond,
 } from "@/features/earnings/model";
 
-/** `[time in ms, total in cents at that time, cents per millisecond after it]` */
-export type Breakpoint = [number, number, number];
+export type Breakpoint = [timeMs: number, totalCents: number, centsPerMsAfter: number];
 
 const DAY_MINUTES = 1440;
 
@@ -26,21 +25,37 @@ function changeInstants(sources: readonly PaymentSource[], from: Date, until: nu
         const midnight = new Date(from.getFullYear(), from.getMonth(), from.getDate() + day);
         if (midnight.getTime() > until) break;
         for (const minute of minutes) {
-            const instant = new Date(midnight.getFullYear(), midnight.getMonth(), midnight.getDate(), 0, minute).getTime();
+            const instant = new Date(
+                midnight.getFullYear(),
+                midnight.getMonth(),
+                midnight.getDate(),
+                0,
+                minute,
+            ).getTime();
             if (instant > from.getTime() && instant <= until) instants.add(instant);
         }
     }
-    return [...instants].sort((a, b) => a - b);
+    const sorted = [...instants];
+    sorted.sort((a, b) => a - b);
+    return sorted;
 }
 
-// After the last breakpoint the rate is 0, so a widget left past the horizon stops counting instead of guessing.
-export function buildEarningsSchedule(
-    sources: readonly PaymentSource[],
-    period: EarningsPeriod,
-    now: Date,
-    firstDayOfWeek: number,
+type EarningsScheduleOptions = {
+    sources: readonly PaymentSource[];
+    period: EarningsPeriod;
+    now: Date;
+    firstDayOfWeek: number;
+    horizonMs?: number;
+};
+
+// After the last breakpoint the rate is 0, so a widget past the horizon stops instead of guessing.
+export function buildEarningsSchedule({
+    sources,
+    period,
+    now,
+    firstDayOfWeek,
     horizonMs = 21 * 86_400_000,
-): Breakpoint[] {
+}: EarningsScheduleOptions): Breakpoint[] {
     // The model counts whole seconds, so start on one.
     const start = new Date(Math.floor(now.getTime() / 1000) * 1000);
     const instants = changeInstants(sources, start, start.getTime() + horizonMs);
@@ -49,20 +64,23 @@ export function buildEarningsSchedule(
         const at = new Date(time);
         const total = sources.reduce((sum, source) => sum + earnedInPeriod(source, period, at, firstDayOfWeek), 0);
         const last = index === instants.length - 1;
-        const rate = last ? 0 : sources.reduce(
-            (sum, source) => sum + (currentShift(source, at) ? ratePerSecond(source, at) : 0),
-            0,
-        );
+        const rate = last
+            ? 0
+            : sources.reduce((sum, source) => sum + (currentShift(source, at) ? ratePerSecond(source, at) : 0), 0);
         const point: Breakpoint = [time, total * 100, (rate * 100) / 1000];
         const previous = points.at(-1);
-        if (previous && !last && previous[2] === point[2]
-            && Math.abs(previous[1] + previous[2] * (time - previous[0]) - point[1]) < 1e-6) return;
+        if (
+            previous &&
+            !last &&
+            previous[2] === point[2] &&
+            Math.abs(previous[1] + previous[2] * (time - previous[0]) - point[1]) < 1e-6
+        )
+            return;
         points.push(point);
     });
     return points;
 }
 
-/** Evaluates a schedule the way the widget does. */
 export function scheduleValueAt(schedule: readonly Breakpoint[], time: number) {
     let current: Breakpoint | undefined;
     for (const point of schedule) {

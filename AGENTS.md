@@ -21,7 +21,22 @@ npx expo-doctor             # diagnose dependency and config issues
 npx expo install --fix      # fix incompatible package versions
 ```
 
-Run lint and typecheck before declaring any task done.
+Run lint and typecheck before declaring any task done:
+
+```bash
+bunx oxlint --type-aware --deny-warnings  # lint, including the anti-slop rules in tools/oxlint
+bunx expo lint                            # Expo and React Hooks rules
+bunx tsc --noEmit                         # typecheck
+bun test src/tests                        # tests
+```
+
+Never add commands to `scripts` in `package.json`: the Expo fingerprint hashes them, so any change there locks existing builds out of OTA updates. Put them in `lefthook.yml` and `.github/workflows/ci.yml`.
+
+Commits run these through a lefthook hook, which also formats the staged files with oxfmt. Don't run `oxfmt` across the whole repo in a feature branch, because most files aren't formatted yet.
+
+`tools/oxlint/anti-slop` is an unmodified copy of [dmmulroy/anti-slop](https://github.com/dmmulroy/anti-slop) at the revision pinned in `tools/oxlint/sync-anti-slop.mts`, and CI fails if it drifts. Never edit it: change the revision and run `bun tools/oxlint/sync-anti-slop.mts`. Local rules go in their own plugin, like `tools/oxlint/comment-policy`.
+
+`tools/oxlint/legacy.json` lists existing violations, per rule and file. Never add to it. After fixing a file, remove its entries by hand or with `bun tools/oxlint/legacy-check.mts --write`.
 
 ## Navigation & Routing
 
@@ -42,7 +57,7 @@ Don't write comments. The default is zero: code explains itself through clear na
 - **Constraints** the reader would otherwise break (ordering, timing, threading, "keep in sync with X").
 - **Links** to the upstream bug behind a workaround.
 
-Keep these to one short line. No docstrings or JSDoc describing what a function, component, prop, or constant does; no file overviews, section headers, labels, or test narration; no comments on what a line does; no narrating the change ("added X", "now uses Y"); no commented-out code. Tool directives (`eslint-disable`, `@ts-expect-error`, `/** @type */`, `@Suppress`) are fine. When you edit code, delete comments it has made stale.
+Keep these to one short line. A type assertion other than `as const` needs a `// SAFETY:` comment stating the invariant. No docstrings or JSDoc describing what a function, component, prop, or constant does; no file overviews, section headers, labels, or test narration; no comments on what a line does; no narrating the change ("added X", "now uses Y"); no commented-out code. Tool directives (`eslint-disable`, `@ts-expect-error`, `/** @type */`, `@Suppress`) are fine. When you edit code, delete comments it has made stale.
 
 ## Rules
 

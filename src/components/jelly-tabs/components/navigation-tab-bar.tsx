@@ -1,6 +1,6 @@
-import { DEFAULT_TAB_BAR_COLORS, resolveTabBarConfig } from "../constants";
-import type { TabBarColors } from "../constants";
+import { resolveTabBarConfig } from "../constants";
 import type { JellyTabBarProps, TabsItem } from "../types";
+import { useNavigationColors } from "../hooks/use-navigation-colors";
 import { useStableArray } from "../hooks/use-stable-array";
 import {
     getNavigationItems,
@@ -9,14 +9,10 @@ import {
     longPressNavigationTab,
     pressNavigationTab,
 } from "../utils/navigation";
-import {
-    areItemsEqual,
-    areRoutesEqual,
-    asColorString,
-} from "../utils/navigation-tab-bar";
+import { areItemsEqual, areRoutesEqual } from "../utils/navigation-tab-bar";
 import { JellyTabBarHeadless } from "./tabs";
 import { useCallback, useMemo } from "react";
-import { type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 export const JellyTabBar = ({
     backdrop,
@@ -32,75 +28,16 @@ export const JellyTabBar = ({
     state,
     ...headlessProps
 }: JellyTabBarProps) => {
-    const visibleRoutes = useStableArray(
-        getVisibleRoutes(state.routes, descriptors),
-        areRoutesEqual,
-    );
+    const visibleRoutes = useStableArray(getVisibleRoutes(state.routes, descriptors), areRoutesEqual);
     const focusedRoute = state.routes[state.index];
-    const selectedIndex = getVisibleSelectedIndex(
-        visibleRoutes,
-        focusedRoute?.key,
-    );
-    const focusedOptions = focusedRoute
-        ? descriptors[focusedRoute.key]?.options
-        : undefined;
+    const selectedIndex = getVisibleSelectedIndex(visibleRoutes, focusedRoute?.key);
+    const focusedOptions = focusedRoute ? descriptors[focusedRoute.key]?.options : undefined;
     const resolvedConfig = useMemo(() => resolveTabBarConfig(config), [config]);
     const trackHeight = resolvedConfig.layout.trackHeight * displayScale;
 
-    const items = useStableArray<TabsItem>(
-        getNavigationItems(visibleRoutes, descriptors),
-        areItemsEqual,
-    );
+    const items = useStableArray<TabsItem>(getNavigationItems(visibleRoutes, descriptors), areItemsEqual);
 
-    const activeTint = asColorString(
-        focusedOptions?.tabBarActiveTintColor,
-    );
-    const inactiveTint = asColorString(
-        focusedOptions?.tabBarInactiveTintColor,
-    );
-    const activeSurface = asColorString(
-        focusedOptions?.tabBarActiveBackgroundColor,
-    );
-    const inactiveSurface = asColorString(
-        focusedOptions?.tabBarInactiveBackgroundColor,
-    );
-    const {
-        activeContent: overrideActiveContent,
-        inactiveContent: overrideInactiveContent,
-        selectedSurface: overrideSelectedSurface,
-        surface: overrideSurface,
-    } = colors ?? {};
-
-    const navigationColors = useMemo<TabBarColors>(
-        () => ({
-            activeContent:
-                overrideActiveContent ??
-                activeTint ??
-                DEFAULT_TAB_BAR_COLORS.activeContent,
-            inactiveContent:
-                overrideInactiveContent ??
-                inactiveTint ??
-                DEFAULT_TAB_BAR_COLORS.inactiveContent,
-            selectedSurface:
-                overrideSelectedSurface ??
-                activeSurface ??
-                DEFAULT_TAB_BAR_COLORS.selectedSurface,
-            surface:
-                overrideSurface ??
-                inactiveSurface ??
-                DEFAULT_TAB_BAR_COLORS.surface,
-        }),
-        [
-            activeTint,
-            inactiveTint,
-            activeSurface,
-            inactiveSurface,
-            overrideActiveContent,
-            overrideInactiveContent,
-            overrideSelectedSurface,
-            overrideSurface,
-        ],
-    );
+    const navigationColors = useNavigationColors(colors, focusedOptions);
 
     const handleTabPress = useCallback(
         ({ index }: { index: number }) => {
@@ -128,9 +65,7 @@ export const JellyTabBar = ({
 
     return (
         <View
-            // The container is full width while the track is centered and capped
-            // at `maxWidth`, so without this the empty strip either side of the
-            // bar swallows touches meant for the content behind it.
+            // The full-width container's empty strips must not swallow touches meant for content behind it.
             pointerEvents="box-none"
             style={[
                 styles.container,
@@ -139,7 +74,7 @@ export const JellyTabBar = ({
                     paddingLeft: insets.left + 20,
                     paddingRight: insets.right + 20,
                 },
-                focusedOptions?.tabBarStyle as StyleProp<ViewStyle>,
+                focusedOptions?.tabBarStyle,
                 floating && styles.floating,
                 containerStyle,
             ]}

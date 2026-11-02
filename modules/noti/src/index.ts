@@ -1,10 +1,14 @@
-import { NativeModule, requireNativeView, requireOptionalNativeModule } from 'expo';
-import { createElement, type ComponentType, type ReactNode } from 'react';
-import { PermissionsAndroid, Platform, type ViewProps } from 'react-native';
-import { NotiPrimitives } from './components';
-import { serializeScene } from './serialize';
+import { NativeModule, requireNativeView, requireOptionalNativeModule } from "expo";
+import { createElement, type ComponentType, type ReactNode } from "react";
+import { PermissionsAndroid, Platform, type ViewProps } from "react-native";
+import { NotiPrimitives } from "./components";
+import { serializeScene } from "./serialize";
 import type {
     ActiveNotification,
+    BillChannel,
+    BillFeedback,
+    BillNotification,
+    BillReminder,
     CreateNotificationOptions,
     MoneyWidget,
     MoneyWidgetConfig,
@@ -14,16 +18,17 @@ import type {
     NotificationTarget,
     NotificationUpdate,
     WidgetAction,
-} from './types';
+} from "./types";
 
-export type * from './types';
-export type { NotiAnimation, AnimationState, NotiPluginOptions } from '../plugin';
+export type * from "./types";
+export type { NotiAnimation, AnimationState, NotiPluginOptions } from "../plugin";
 
 type Events = {
     onAction: (event: NotiAction) => void;
     onWidgetAction: (event: WidgetAction) => void;
     onWidgetPinned: (event: { widgetId: number }) => void;
     onMoneyWidgetsChanged: () => void;
+    onBillFeedback: () => void;
 };
 declare class NotificationMotionModule extends NativeModule<Events> {
     create(options: string): Promise<NotificationIdentity>;
@@ -44,70 +49,77 @@ declare class NotificationMotionModule extends NativeModule<Events> {
     requestPinMoneyWidget(config: string): Promise<boolean>;
     listMoneyWidgets(): Promise<{ id: number; config: string; width: number; height: number }[]>;
     updateMoneyWidget(widgetId: number, config: string): Promise<void>;
+    billsEnabled(): Promise<boolean>;
+    ensureBillChannels(channels: string): Promise<void>;
+    postBill(payload: string): Promise<boolean>;
+    postBillReminder(payload: string): Promise<boolean>;
+    drainBillFeedback(): Promise<string>;
+    openBillSettings(): Promise<void>;
+    takeOpenedBillPeriod(): Promise<string | null>;
 }
 
-const supported = () => Platform.OS === 'android' && Number(Platform.Version) >= 31;
+const supported = () => Platform.OS === "android" && Platform.Version >= 31;
+const billsSupported = () => Platform.OS === "android" && Platform.Version >= 26;
+
+function billModule(): NotificationMotionModule {
+    if (!billsSupported()) throw new Error("Bill notifications require Android 8 / API 26 or newer.");
+    const module = requireOptionalNativeModule<NotificationMotionModule>("NotificationMotion");
+    if (!module) throw new Error("Noti is not linked. Rebuild the Expo development client.");
+    return module;
+}
 
 function native(): NotificationMotionModule {
-    if (!supported()) throw new Error('Noti requires Android 12 / API 31 or newer.');
-    const module = requireOptionalNativeModule<NotificationMotionModule>('NotificationMotion');
-    if (!module) throw new Error('Noti is not linked. Rebuild the Expo development client.');
+    if (!supported()) throw new Error("Noti requires Android 12 / API 31 or newer.");
+    const module = requireOptionalNativeModule<NotificationMotionModule>("NotificationMotion");
+    if (!module) throw new Error("Noti is not linked. Rebuild the Expo development client.");
     return module;
 }
 
 function identity(target: NotificationTarget): NotificationIdentity {
-    const result = typeof target === 'number' ? { id: target, tag: null } : target;
+    const result = typeof target === "number" ? { id: target, tag: null } : target;
     if (
         !Number.isInteger(result.id) ||
         result.id < -2147483648 ||
         result.id > 2147483647 ||
-        (result.tag !== null && typeof result.tag !== 'string')
+        (result.tag !== null && typeof result.tag !== "string")
     )
-        throw new Error('Invalid Android notification identity.');
+        throw new Error("Invalid Android notification identity.");
     return { id: result.id, tag: result.tag };
+}
+
+function serializeOptionalScene(scene: ReactNode) {
+    if (scene === undefined) return undefined;
+    if (scene === null) return null;
+    return serializeScene(scene);
 }
 
 function serializeUpdate(update: NotificationUpdate): string {
     const actions = update.actions?.map((item) => {
         if (
-            typeof item.id !== 'string' ||
+            typeof item.id !== "string" ||
             !/^[a-zA-Z0-9._-]{1,64}$/.test(item.id) ||
-            typeof item.onPress !== 'string' ||
+            typeof item.onPress !== "string" ||
             !/^[a-zA-Z0-9._-]{1,64}$/.test(item.onPress) ||
-            typeof item.title !== 'string' ||
+            typeof item.title !== "string" ||
             item.title.length < 1 ||
             item.title.length > 40
         ) {
-            throw new Error(
-                'Notification actions require a 1–64 character id/onPress and a 1–40 character title.'
-            );
+            throw new Error("Notification actions require a 1–64 character id/onPress and a 1–40 character title.");
         }
         return item;
     });
-    if (actions && actions.length > 3)
-        throw new Error('Android notifications support at most three actions.');
+    if (actions && actions.length > 3) throw new Error("Android notifications support at most three actions.");
     return JSON.stringify({
         ...update,
         actions,
         collapsed: update.collapsed === undefined ? undefined : serializeScene(update.collapsed),
-        expanded:
-            update.expanded === undefined
-                ? undefined
-                : update.expanded === null
-                  ? null
-                  : serializeScene(update.expanded),
-        headsUp:
-            update.headsUp === undefined
-                ? undefined
-                : update.headsUp === null
-                  ? null
-                  : serializeScene(update.headsUp),
+        expanded: serializeOptionalScene(update.expanded),
+        headsUp: serializeOptionalScene(update.headsUp),
     });
 }
 
 function widgetId(id: number): number {
-    if (!Number.isInteger(id) || id <= 0 || id > 2147483647)
-        throw new Error('Invalid Android widget id.');
+    if (!Number.isInteger(id) || id <= 0 || id > 2147483647) throw new Error("Invalid Android widget id.");
     return id;
 }
 
@@ -129,10 +141,10 @@ const widgets = {
         await native().updateAllWidgets(JSON.stringify(serializeScene(scene)));
     },
     addActionListener(listener: (event: WidgetAction) => void) {
-        return native().addListener('onWidgetAction', listener);
+        return native().addListener("onWidgetAction", listener);
     },
     addPinnedListener(listener: (event: { widgetId: number }) => void) {
-        return native().addListener('onWidgetPinned', listener);
+        return native().addListener("onWidgetPinned", listener);
     },
 };
 
@@ -156,13 +168,45 @@ const moneyWidgets = {
     },
     async list(): Promise<MoneyWidget[]> {
         const items = await native().listMoneyWidgets();
-        return items.map((item) => ({ ...item, config: JSON.parse(item.config) as MoneyWidgetConfig }));
+        return items.map((item) => {
+            const config: MoneyWidgetConfig = JSON.parse(item.config);
+            return { ...item, config };
+        });
     },
     async update(id: number, config: MoneyWidgetConfig): Promise<void> {
         await native().updateMoneyWidget(widgetId(id), JSON.stringify(config));
     },
     addChangeListener(listener: () => void) {
-        return native().addListener('onMoneyWidgetsChanged', listener);
+        return native().addListener("onMoneyWidgetsChanged", listener);
+    },
+};
+
+const bills = {
+    isSupported: billsSupported,
+    async areEnabled(): Promise<boolean> {
+        return billModule().billsEnabled();
+    },
+    async ensureChannels(channels: readonly BillChannel[]): Promise<void> {
+        await billModule().ensureBillChannels(JSON.stringify(channels));
+    },
+    async post(payload: BillNotification): Promise<boolean> {
+        return billModule().postBill(JSON.stringify(payload));
+    },
+    async postReminder(payload: BillReminder): Promise<boolean> {
+        return billModule().postBillReminder(JSON.stringify(payload));
+    },
+    async drainFeedback(): Promise<BillFeedback[]> {
+        const feedback: BillFeedback[] = JSON.parse(await billModule().drainBillFeedback());
+        return feedback;
+    },
+    async openSettings(): Promise<void> {
+        await billModule().openBillSettings();
+    },
+    async takeOpenedPeriod(): Promise<string | null> {
+        return billModule().takeOpenedBillPeriod();
+    },
+    addFeedbackListener(listener: () => void) {
+        return billModule().addListener("onBillFeedback", listener);
     },
 };
 
@@ -176,18 +220,17 @@ let previewComponent: ComponentType<ViewProps & { config: string; revision: numb
 
 export function MoneyWidgetPreview({ config, revision = 0, active = true, ...props }: MoneyWidgetPreviewProps) {
     if (!supported()) return null;
-    previewComponent ??= requireNativeView('NotificationMotion');
+    previewComponent ??= requireNativeView("NotificationMotion");
     return createElement(previewComponent, { ...props, config: JSON.stringify(config), revision, active });
 }
 
 const lifecycle = {
     async requestPermission(): Promise<boolean> {
-        if (Platform.OS !== 'android') return false;
-        if (Number(Platform.Version) < 33) return true;
+        if (Platform.OS !== "android") return false;
+        if (Platform.Version < 33) return true;
         return (
-            (await PermissionsAndroid.request(
-                PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
-            )) === PermissionsAndroid.RESULTS.GRANTED
+            (await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS)) ===
+            PermissionsAndroid.RESULTS.GRANTED
         );
     },
     async create(options: CreateNotificationOptions): Promise<number> {
@@ -207,13 +250,12 @@ const lifecycle = {
         await native().dismiss(identity(target));
     },
     async scrollTo(target: NotificationTarget, nodeId: string, index: number): Promise<void> {
-        if (!Number.isInteger(index) || index < 0)
-            throw new Error('Scroll index must be a non-negative integer.');
+        if (!Number.isInteger(index) || index < 0) throw new Error("Scroll index must be a non-negative integer.");
         await native().scrollTo(identity(target), nodeId, index);
     },
     addActionListener(listener: (event: NotiAction) => void) {
-        return native().addListener('onAction', listener);
+        return native().addListener("onAction", listener);
     },
 };
 
-export const Noti = Object.assign(NotiPrimitives, lifecycle, { widgets, moneyWidgets });
+export const Noti = Object.assign(NotiPrimitives, lifecycle, { widgets, moneyWidgets, bills });

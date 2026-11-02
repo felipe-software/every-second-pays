@@ -1,10 +1,12 @@
 package expo.modules.notificationmotion
 
 import android.os.Build
+import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.kotlin.records.Field
 import expo.modules.kotlin.records.Record
+import expo.modules.notificationmotion.bills.BillNotifications
 import expo.modules.notificationmotion.money.MoneyWidgetPreviewView
 import expo.modules.notificationmotion.money.MoneyWidgets
 
@@ -18,6 +20,7 @@ class NotificationMotionModule : Module() {
   private val store get() = MotionNotifications.get(context)
   private val widgets get() = MotionWidgets.get(context)
   private val money get() = MoneyWidgets.get(context)
+  private val bills get() = BillNotifications.get(context)
 
   private fun supported() {
     check(Build.VERSION.SDK_INT >= 31) { "Noti requires Android 12 / API 31 or newer." }
@@ -25,7 +28,7 @@ class NotificationMotionModule : Module() {
 
   override fun definition() = ModuleDefinition {
     Name("NotificationMotion")
-    Events("onAction", "onWidgetAction", "onWidgetPinned", "onMoneyWidgetsChanged")
+    Events("onAction", "onWidgetAction", "onWidgetPinned", "onMoneyWidgetsChanged", "onBillFeedback")
     AsyncFunction("create") { options: String -> supported(); store.create(options) }
     AsyncFunction("update") { identity: NotificationIdentity, update: String -> supported(); store.update(identity, update) }
     AsyncFunction("adopt") { identity: NotificationIdentity -> supported(); store.adopt(identity) }
@@ -45,6 +48,14 @@ class NotificationMotionModule : Module() {
     AsyncFunction("requestPinMoneyWidget") { config: String -> supported(); money.requestPin(config) }
     AsyncFunction("listMoneyWidgets") { supported(); money.list() }
     AsyncFunction("updateMoneyWidget") { widgetId: Int, config: String -> supported(); money.update(widgetId, config) }
+
+    AsyncFunction("billsEnabled") { bills.areEnabled() }
+    AsyncFunction("ensureBillChannels") { channels: String -> bills.ensureChannels(channels) }
+    AsyncFunction("postBill") Coroutine { payload: String -> bills.post(payload) }
+    AsyncFunction("postBillReminder") Coroutine { payload: String -> bills.postReminder(payload) }
+    AsyncFunction("drainBillFeedback") { bills.drain() }
+    AsyncFunction("openBillSettings") { bills.openSettings() }
+    AsyncFunction("takeOpenedBillPeriod") { bills.takeOpenedPeriod() }
 
     View(MoneyWidgetPreviewView::class) {
       Prop("config") { view: MoneyWidgetPreviewView, config: String -> view.setConfig(config) }
@@ -69,6 +80,9 @@ class NotificationMotionModule : Module() {
     }
     fun dispatchMoneyWidgetsChanged() {
       active?.sendEvent("onMoneyWidgetsChanged", emptyMap<String, Any>())
+    }
+    fun dispatchBillFeedback() {
+      active?.sendEvent("onBillFeedback", emptyMap<String, Any>())
     }
   }
 }

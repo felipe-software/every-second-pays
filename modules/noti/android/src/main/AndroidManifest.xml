@@ -1,6 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
   <application>
     <receiver android:name=".MotionActionReceiver" android:exported="false" />
+    <receiver android:name=".bills.BillActionReceiver" android:exported="false" />
+    <activity
+      android:name=".bills.BillTapActivity"
+      android:excludeFromRecents="true"
+      android:exported="false"
+      android:noHistory="true"
+      android:taskAffinity=""
+      android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
     <!-- nmw_widgets_enabled is true only in values-v31: the widget needs API 31 RemoteViews APIs. -->
     <receiver

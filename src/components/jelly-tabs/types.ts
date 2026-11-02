@@ -1,16 +1,6 @@
-import type {
-    DeepPartial,
-    TabBarColors,
-    TabBarConfig,
-    TabBarOpacity,
-} from "./constants";
+import type { DeepPartial, TabBarColors, TabBarConfig, TabBarOpacity } from "./constants";
 import type { ComponentType, ReactNode } from "react";
-import type {
-    DimensionValue,
-    StyleProp,
-    TextStyle,
-    ViewStyle,
-} from "react-native";
+import type { DimensionValue, StyleProp, TextStyle, ViewStyle } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 
 export interface TabsIconProps {
@@ -31,10 +21,6 @@ export interface TabsItem {
     inactiveIcon: TabsIcon;
     badge?: number | string;
     badgeStyle?: StyleProp<TextStyle>;
-    /**
-     * Layered over `badgeStyle` for the tab copy revealed through the pill
-     * mask, so a badge can read differently once the pill covers it.
-     */
     activeBadgeStyle?: StyleProp<TextStyle>;
     testID?: string;
 }
@@ -56,11 +42,6 @@ export interface JellyTabBarHeadlessProps {
     onTabLongPress?: (event: TabsChangeEvent) => void;
     onTabPress?: (event: TabsChangeEvent) => boolean | void;
     opacity?: Partial<TabBarOpacity>;
-    /**
-     * Fractional pill position driven from the UI thread. Values are clamped
-     * between the first and last tab. During a tab bar interaction, the
-     * animated pill position is written back so linked content stays synced.
-     */
     progress?: SharedValue<number>;
     selectedIndex?: number | null;
     selectedBackdrop?: ReactNode;
@@ -70,7 +51,6 @@ export interface JellyTabBarHeadlessProps {
     touchFeedbackScale?: number;
 }
 
-/** @deprecated Use JellyTabBarHeadlessProps instead. */
 export type TabsProps = JellyTabBarHeadlessProps;
 
 export interface JellyNavigationRoute {
@@ -96,18 +76,14 @@ export interface JellyNavigationOptions {
     tabBarBadge?: number | string;
     tabBarBadgeStyle?: StyleProp<TextStyle>;
     tabBarButtonTestID?: string;
-    tabBarIcon?: (props: {
-        color: string;
-        focused: boolean;
-        size: number;
-    }) => ReactNode;
+    tabBarIcon?: (props: { color: string; focused: boolean; size: number }) => ReactNode;
     tabBarInactiveBackgroundColor?: unknown;
     tabBarInactiveTintColor?: unknown;
     tabBarItemStyle?: StyleProp<ViewStyle>;
     tabBarLabel?: unknown;
     tabBarLabelStyle?: StyleProp<TextStyle>;
     tabBarShowLabel?: boolean;
-    tabBarStyle?: unknown;
+    tabBarStyle?: StyleProp<ViewStyle>;
     title?: string;
 }
 
@@ -131,7 +107,7 @@ export interface JellyNavigationHelpers {
         target: string;
         type: "NAVIGATE";
     }): void;
-    emit(event: JellyNavigationEvent): unknown;
+    emit(event: JellyNavigationEvent): { defaultPrevented?: boolean };
 }
 
 export interface JellyTabBarProps extends Omit<

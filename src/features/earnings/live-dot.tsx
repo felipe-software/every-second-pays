@@ -24,15 +24,17 @@ export function LiveDot({ live, size = 8 }: { live: boolean; size?: number }) {
         if (!live) {
             cancelAnimation(pulse);
             pulse.set(0);
-            return;
+            return undefined;
         }
-        pulse.set(withRepeat(
-            withTiming(1, { duration: 1800, easing: Easing.out(Easing.quad), reduceMotion: ReduceMotion.System }),
-            -1,
-            false,
-            undefined,
-            ReduceMotion.System,
-        ));
+        pulse.set(
+            withRepeat(
+                withTiming(1, { duration: 1800, easing: Easing.out(Easing.quad), reduceMotion: ReduceMotion.System }),
+                -1,
+                false,
+                undefined,
+                ReduceMotion.System,
+            ),
+        );
         return () => cancelAnimation(pulse);
     }, [live, pulse]);
 
@@ -41,7 +43,10 @@ export function LiveDot({ live, size = 8 }: { live: boolean; size?: number }) {
             {live ? (
                 <Animated.View
                     pointerEvents="none"
-                    style={[{ position: "absolute", inset: 0, borderRadius: size, backgroundColor: colors.accent }, ringStyle]}
+                    style={[
+                        { position: "absolute", inset: 0, borderRadius: size, backgroundColor: colors.accent },
+                        ringStyle,
+                    ]}
                 />
             ) : null}
             <View style={{ flex: 1, borderRadius: size, backgroundColor: live ? colors.accent : colors.track }} />
