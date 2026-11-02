@@ -6,6 +6,7 @@
         "goldie/goldie.config.ts",
         "fingerprint.config.js",
         "modules/noti/scripts/*",
+        "scripts/onboarding-lottie/service-bell.mjs",
         "oxlint.config.mts",
         "tools/oxlint/legacy-check.mts",
         "tools/oxlint/sync-anti-slop.mts"

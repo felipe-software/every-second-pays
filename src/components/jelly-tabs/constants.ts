@@ -56,7 +56,6 @@ export const PILL_JELLY = {
     pressedScale: 1.3,
     snapOnPointerDown: true,
     frameConfig: {
-        // Keep the indicator inflated until it is within 2.5% of its snap point.
         releaseDistanceFraction: 0.025,
         springs: {
             panel: { stiffness: 300, dampingRatio: 1 },
@@ -106,9 +105,7 @@ export const DISTORTION = {
     verticalDrag: {
         distortion: 0.08,
         distanceForMaxDistortion: 700,
-
-        // Movement only: these change how much the tabbar follows the finger,
-        // without changing its width distortion.
+        // Movement only: how far the tabbar follows the finger, not its width distortion.
         follow: 0.25,
         rubberBand: 0.28 / 2,
     },
@@ -130,61 +127,35 @@ export const DEFAULT_TAB_BAR_CONFIG: TabBarConfig = {
     pillJelly: PILL_JELLY,
 };
 
-export const resolveTabBarConfig = (
-    config?: DeepPartial<TabBarConfig>,
-): TabBarConfig => ({
-    layout: {
-        ...TABBAR_LAYOUT,
-        ...config?.layout,
+const resolveSprings = (springs?: DeepPartial<PillJellyFrameConfig["springs"]>): PillJellyFrameConfig["springs"] => ({
+    panel: { ...PILL_JELLY.frameConfig.springs.panel, ...springs?.panel },
+    press: { ...PILL_JELLY.frameConfig.springs.press, ...springs?.press },
+    scaleX: { ...PILL_JELLY.frameConfig.springs.scaleX, ...springs?.scaleX },
+    scaleY: { ...PILL_JELLY.frameConfig.springs.scaleY, ...springs?.scaleY },
+    value: { ...PILL_JELLY.frameConfig.springs.value, ...springs?.value },
+    velocity: { ...PILL_JELLY.frameConfig.springs.velocity, ...springs?.velocity },
+});
+
+const resolvePillJelly = (pillJelly?: DeepPartial<PillJellyConfig>): PillJellyConfig => ({
+    ...PILL_JELLY,
+    ...pillJelly,
+    frameConfig: {
+        ...PILL_JELLY.frameConfig,
+        ...pillJelly?.frameConfig,
+        springs: resolveSprings(pillJelly?.frameConfig?.springs),
     },
-    pillJelly: {
-        ...PILL_JELLY,
-        ...config?.pillJelly,
-        frameConfig: {
-            ...PILL_JELLY.frameConfig,
-            ...config?.pillJelly?.frameConfig,
-            springs: {
-                panel: {
-                    ...PILL_JELLY.frameConfig.springs.panel,
-                    ...config?.pillJelly?.frameConfig?.springs?.panel,
-                },
-                press: {
-                    ...PILL_JELLY.frameConfig.springs.press,
-                    ...config?.pillJelly?.frameConfig?.springs?.press,
-                },
-                scaleX: {
-                    ...PILL_JELLY.frameConfig.springs.scaleX,
-                    ...config?.pillJelly?.frameConfig?.springs?.scaleX,
-                },
-                scaleY: {
-                    ...PILL_JELLY.frameConfig.springs.scaleY,
-                    ...config?.pillJelly?.frameConfig?.springs?.scaleY,
-                },
-                value: {
-                    ...PILL_JELLY.frameConfig.springs.value,
-                    ...config?.pillJelly?.frameConfig?.springs?.value,
-                },
-                velocity: {
-                    ...PILL_JELLY.frameConfig.springs.velocity,
-                    ...config?.pillJelly?.frameConfig?.springs?.velocity,
-                },
-            },
-        },
-    },
-    distortion: {
-        ...DISTORTION,
-        ...config?.distortion,
-        touchFeedback: {
-            ...DISTORTION.touchFeedback,
-            ...config?.distortion?.touchFeedback,
-        },
-        spring: {
-            ...DISTORTION.spring,
-            ...config?.distortion?.spring,
-        },
-        verticalDrag: {
-            ...DISTORTION.verticalDrag,
-            ...config?.distortion?.verticalDrag,
-        },
-    },
+});
+
+const resolveDistortion = (distortion?: DeepPartial<DistortionConfig>): DistortionConfig => ({
+    ...DISTORTION,
+    ...distortion,
+    touchFeedback: { ...DISTORTION.touchFeedback, ...distortion?.touchFeedback },
+    spring: { ...DISTORTION.spring, ...distortion?.spring },
+    verticalDrag: { ...DISTORTION.verticalDrag, ...distortion?.verticalDrag },
+});
+
+export const resolveTabBarConfig = (config?: DeepPartial<TabBarConfig>): TabBarConfig => ({
+    layout: { ...TABBAR_LAYOUT, ...config?.layout },
+    pillJelly: resolvePillJelly(config?.pillJelly),
+    distortion: resolveDistortion(config?.distortion),
 });

@@ -65,23 +65,26 @@ export function DevJobControls() {
 
     return (
         <View className="mt-8">
-            <Text className="mb-3 ml-1 font-sans text-[13px] font-semibold text-muted">
-                {t("settings.developer")}
-            </Text>
+            <Text className="mb-3 ml-1 font-sans text-[13px] font-semibold text-muted">{t("settings.developer")}</Text>
             <View className="gap-2 rounded-[20px] bg-row p-3">
                 <RaisedPressable
                     testID="add-always-active-job"
                     accessibilityRole="button"
                     accessibilityState={{ disabled }}
                     disabled={disabled}
-                    onPress={() => void addJob(true)}
+                    onPress={() => {
+                        void addJob(true);
+                    }}
                     surface={disabled ? "canvas" : "accent"}
                     flat={disabled}
                     depth={4}
                     radius={15}
                     className="min-h-[52px] items-center justify-center px-4"
                 >
-                    <Text className="text-center font-sans text-[14px] font-semibold" style={disabled ? { color: colors.muted } : colors.onAccentText}>
+                    <Text
+                        className="text-center font-sans text-[14px] font-semibold"
+                        style={disabled ? { color: colors.muted } : colors.onAccentText}
+                    >
                         {t("settings.addAlwaysActiveJob")}
                     </Text>
                 </RaisedPressable>
@@ -90,14 +93,18 @@ export function DevJobControls() {
                     accessibilityRole="button"
                     accessibilityState={{ disabled }}
                     disabled={disabled}
-                    onPress={() => void addJob(false)}
+                    onPress={() => {
+                        void addJob(false);
+                    }}
                     surface="canvas"
                     flat={disabled}
                     depth={4}
                     radius={15}
                     className="min-h-[52px] items-center justify-center px-4"
                 >
-                    <Text className={`text-center font-sans text-[14px] font-semibold ${disabled ? "text-muted" : "text-ink"}`}>
+                    <Text
+                        className={`text-center font-sans text-[14px] font-semibold ${disabled ? "text-muted" : "text-ink"}`}
+                    >
                         {t("settings.addNeverActiveJob")}
                     </Text>
                 </RaisedPressable>
@@ -119,7 +126,10 @@ export function DevJobControls() {
                 </RaisedPressable>
             </View>
             {addError ? (
-                <Text accessibilityLiveRegion="polite" className="mt-3 px-1 font-sans text-[12.5px] leading-5 text-muted">
+                <Text
+                    accessibilityLiveRegion="polite"
+                    className="mt-3 px-1 font-sans text-[12.5px] leading-5 text-muted"
+                >
                     {t("settings.devJobError")}
                 </Text>
             ) : null}

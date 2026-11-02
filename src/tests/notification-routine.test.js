@@ -15,7 +15,8 @@ const {
     recordSent,
     showLess,
 } = await import("../features/notifications/routine");
-const { ADD_SOURCE_TAP, billChannels, buildBillNotification, buildSetupReminder } = await import("../features/notifications/content");
+const { ADD_SOURCE_TAP, billChannels, buildBillNotification, buildSetupReminder } =
+    await import("../features/notifications/content");
 const { translations } = await import("../features/i18n/translations");
 
 const originalTimeZone = process.env.TZ;
@@ -27,17 +28,47 @@ afterEach(() => {
 });
 
 const MONDAY = 1;
-const job = { id: 1, name: "Job", frequency: "month", amount: 4000, days: [1, 2, 3, 4, 5], shifts: [{ start: 540, end: 1020 }] };
+const job = {
+    id: 1,
+    name: "Job",
+    frequency: "month",
+    amount: 4000,
+    days: [1, 2, 3, 4, 5],
+    shifts: [{ start: 540, end: 1020 }],
+};
 const opened = (date) => ({ ...EMPTY_STATE, lastOpenedAt: date.getTime() - 86_400_000 });
-const run = (now, overrides = {}) => nextNotification({
-    sources: [job],
-    period: "month",
-    settings: DEFAULT_SETTINGS,
-    state: opened(now),
-    now,
-    firstDayOfWeek: MONDAY,
+const run = (now, overrides = {}) =>
+    nextNotification({
+        sources: [job],
+        period: "month",
+        settings: DEFAULT_SETTINGS,
+        state: opened(now),
+        now,
+        firstDayOfWeek: MONDAY,
+        ...overrides,
+    });
+const t = (key) => key;
+const context = (overrides = {}) => ({
+    t: (key, values) => `${key}${values ? JSON.stringify(values) : ""}`,
+    locale: "en-US",
+    currency: "USD",
+    showAmounts: true,
+    appearance: { mode: "system", palette: "green" },
     ...overrides,
 });
+const progress = (mark, from, overrides = {}) => ({
+    kind: "progress",
+    scope: "month",
+    key: "k",
+    start: new Date(2026, 9, 1).getTime(),
+    mark,
+    from,
+    marks: [25, 50, 90, 100],
+    amount: 2012,
+    goal: 4000,
+    ...overrides,
+});
+const labels = (payload) => payload.marks.map((mark) => mark.label);
 
 describe("progress milestones", () => {
     test("sends only the highest crossed percentage of the month", () => {
@@ -104,7 +135,13 @@ describe("progress milestones", () => {
 
     test("saving a source marks crossed percentages as handled without sending", () => {
         const now = new Date(2026, 9, 16, 18);
-        const state = markCrossedHandled(opened(now), [job], "month", now, MONDAY);
+        const state = markCrossedHandled({
+            state: opened(now),
+            sources: [job],
+            period: "month",
+            now,
+            firstDayOfWeek: MONDAY,
+        });
         expect(state.handled["2026-10"]).toBe(50);
         expect(run(now, { state, settings: { ...DEFAULT_SETTINGS, week: "off" } })).toBeNull();
     });
@@ -228,7 +265,16 @@ describe("delivery rules", () => {
     });
 
     test("one-off payments alone never notify", () => {
-        const once = { id: 2, name: "Bonus", frequency: "once", amount: 500, days: [], shifts: [], when: "today", paidAt: Date.now() };
+        const once = {
+            id: 2,
+            name: "Bonus",
+            frequency: "once",
+            amount: 500,
+            days: [],
+            shifts: [],
+            when: "today",
+            paidAt: Date.now(),
+        };
         expect(run(new Date(2026, 9, 16, 18), { sources: [once] })).toBeNull();
     });
 });
@@ -253,7 +299,11 @@ describe("meter's still running", () => {
 
     test("opening the app ends the silence", () => {
         const now = new Date(2026, 9, 16, 18);
-        const silent = { ...EMPTY_STATE, lastOpenedAt: now.getTime() - fourteenDays, silenceSince: now.getTime() - fourteenDays };
+        const silent = {
+            ...EMPTY_STATE,
+            lastOpenedAt: now.getTime() - fourteenDays,
+            silenceSince: now.getTime() - fourteenDays,
+        };
         expect(run(now, { state: silent })).toBeNull();
         expect(run(now, { state: { ...silent, lastOpenedAt: now.getTime() - 3_600_000 } }).kind).toBe("progress");
     });
@@ -296,7 +346,12 @@ describe("Show less and Nice", () => {
 describe("setup reminder", () => {
     const DAY = 86_400_000;
     const now = new Date(2026, 9, 16, 12);
-    const onboarded = (daysAgo, overrides = {}) => ({ ...EMPTY_STATE, lastOpenedAt: now.getTime(), onboardedAt: now.getTime() - daysAgo * DAY, ...overrides });
+    const onboarded = (daysAgo, overrides = {}) => ({
+        ...EMPTY_STATE,
+        lastOpenedAt: now.getTime(),
+        onboardedAt: now.getTime() - daysAgo * DAY,
+        ...overrides,
+    });
     const noSources = (state, overrides = {}) => run(now, { sources: [], state, ...overrides });
 
     test("sends three days after onboarding when there is still no source", () => {
@@ -333,8 +388,13 @@ describe("setup reminder", () => {
     });
 
     test("opens the new source sheet and has its own channel, with no amounts", () => {
-        const t = (key) => key;
-        const reminder = buildSetupReminder({ t, locale: "en-US", currency: "USD", showAmounts: true, appearance: { mode: "system", palette: "green" } });
+        const reminder = buildSetupReminder({
+            t,
+            locale: "en-US",
+            currency: "USD",
+            showAmounts: true,
+            appearance: { mode: "system", palette: "green" },
+        });
         expect(reminder.period).toBe(ADD_SOURCE_TAP);
         expect(reminder.channel).toBe("earnings-setup");
         expect(reminder).not.toHaveProperty("amount");
@@ -345,7 +405,13 @@ describe("setup reminder", () => {
 
     test("every language has the reminder text", () => {
         for (const table of Object.values(translations)) {
-            for (const key of ["notifications.setup", "notifications.content.setup.title", "notifications.content.setup.body", "notifications.channel.setup.description", "notifications.action.addSource"]) {
+            for (const key of [
+                "notifications.setup",
+                "notifications.content.setup.title",
+                "notifications.content.setup.body",
+                "notifications.channel.setup.description",
+                "notifications.action.addSource",
+            ]) {
                 expect(table[key].length).toBeGreaterThan(0);
             }
         }
@@ -354,8 +420,14 @@ describe("setup reminder", () => {
 
 describe("saved data", () => {
     test("saved onboarding state survives and bad values are dropped", () => {
-        expect(parseState({ onboardedAt: 5, setupSettled: true })).toMatchObject({ onboardedAt: 5, setupSettled: true });
-        expect(parseState({ onboardedAt: "x", setupSettled: "yes" })).toMatchObject({ onboardedAt: null, setupSettled: false });
+        expect(parseState({ onboardedAt: 5, setupSettled: true })).toMatchObject({
+            onboardedAt: 5,
+            setupSettled: true,
+        });
+        expect(parseState({ onboardedAt: "x", setupSettled: "yes" })).toMatchObject({
+            onboardedAt: null,
+            setupSettled: false,
+        });
     });
 
     test("bad saved values fall back to defaults", () => {
@@ -367,35 +439,14 @@ describe("saved data", () => {
     test("only the most recent sent keys are kept", () => {
         const now = new Date(2026, 9, 16, 18);
         let state = opened(now);
-        for (let index = 0; index < 80; index += 1) state = recordSent(state, { kind: "week", key: `week:${index}`, amount: 1, start: 0, days: [] }, now);
+        for (let index = 0; index < 80; index += 1)
+            state = recordSent(state, { kind: "week", key: `week:${index}`, amount: 1, start: 0, days: [] }, now);
         expect(state.sent.length).toBe(64);
         expect(state.sent.at(-1)).toBe("week:79");
     });
 });
 
 describe("Marked Bar content", () => {
-    const context = (overrides = {}) => ({
-        t: (key, values) => `${key}${values ? JSON.stringify(values) : ""}`,
-        locale: "en-US",
-        currency: "USD",
-        showAmounts: true,
-        appearance: { mode: "system", palette: "green" },
-        ...overrides,
-    });
-    const progress = (mark, from, overrides = {}) => ({
-        kind: "progress",
-        scope: "month",
-        key: "k",
-        start: new Date(2026, 9, 1).getTime(),
-        mark,
-        from,
-        marks: [25, 50, 90, 100],
-        amount: 2012,
-        goal: 4000,
-        ...overrides,
-    });
-    const labels = (payload) => payload.marks.map((mark) => mark.label);
-
     test("marks are labelled with money from the goal", () => {
         const payload = buildBillNotification(progress(50, 25), context());
         expect(labels(payload)).toEqual(["1K", "2K", "3.6K", "4K"]);
@@ -408,8 +459,11 @@ describe("Marked Bar content", () => {
     });
 
     test("money labels follow the user's language", () => {
-        expect(labels(buildBillNotification(progress(50, 25), context({ locale: "pt-BR" }))).map((label) => label.replace(/\s/g, " ")))
-            .toEqual(["1 mil", "2 mil", "3,6 mil", "4 mil"]);
+        expect(
+            labels(buildBillNotification(progress(50, 25), context({ locale: "pt-BR" }))).map((label) =>
+                label.replace(/\s/g, " "),
+            ),
+        ).toEqual(["1 mil", "2 mil", "3,6 mil", "4 mil"]);
     });
 
     test("Show amounts off removes every money figure", () => {
@@ -428,11 +482,18 @@ describe("Marked Bar content", () => {
 
     test("a year's ten marks only label what fits", () => {
         const marks = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-        const payload = buildBillNotification(progress(40, 30, { scope: "year", marks, goal: 48_000, start: new Date(2026, 0, 1).getTime() }), context());
+        const payload = buildBillNotification(
+            progress(40, 30, { scope: "year", marks, goal: 48_000, start: new Date(2026, 0, 1).getTime() }),
+            context(),
+        );
         expect(payload.start).toBe("2026");
         expect(payload.marks.filter((mark) => mark.label).map((mark) => mark.at)).toEqual([20, 40, 60, 80, 100]);
-        expect(labels(buildBillNotification(progress(10, 0, { scope: "year", marks, goal: 48_000 }), context()))[0]).toBe("4.8K");
-        expect(buildBillNotification(progress(10, 0, { scope: "year", marks, goal: 48_000 }), context()).start).toBeNull();
+        expect(
+            labels(buildBillNotification(progress(10, 0, { scope: "year", marks, goal: 48_000 }), context()))[0],
+        ).toBe("4.8K");
+        expect(
+            buildBillNotification(progress(10, 0, { scope: "year", marks, goal: 48_000 }), context()).start,
+        ).toBeNull();
     });
 
     test("week wrapped has one mark a working day and fills the last one", () => {
@@ -441,7 +502,13 @@ describe("Marked Bar content", () => {
         expect(payload.marks.map((mark) => mark.at)).toEqual([20, 40, 60, 80, 100]);
         expect(labels(payload)).toEqual(["185", "370", "555", "740", "925"]);
         expect(payload.from).toBe(80);
-        expect(labels(buildBillNotification(candidate, context({ showAmounts: false })))).toEqual(["Mon", "Tue", "Wed", "Thu", "Fri"]);
+        expect(labels(buildBillNotification(candidate, context({ showAmounts: false })))).toEqual([
+            "Mon",
+            "Tue",
+            "Wed",
+            "Thu",
+            "Fri",
+        ]);
     });
 
     test("labels under 1,000 are whole numbers", () => {
@@ -450,7 +517,10 @@ describe("Marked Bar content", () => {
     });
 
     test("year in review marks the quarters", () => {
-        const payload = buildBillNotification({ kind: "year", key: "k", year: 2026, amount: 48_000, goal: 48_000 }, context());
+        const payload = buildBillNotification(
+            { kind: "year", key: "k", year: 2026, amount: 48_000, goal: 48_000 },
+            context(),
+        );
         expect(labels(payload)).toEqual(["12K", "24K", "36K", "48K"]);
         expect(payload.chain).toBe(true);
     });

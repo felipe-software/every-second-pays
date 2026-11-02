@@ -7,26 +7,22 @@ import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withT
 import Svg, { Path } from "react-native-svg";
 
 import { RaisedPressable } from "@/components/elevated/raised";
-import {
-    JellyTabBarHeadless,
-    type TabsIconProps,
-    type TabsItem,
-} from "@/components/jelly-tabs";
+import { JellyTabBarHeadless, type TabsIconProps, type TabsItem } from "@/components/jelly-tabs";
 import { usePaymentComposerStore } from "@/features/earnings/payment-composer-store";
 import { useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
-import {
-    AndroidTabPager,
-    useAndroidTabPagerProgress,
-    useIsTabSubpage,
-} from "./android-tab-pager";
+import { AndroidTabPager, useAndroidTabPagerProgress, useIsTabSubpage } from "./android-tab-pager";
 
 type TabIconProps = { color: ColorValue; size: number };
 
 const DOCK_HIDE_OFFSET = 24;
 const DOCK_TIMING = { duration: 220, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System };
 
+function getSelectedTabIndex(indexFocused?: boolean, settingsFocused?: boolean) {
+    if (indexFocused) return 0;
+    return settingsFocused ? 1 : null;
+}
 
 function PaidIcon({ color, size }: TabIconProps) {
     return (
@@ -70,34 +66,36 @@ function AndroidTabBar() {
         hidden.set(withTiming(onSubpage ? 1 : 0, DOCK_TIMING));
     }, [hidden, onSubpage]);
     const requestNewSource = usePaymentComposerStore((state) => state.requestNewSource);
-    const items = useMemo<TabsItem[]>(() => [
-        {
-            accessibilityLabel: t("tabs.earnings"),
-            activeIcon: PaidJellyIcon,
-            inactiveIcon: PaidJellyIcon,
-            key: "index",
-            label: t("tabs.earnings"),
-            testID: "today-tab",
+    const items = useMemo<TabsItem[]>(
+        () => [
+            {
+                accessibilityLabel: t("tabs.earnings"),
+                activeIcon: PaidJellyIcon,
+                inactiveIcon: PaidJellyIcon,
+                key: "index",
+                label: t("tabs.earnings"),
+                testID: "today-tab",
+            },
+            {
+                accessibilityLabel: t("tabs.settings"),
+                activeIcon: SettingsJellyIcon,
+                inactiveIcon: SettingsJellyIcon,
+                key: "settings",
+                label: t("tabs.settings"),
+                testID: "settings-tab",
+            },
+        ],
+        [t],
+    );
+    const selectedIndex = getSelectedTabIndex(indexTab.trigger?.isFocused, settingsTab.trigger?.isFocused);
+    const selectTab = useCallback(
+        ({ index }: { index: number }) => {
+            const tab = index === 1 ? settingsTab : indexTab;
+            tab.switchTab(index === 1 ? "settings" : "index", {});
+            return true;
         },
-        {
-            accessibilityLabel: t("tabs.settings"),
-            activeIcon: SettingsJellyIcon,
-            inactiveIcon: SettingsJellyIcon,
-            key: "settings",
-            label: t("tabs.settings"),
-            testID: "settings-tab",
-        },
-    ], [t]);
-    const selectedIndex = indexTab.trigger?.isFocused
-        ? 0
-        : settingsTab.trigger?.isFocused
-            ? 1
-            : null;
-    const selectTab = useCallback(({ index }: { index: number }) => {
-        const tab = index === 1 ? settingsTab : indexTab;
-        tab.switchTab(index === 1 ? "settings" : "index", {});
-        return true;
-    }, [indexTab, settingsTab]);
+        [indexTab, settingsTab],
+    );
     const openPaymentComposer = () => {
         appHaptics.secondaryAction();
         requestNewSource();
@@ -112,13 +110,17 @@ function AndroidTabBar() {
             className="pb-2"
             style={[styles.dock, dockStyle]}
         >
-            <View
-                pointerEvents="box-none"
-                style={[styles.dockContent, { paddingBottom: Math.max(insets.bottom, 20) }]}
-            >
+            <View pointerEvents="box-none" style={[styles.dockContent, { paddingBottom: Math.max(insets.bottom, 20) }]}>
                 <View pointerEvents="box-none" style={styles.jellyTrack}>
                     <JellyTabBarHeadless
-                        backdrop={<View style={[styles.trackFace, { backgroundColor: colors.cardFace, borderColor: colors.cardOutline }]} />}
+                        backdrop={
+                            <View
+                                style={[
+                                    styles.trackFace,
+                                    { backgroundColor: colors.cardFace, borderColor: colors.cardOutline },
+                                ]}
+                            />
+                        }
                         colors={{
                             surface: "transparent",
                             selectedSurface: colors.accent,
@@ -127,8 +129,8 @@ function AndroidTabBar() {
                         }}
                         config={{
                             layout: { iconSize: 23, itemHeight: 56, trackHeight: 64 },
-                            pillJelly: { pressedScale: 1.2, frameConfig: {  } },
-                            distortion: { pressedScale: 1.1 }
+                            pillJelly: { pressedScale: 1.2, frameConfig: {} },
+                            distortion: { pressedScale: 1.1 },
                         }}
 
                         items={items}

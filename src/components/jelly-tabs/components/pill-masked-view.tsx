@@ -1,11 +1,6 @@
 import NativeMaskedView from "@react-native-masked-view/masked-view";
 import type { PropsWithChildren } from "react";
-import {
-    Platform,
-    type StyleProp,
-    StyleSheet,
-    type ViewStyle,
-} from "react-native";
+import { Platform, type StyleProp, StyleSheet, type ViewStyle } from "react-native";
 import Animated, { type AnimatedStyle } from "react-native-reanimated";
 
 export interface PillMaskedViewProps extends PropsWithChildren {
@@ -26,9 +21,7 @@ const PillMaskElement = ({
     left,
     top,
 }: Pick<PillMaskedViewProps, "animatedStyle" | "height" | "left" | "top">) => (
-    <Animated.View
-        style={[styles.mask, { height, left, top }, animatedStyle]}
-    />
+    <Animated.View style={[styles.mask, { height, left, top }, animatedStyle]} />
 );
 
 export const PillMaskedView = ({
@@ -44,11 +37,7 @@ export const PillMaskedView = ({
     top,
 }: PillMaskedViewProps) => {
     if (Platform.OS === "web") {
-        // The clip box is a statically sized rounded rect moved and scaled
-        // only by clipStyle's transform; contentStyle applies the inverse
-        // transform so the children stay fixed to the track. Safari drops the
-        // rounding of an animated clip-path on stray frames, so the rounded
-        // clip must come from border-radius, which is stable.
+        // Round with border-radius: Safari drops the rounding of an animated clip-path on stray frames.
         return (
             <Animated.View
                 style={[
@@ -65,11 +54,7 @@ export const PillMaskedView = ({
                 ]}
             >
                 <Animated.View
-                    style={[
-                        styles.webContent,
-                        { height: contentHeight, width: contentWidth },
-                        contentStyle,
-                    ]}
+                    style={[styles.webContent, { height: contentHeight, width: contentWidth }, contentStyle]}
                 >
                     {children}
                 </Animated.View>
@@ -81,29 +66,19 @@ export const PillMaskedView = ({
         <NativeMaskedView
             androidRenderingMode="hardware"
             style={StyleSheet.absoluteFill}
-            maskElement={
-                <PillMaskElement
-                    animatedStyle={animatedStyle}
-                    height={height}
-                    left={left}
-                    top={top}
-                />
-            }
+            maskElement={<PillMaskElement animatedStyle={animatedStyle} height={height} left={left} top={top} />}
         >
             {children}
         </NativeMaskedView>
     );
 };
 
-// Promote the clip box to its own compositing layer. The static clip-path is a
-// second paint boundary for Chromium, where a backdrop-filter child can escape
-// borderRadius + overflow:hidden while its transformed parent initializes and
-// briefly show a square blur halo. Only the box transform is animated; the clip
-// itself remains stable, avoiding Safari's animated clip-path rounding issue.
+// Static clip-path: in Chromium a backdrop-filter child can escape border-radius as a square halo.
 const WEB_CLIP_LAYER = {
     clipPath: "inset(0 round 999px)",
+    overflow: "hidden",
     willChange: "transform",
-} as unknown as ViewStyle;
+} as const;
 
 const styles = StyleSheet.create({
     webClipBox: {

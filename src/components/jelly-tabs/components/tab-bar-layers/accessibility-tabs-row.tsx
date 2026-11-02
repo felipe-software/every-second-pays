@@ -6,10 +6,7 @@ import { StyleSheet, View } from "react-native";
 export const SelectedTabIndexContext = createContext<number | null>(null);
 
 const ACTIVATE_ACCESSIBILITY_ACTION = [{ name: "activate" }] as const;
-const TAB_ACCESSIBILITY_ACTIONS = [
-    { name: "activate" },
-    { name: "longpress" },
-] as const;
+const TAB_ACCESSIBILITY_ACTIONS = [{ name: "activate" }, { name: "longpress" }] as const;
 
 interface AccessibilityTabProps {
     index: number;
@@ -19,19 +16,9 @@ interface AccessibilityTabProps {
     selected: boolean;
 }
 
-const AccessibilityTab = ({
-    index,
-    item,
-    onActivate,
-    onLongPress,
-    selected,
-}: AccessibilityTabProps) => (
+const AccessibilityTab = ({ index, item, onActivate, onLongPress, selected }: AccessibilityTabProps) => (
     <View
-        accessibilityActions={
-            onLongPress
-                ? TAB_ACCESSIBILITY_ACTIONS
-                : ACTIVATE_ACCESSIBILITY_ACTION
-        }
+        accessibilityActions={onLongPress ? TAB_ACCESSIBILITY_ACTIONS : ACTIVATE_ACCESSIBILITY_ACTION}
         accessibilityLabel={item.accessibilityLabel ?? item.label}
         accessibilityRole="tab"
         accessibilityState={{ selected }}
@@ -56,10 +43,6 @@ export interface AccessibilityTabsRowProps {
     trackInset: number;
 }
 
-/**
- * Carries the a11y contract: every visual layer below is hidden from it.
- * The selected index comes from SelectedTabIndexContext.
- */
 export const AccessibilityTabsRow = memo(function AccessibilityTabsRow({
     items,
     onActivate,
@@ -69,13 +52,7 @@ export const AccessibilityTabsRow = memo(function AccessibilityTabsRow({
     const selectedIndex = useContext(SelectedTabIndexContext);
 
     return (
-        <View
-            pointerEvents="box-none"
-            style={[
-                styles.accessibilityTabsRow,
-                { paddingHorizontal: trackInset },
-            ]}
-        >
+        <View pointerEvents="box-none" style={[styles.accessibilityTabsRow, { paddingHorizontal: trackInset }]}>
             {items.map((item, index) => (
                 <AccessibilityTab
                     index={index}

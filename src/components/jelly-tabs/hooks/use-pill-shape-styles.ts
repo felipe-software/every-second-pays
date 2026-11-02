@@ -2,11 +2,7 @@ import type { AnimatedViewStyle } from "../components/tab-bar-layers/shared";
 import { getTabWidth } from "../utils/animation";
 import { useMemo } from "react";
 import { Platform } from "react-native";
-import {
-    clamp,
-    type SharedValue,
-    useAnimatedStyle,
-} from "react-native-reanimated";
+import { clamp, type SharedValue, useAnimatedStyle } from "react-native-reanimated";
 
 export interface PillShapeInputs {
     baseScaleX: SharedValue<number>;
@@ -37,8 +33,7 @@ const useNativePillShapeStyles = ({
     trackWidth,
     value,
 }: PillShapeInputs): PillShapeStyles => {
-    // The width only follows the track layout. Keeping it out of the
-    // per-frame style leaves that update transform-only.
+    // Separate from the per-frame style so that update stays transform-only.
     const maskWidthStyle = useAnimatedStyle(() => ({
         width: getTabWidth(trackWidth.value, trackInset, tabCount),
     }));
@@ -58,20 +53,10 @@ const useNativePillShapeStyles = ({
         };
     });
 
-    return useMemo(
-        () => ({ maskStyle: [maskWidthStyle, maskTransformStyle] }),
-        [maskTransformStyle, maskWidthStyle],
-    );
+    return useMemo(() => ({ maskStyle: [maskWidthStyle, maskTransformStyle] }), [maskTransformStyle, maskWidthStyle]);
 };
 
-// MaskedView has no web implementation. An animated CSS
-// `clip-path: inset(... round ...)` is not an option either: Safari
-// occasionally paints a frame with the inset applied but the rounding
-// dropped, flashing the whole pill as a rectangle. Instead the pill is a
-// statically sized border-radius + overflow:hidden box (a stable rounded
-// clip) animated purely with transforms — the same translate/scale the
-// native mask element uses — while contentStyle applies the exact
-// inverse transform so the clipped content stays fixed to the track.
+// No MaskedView on web, and Safari drops the rounding of an animated clip-path, so transform a box.
 const useWebPillShapeStyles = ({
     baseScaleX,
     baseScaleY,
@@ -108,10 +93,7 @@ const useWebPillShapeStyles = ({
         const scaleX = baseScaleX.value / (1 - scaleXCorrection);
         const scaleY = baseScaleY.value * (1 - scaleYCorrection);
 
-        // Both the clip box and this wrapper transform about their own
-        // centres, so inverting the box transform needs the centre offsets:
-        // solving box(wrapper(y)) = y for translate-then-scale transforms
-        // gives the translations below alongside the reciprocal scales.
+        // Both boxes transform about their own centres, so inverting needs the centre offsets.
         const boxCenterX = tabWidth / 2;
         const boxCenterY = itemHeight / 2;
         const contentCenterX = (trackWidth.value + maskOverscanX * 2) / 2;
@@ -124,16 +106,10 @@ const useWebPillShapeStyles = ({
             transform: [
                 {
                     translateX:
-                        boxCenterX -
-                        contentCenterX +
-                        (contentCenterX - boxCenterX - pillLeft - pillShiftX) /
-                            scaleX,
+                        boxCenterX - contentCenterX + (contentCenterX - boxCenterX - pillLeft - pillShiftX) / scaleX,
                 },
                 {
-                    translateY:
-                        boxCenterY -
-                        contentCenterY +
-                        (contentCenterY - boxCenterY - pillTop) / scaleY,
+                    translateY: boxCenterY - contentCenterY + (contentCenterY - boxCenterY - pillTop) / scaleY,
                 },
                 { scaleX: 1 / scaleX },
                 { scaleY: 1 / scaleY },
@@ -141,13 +117,8 @@ const useWebPillShapeStyles = ({
         };
     });
 
-    return useMemo(
-        () => ({ clipStyle, contentStyle }),
-        [clipStyle, contentStyle],
-    );
+    return useMemo(() => ({ clipStyle, contentStyle }), [clipStyle, contentStyle]);
 };
 
-// Each platform renders only one of the two pill implementations, so the
-// other one's mappers would run every frame without a view to update.
-export const usePillShapeStyles =
-    Platform.OS === "web" ? useWebPillShapeStyles : useNativePillShapeStyles;
+// Each platform renders one pill, so the other's mappers would run with no view to update.
+export const usePillShapeStyles = Platform.OS === "web" ? useWebPillShapeStyles : useNativePillShapeStyles;

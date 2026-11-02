@@ -1,6 +1,7 @@
 import { useEffect, useEffectEvent } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, {
+    createAnimatedComponent,
     css,
     Easing,
     ReduceMotion,
@@ -32,7 +33,7 @@ const POP = css.keyframes({
     to: { transform: [{ scale: 1 }] },
 });
 
-const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedPath = createAnimatedComponent(Path);
 // The check's two strokes: (20,6)→(9,17) and (9,17)→(4,12).
 const CHECK_LENGTH = Math.hypot(11, 11) + Math.hypot(5, 5);
 
@@ -42,11 +43,16 @@ function Check({ delay }: { delay: number }) {
     const animatedProps = useAnimatedProps(() => ({ strokeDashoffset: CHECK_LENGTH * (1 - drawn.get()) }));
 
     useEffect(() => {
-        drawn.set(withDelay(delay, withTiming(1, {
-            duration: 380,
-            easing: Easing.bezier(0.6, 0, 0.3, 1),
-            reduceMotion: ReduceMotion.System,
-        })));
+        drawn.set(
+            withDelay(
+                delay,
+                withTiming(1, {
+                    duration: 380,
+                    easing: Easing.bezier(0.6, 0, 0.3, 1),
+                    reduceMotion: ReduceMotion.System,
+                }),
+            ),
+        );
     }, [delay, drawn]);
 
     return (
@@ -64,23 +70,25 @@ function Check({ delay }: { delay: number }) {
     );
 }
 
-function PromiseRow({ label, row }: { label: string; row: typeof ROWS[number] }) {
+function PromiseRow({ label, row }: { label: string; row: (typeof ROWS)[number] }) {
     const { colors, isDark } = useOnboardingTheme();
-    // White cards on a light canvas, as the app's own cards; the design's gray `fill`
-    // reads as sunken there.
+    // White on a light canvas, as the app's own cards: the design's gray `fill` reads as sunken.
     const face = isDark ? colors.fill : colors.raised;
     return (
         <Animated.View style={[styles.rowShell, rise(row.rise, 18)]}>
             <View style={[styles.row, { backgroundColor: face, borderColor: colors.cardOutline }]}>
                 <Animated.View
-                    style={[styles.checkDisc, {
-                        backgroundColor: colors.accent,
-                        animationName: [POP, FADE_IN],
-                        animationDuration: [640, 200],
-                        animationTimingFunction: [EASE_BOUNCY, "ease-out"],
-                        animationDelay: row.pop,
-                        animationFillMode: "both",
-                    }]}
+                    style={[
+                        styles.checkDisc,
+                        {
+                            backgroundColor: colors.accent,
+                            animationName: [POP, FADE_IN],
+                            animationDuration: [640, 200],
+                            animationTimingFunction: [EASE_BOUNCY, "ease-out"],
+                            animationDelay: row.pop,
+                            animationFillMode: "both",
+                        },
+                    ]}
                 >
                     <Check delay={row.draw} />
                 </Animated.View>
@@ -90,7 +98,6 @@ function PromiseRow({ label, row }: { label: string; row: typeof ROWS[number] })
     );
 }
 
-/** Step three: a padlock snaps shut over the app's privacy promises. */
 export function PrivacyStep({ index, playing, reduced }: { index: number; playing: boolean; reduced: boolean }) {
     const { t } = useI18n();
     const art = ONBOARDING_ART.privacy();
@@ -128,7 +135,9 @@ export function PrivacyStep({ index, playing, reduced }: { index: number; playin
                     bodyDelay={460}
                 />
                 <View style={styles.rows}>
-                    {ROWS.map((row) => <PromiseRow key={row.key} label={t(row.key)} row={row} />)}
+                    {ROWS.map((row) => (
+                        <PromiseRow key={row.key} label={t(row.key)} row={row} />
+                    ))}
                 </View>
             </PageLayer>
         </>

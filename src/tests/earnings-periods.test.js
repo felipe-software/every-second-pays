@@ -10,13 +10,7 @@ mock.module("expo-sqlite/kv-store", () => ({
     },
 }));
 
-const {
-    PERIODS,
-    countWeekdays,
-    earnedInPeriod,
-    earnedToday,
-    periodStart,
-} = await import("../features/earnings/model");
+const { PERIODS, countWeekdays, earnedInPeriod, earnedToday, periodStart } = await import("../features/earnings/model");
 const { firstDayOfWeek } = await import("../features/i18n/first-day-of-week");
 const { usePeriodStore } = await import("../features/earnings/period-store");
 
@@ -116,7 +110,10 @@ describe("earnedInPeriod", () => {
                 const now = new Date(2026, 0, day, 15, 10);
                 for (const period of PERIODS) {
                     for (const firstDay of [SUNDAY, MONDAY]) {
-                        expect(earnedInPeriod(job, period, now, firstDay)).toBeCloseTo(slowEarned(job, period, now, firstDay), 6);
+                        expect(earnedInPeriod(job, period, now, firstDay)).toBeCloseTo(
+                            slowEarned(job, period, now, firstDay),
+                            6,
+                        );
                     }
                 }
             }
@@ -128,10 +125,22 @@ describe("earnedInPeriod", () => {
         // DST started March 8, 2026 (a 23-hour Sunday) and ends November 1 (a 25-hour Sunday).
         const afterSpring = new Date(2026, 2, 12, 9);
         const afterFall = new Date(2026, 10, 5, 9);
-        expect(earnedInPeriod(weekdayJob, "month", afterSpring, MONDAY)).toBeCloseTo(slowEarned(weekdayJob, "month", afterSpring, MONDAY), 6);
-        expect(earnedInPeriod(weekdayJob, "year", afterSpring, MONDAY)).toBeCloseTo(slowEarned(weekdayJob, "year", afterSpring, MONDAY), 6);
-        expect(earnedInPeriod(weekdayJob, "week", afterFall, SUNDAY)).toBeCloseTo(slowEarned(weekdayJob, "week", afterFall, SUNDAY), 6);
-        expect(earnedInPeriod(weekdayJob, "year", afterFall, MONDAY)).toBeCloseTo(slowEarned(weekdayJob, "year", afterFall, MONDAY), 6);
+        expect(earnedInPeriod(weekdayJob, "month", afterSpring, MONDAY)).toBeCloseTo(
+            slowEarned(weekdayJob, "month", afterSpring, MONDAY),
+            6,
+        );
+        expect(earnedInPeriod(weekdayJob, "year", afterSpring, MONDAY)).toBeCloseTo(
+            slowEarned(weekdayJob, "year", afterSpring, MONDAY),
+            6,
+        );
+        expect(earnedInPeriod(weekdayJob, "week", afterFall, SUNDAY)).toBeCloseTo(
+            slowEarned(weekdayJob, "week", afterFall, SUNDAY),
+            6,
+        );
+        expect(earnedInPeriod(weekdayJob, "year", afterFall, MONDAY)).toBeCloseTo(
+            slowEarned(weekdayJob, "year", afterFall, MONDAY),
+            6,
+        );
         // Thursday after the fall change: Mon, Tue, Wed are done.
         expect(earnedInPeriod(weekdayJob, "week", afterFall, MONDAY)).toBeCloseTo(3 * DAY_PAY, 6);
     });
@@ -183,7 +192,9 @@ describe("earnedInPeriod", () => {
         expect(PERIODS.map((period) => earnedInPeriod(landedLastYear, period, now, MONDAY))).toEqual([0, 0, 0, 0]);
 
         expect(PERIODS.map((period) => earnedInPeriod(bonus, period, now, MONDAY))).toEqual([500, 500, 500, 500]);
-        expect(PERIODS.map((period) => earnedInPeriod({ ...bonus, when: "later" }, period, now, MONDAY))).toEqual([0, 0, 0, 0]);
+        expect(PERIODS.map((period) => earnedInPeriod({ ...bonus, when: "later" }, period, now, MONDAY))).toEqual([
+            0, 0, 0, 0,
+        ]);
     });
 });
 
@@ -203,14 +214,14 @@ describe("firstDayOfWeek", () => {
     });
 });
 
-describe("period store", () => {
-    const period = () => usePeriodStore.getState().period;
+const currentPeriod = () => usePeriodStore.getState().period;
 
+describe("period store", () => {
     test("tapping cycles through every period and wraps back to today", () => {
         usePeriodStore.setState({ period: "today" });
         const seen = PERIODS.map(() => {
             usePeriodStore.getState().cycle();
-            return period();
+            return currentPeriod();
         });
         expect(seen).toEqual(["week", "month", "year", "today"]);
     });
@@ -219,13 +230,13 @@ describe("period store", () => {
         const { step } = usePeriodStore.getState();
         usePeriodStore.setState({ period: "today" });
         expect(step(-1)).toBe(false);
-        expect(period()).toBe("today");
+        expect(currentPeriod()).toBe("today");
         expect([step(1), step(1), step(1)]).toEqual([true, true, true]);
-        expect(period()).toBe("year");
+        expect(currentPeriod()).toBe("year");
         expect(step(1)).toBe(false);
-        expect(period()).toBe("year");
+        expect(currentPeriod()).toBe("year");
         expect(step(-1)).toBe(true);
-        expect(period()).toBe("month");
+        expect(currentPeriod()).toBe("month");
     });
 
     test("remembers the choice and restores it on the next launch", async () => {
@@ -233,6 +244,6 @@ describe("period store", () => {
         usePeriodStore.getState().select("month");
         usePeriodStore.setState({ period: "today", hydrated: false });
         await usePeriodStore.getState().load();
-        expect(period()).toBe("month");
+        expect(currentPeriod()).toBe("month");
     });
 });

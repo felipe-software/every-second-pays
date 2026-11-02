@@ -29,7 +29,7 @@ export function useBackProgress(enabled: boolean, handlers: BackProgressHandlers
     const handleCancel = useEffectEvent(() => handlers.onCancel());
 
     useEffect(() => {
-        if (!enabled || !NATIVE) return;
+        if (!enabled || !NATIVE) return undefined;
         const progress = NATIVE.addListener("onProgress", handleProgress);
         const cancel = NATIVE.addListener("onCancel", handleCancel);
         return () => {

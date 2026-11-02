@@ -16,7 +16,8 @@ import { DevNotificationControls } from "@/features/notifications/dev-notificati
 import { activePause, type PauseChoice, type ProgressLevel, type WeekLevel } from "@/features/notifications/routine";
 import { useNotificationStore } from "@/features/notifications/store";
 import { BackChevron } from "@/features/widgets/widget-glyphs";
-import { OptionChips, OptionGroup, SwitchRow } from "@/features/widgets/widget-options";
+import { OptionChips, OptionGroup } from "@/features/widgets/widget-options";
+import { SwitchRow } from "@/features/widgets/widget-switch-row";
 
 const WEEK_LEVELS: readonly WeekLevel[] = ["every", "other", "off"];
 const PROGRESS_LEVELS: readonly ProgressLevel[] = ["all", "half", "final", "off"];
@@ -53,7 +54,9 @@ function BlockedBanner() {
             className="mt-4 rounded-[20px] bg-active px-4 py-3.5"
         >
             <Text className="font-sans text-[15px] font-semibold text-ink">{t("notifications.blocked")}</Text>
-            <Text className="mt-1 font-sans text-[13.5px] font-semibold text-accent-deep">{t("notifications.blockedAction")}</Text>
+            <Text className="mt-1 font-sans text-[13.5px] font-semibold text-accent-deep">
+                {t("notifications.blockedAction")}
+            </Text>
         </Pressable>
     );
 }
@@ -73,9 +76,14 @@ export default function NotificationsScreen() {
         void useNotificationStore.getState().load();
     }, []);
 
-    useFocusEffect(useCallback(() => {
-        void Noti.bills.areEnabled().then((enabled) => setBlocked(!enabled)).catch(() => {});
-    }, []));
+    useFocusEffect(
+        useCallback(() => {
+            void Noti.bills
+                .areEnabled()
+                .then((enabled) => setBlocked(!enabled))
+                .catch(() => {});
+        }, []),
+    );
 
     const weekLabels: Record<WeekLevel, string> = {
         every: t("notifications.week.every"),

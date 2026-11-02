@@ -1,35 +1,32 @@
 import Storage from "expo-sqlite/kv-store";
 
-import {
-    type NotificationSettings,
-    parseSettings,
-    parseState,
-    type RoutineState,
-} from "./routine";
+import { type NotificationSettings, parseSettings, parseState, type RoutineState } from "./routine";
 
 const SETTINGS_KEY = "notification-settings";
 const STATE_KEY = "notification-routine";
 const ASKED_KEY = "notification-permission-asked";
 
-async function readJson(key: string): Promise<unknown> {
+async function readParsed<T>(key: string, parse: (value: unknown) => T) {
+    let stored: unknown;
     try {
         const value = await Storage.getItem(key);
-        return value ? JSON.parse(value) : undefined;
+        stored = value ? JSON.parse(value) : undefined;
     } catch {
-        return undefined;
+        stored = undefined;
     }
+    return parse(stored);
 }
 
-export async function readSettings() {
-    return parseSettings(await readJson(SETTINGS_KEY));
+export function readSettings() {
+    return readParsed(SETTINGS_KEY, parseSettings);
 }
 
 export async function writeSettings(settings: NotificationSettings) {
     await Storage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
-export async function readState() {
-    return parseState(await readJson(STATE_KEY));
+export function readState() {
+    return readParsed(STATE_KEY, parseState);
 }
 
 let stateQueue: Promise<unknown> = Promise.resolve();

@@ -23,8 +23,7 @@ type I18nContextValue = {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
-// Hermes builds a native ICU formatter for every Intl constructor and every `toLocaleString`
-// with a locale, which costs about a millisecond each on Android; reuse them.
+// Hermes builds a native ICU formatter per Intl call, about 1 ms each on Android; reuse them.
 const numberFormats = new Map<string, Intl.NumberFormat>();
 
 function numberFormat(locale: string, options?: Intl.NumberFormatOptions) {
@@ -53,11 +52,11 @@ function clockParts(locale: string, twentyFourHour: boolean, withMinutes: boolea
     const key = `${locale}|${twentyFourHour}|${withMinutes}`;
     let parts = clockFormats.get(key);
     if (!parts) {
-        const formatter = new Intl.DateTimeFormat(locale, {
-            hour: twentyFourHour && withMinutes ? "2-digit" : "numeric",
-            ...(withMinutes ? { minute: "2-digit" as const } : {}),
-            ...(twentyFourHour ? { hourCycle: "h23" as const } : { hour12: true }),
-        });
+        const options: Intl.DateTimeFormatOptions = { hour: twentyFourHour && withMinutes ? "2-digit" : "numeric" };
+        if (withMinutes) options.minute = "2-digit";
+        if (twentyFourHour) options.hourCycle = "h23";
+        else options.hour12 = true;
+        const formatter = new Intl.DateTimeFormat(locale, options);
         parts = memoize((minutes: number) => {
             const date = new Date(2024, 0, 1, Math.floor(minutes / 60), minutes % 60);
             return typeof formatter.formatToParts === "function"
@@ -82,6 +81,22 @@ function weekdayNames(locale: string, width: "long" | "short" | "narrow") {
     return names;
 }
 
+function dayRuns(days: number[]) {
+    const sorted = [...days];
+    sorted.sort((a, b) => a - b);
+    const runs: number[][] = [];
+    let current = [sorted[0]];
+    for (let index = 1; index < sorted.length; index += 1) {
+        if (sorted[index] === sorted[index - 1] + 1) current.push(sorted[index]);
+        else {
+            runs.push(current);
+            current = [sorted[index]];
+        }
+    }
+    runs.push(current);
+    return runs;
+}
+
 export function I18nProvider({ children }: { children: ReactNode }) {
     const locales = useLocales();
     const calendars = useCalendars();
@@ -98,11 +113,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         [locale],
     );
     const formatMoney = useCallback(
-        (value: number, digits = 2) => formatNumber(value, { minimumFractionDigits: digits, maximumFractionDigits: digits }),
+        (value: number, digits = 2) =>
+            formatNumber(value, { minimumFractionDigits: digits, maximumFractionDigits: digits }),
         [formatNumber],
     );
     const twentyFourHour = useMemo(
-        () => uses24HourClock ?? new Intl.DateTimeFormat(locale, { hour: "numeric" }).resolvedOptions().hour12 === false,
+        () =>
+            uses24HourClock ?? new Intl.DateTimeFormat(locale, { hour: "numeric" }).resolvedOptions().hour12 === false,
         [locale, uses24HourClock],
     );
     const timeParts = useCallback(
@@ -111,11 +128,17 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         [locale, twentyFourHour],
     );
     const formatTime = useCallback(
-        (totalMinutes: number) => timeParts(totalMinutes).map((part) => part.value).join(""),
+        (totalMinutes: number) =>
+            timeParts(totalMinutes)
+                .map((part) => part.value)
+                .join(""),
         [timeParts],
     );
     const formatHour = useCallback(
-        (totalMinutes: number) => timeParts(totalMinutes, false).map((part) => part.value).join(""),
+        (totalMinutes: number) =>
+            timeParts(totalMinutes, false)
+                .map((part) => part.value)
+                .join(""),
         [timeParts],
     );
     const formatTimeRangeParts = useCallback(
@@ -125,7 +148,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
             const period = (parts: Intl.DateTimeFormatPart[]) => parts.find((part) => part.type === "dayPeriod")?.value;
             const sharedPeriod = period(startParts) != null && period(startParts) === period(endParts);
             const startText = sharedPeriod
-                ? startParts.filter((part) => part.type !== "dayPeriod").map((part) => part.value).join("").trim()
+                ? startParts
+                      .filter((part) => part.type !== "dayPeriod")
+                      .map((part) => part.value)
+                      .join("")
+                      .trim()
                 : startParts.map((part) => part.value).join("");
             return [startText, endParts.map((part) => part.value).join("")];
         },
@@ -143,41 +170,47 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         (days: number[]) => {
             if (!days.length) return t("days.none");
             if (days.length === 7) return t("days.everyDay");
-            const sorted = [...days].sort((a, b) => a - b);
-            const runs: number[][] = [];
-            let current = [sorted[0]];
-            for (let index = 1; index < sorted.length; index += 1) {
-                if (sorted[index] === sorted[index - 1] + 1) current.push(sorted[index]);
-                else {
-                    runs.push(current);
-                    current = [sorted[index]];
-                }
-            }
-            runs.push(current);
-            return runs
-                .map((run) => run.length > 1
-                    ? `${weekdayName(run[0])}-${weekdayName(run.at(-1)!)}`
-                    : weekdayName(run[0]))
+            return dayRuns(days)
+                .map((run) =>
+                    run.length > 1 ? `${weekdayName(run[0])}-${weekdayName(run.at(-1)!)}` : weekdayName(run[0]),
+                )
                 .join(", ");
         },
         [t, weekdayName],
     );
 
-    const value = useMemo<I18nContextValue>(() => ({
-        language,
-        locale,
-        decimalSeparator,
-        firstDayOfWeek,
-        t,
-        formatMoney,
-        formatNumber,
-        formatTime,
-        formatHour,
-        formatTimeRange,
-        formatTimeRangeParts,
-        formatDays,
-        weekdayName,
-    }), [decimalSeparator, firstDayOfWeek, formatDays, formatMoney, formatNumber, formatHour, formatTime, formatTimeRange, formatTimeRangeParts, language, locale, t, weekdayName]);
+    const value = useMemo<I18nContextValue>(
+        () => ({
+            language,
+            locale,
+            decimalSeparator,
+            firstDayOfWeek,
+            t,
+            formatMoney,
+            formatNumber,
+            formatTime,
+            formatHour,
+            formatTimeRange,
+            formatTimeRangeParts,
+            formatDays,
+            weekdayName,
+        }),
+        [
+            decimalSeparator,
+            firstDayOfWeek,
+            formatDays,
+            formatMoney,
+            formatNumber,
+            formatHour,
+            formatTime,
+            formatTimeRange,
+            formatTimeRangeParts,
+            language,
+            locale,
+            t,
+            weekdayName,
+        ],
+    );
 
     return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

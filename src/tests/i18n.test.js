@@ -16,7 +16,10 @@ mock.module("expo-sqlite/kv-store", () => ({
             return savedPreferences.get(key) ?? null;
         },
         setItem: async (key, value) => {
-            if (holdWrite) await new Promise((resolve) => { releaseWrite = resolve; });
+            if (holdWrite)
+                await new Promise((resolve) => {
+                    releaseWrite = resolve;
+                });
             if (failWrite) throw new Error("write failed");
             savedPreferences.set(key, value);
         },
@@ -32,7 +35,15 @@ const { I18nProvider, useI18n } = await import("../features/i18n/i18n");
 const { translations } = await import("../features/i18n/translations");
 const { useLanguageStore: languageStore } = await import("../features/i18n/store");
 const initialLanguageState = languageStore.getInitialState();
-const resetLanguage = () => languageStore.setState({ preference: "system", hydrated: false, loading: false, saving: false, loadError: false });
+const resetLanguage = () =>
+    languageStore.setState({ preference: "system", hydrated: false, loading: false, saving: false, loadError: false });
+
+function byCodeUnit(a, b) {
+    if (a < b) return -1;
+    return a > b ? 1 : 0;
+}
+
+const placeholders = (value) => [...value.matchAll(/\{\{(\w+)\}\}/g)].map((match) => match[1]).toSorted(byCodeUnit);
 
 function readI18n() {
     // The server renderer reads Zustand's initial snapshot instead of its live subscription.
@@ -102,13 +113,13 @@ test("does not persist an unchanged language", async () => {
 test("manual language without a native locale keeps Hermes-compatible decimal formatting", async () => {
     await languageStore.getState().load();
     await languageStore.getState().update("fr");
-    const original = Intl.NumberFormat.prototype.formatToParts;
+    const original = Object.getOwnPropertyDescriptor(Intl.NumberFormat.prototype, "formatToParts");
     Intl.NumberFormat.prototype.formatToParts = undefined;
     try {
         expect(readI18n().decimalSeparator).toBe(",");
         expect(readI18n().formatMoney(12.5)).toBe("12,50");
     } finally {
-        Intl.NumberFormat.prototype.formatToParts = original;
+        Object.defineProperty(Intl.NumberFormat.prototype, "formatToParts", original);
     }
 });
 
@@ -136,7 +147,7 @@ test("unknown saved language falls back to the device", async () => {
 });
 
 test("formats all supported languages without NumberFormat.formatToParts", () => {
-    const original = Intl.NumberFormat.prototype.formatToParts;
+    const original = Object.getOwnPropertyDescriptor(Intl.NumberFormat.prototype, "formatToParts");
     Intl.NumberFormat.prototype.formatToParts = undefined;
     try {
         for (const [languageCode, languageTag, decimalSeparator, expected] of [
@@ -154,7 +165,7 @@ test("formats all supported languages without NumberFormat.formatToParts", () =>
             expect(i18n.t("home.editSource", { name: "Acme" })).toContain("Acme");
         }
     } finally {
-        Intl.NumberFormat.prototype.formatToParts = original;
+        Object.defineProperty(Intl.NumberFormat.prototype, "formatToParts", original);
     }
 });
 
@@ -207,9 +218,8 @@ test("formats translated empty, full and mixed weekday schedules", () => {
 });
 
 test("translations preserve every key and interpolation placeholder", () => {
-    const placeholders = (value) => [...value.matchAll(/\{\{(\w+)\}\}/g)].map((match) => match[1]).sort();
     for (const table of Object.values(translations)) {
-        expect(Object.keys(table).sort()).toEqual(Object.keys(translations.en).sort());
+        expect(Object.keys(table).toSorted()).toEqual(Object.keys(translations.en).toSorted());
         for (const [key, value] of Object.entries(translations.en)) {
             expect(table[key].trim().length).toBeGreaterThan(0);
             expect(placeholders(table[key])).toEqual(placeholders(value));

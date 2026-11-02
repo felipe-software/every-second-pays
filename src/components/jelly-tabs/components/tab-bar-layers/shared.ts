@@ -1,17 +1,13 @@
 import type { TabItemProps } from "../tab-item";
 import { cloneElement, type ReactElement } from "react";
-import {
-    type StyleProp,
-    StyleSheet,
-    type ViewStyle,
-} from "react-native";
+import { type StyleProp, StyleSheet, type ViewStyle } from "react-native";
 import type { AnimatedStyle } from "react-native-reanimated";
 
 export type AnimatedViewStyle = StyleProp<AnimatedStyle<ViewStyle>>;
 
 export type TabElements = readonly ReactElement<TabItemProps>[];
 
-/** Layout scalars already multiplied by `displayScale`. */
+// Already multiplied by displayScale.
 export interface TabBarGeometry {
     itemHeight: number;
     maskOverscanX: number;
@@ -28,11 +24,7 @@ export interface TouchFeedbackVisuals {
     radius: number;
 }
 
-export const cloneTabs = (
-    tabs: TabElements,
-    keyPrefix: string,
-    activeStyle?: AnimatedViewStyle,
-) =>
+export const cloneTabs = (tabs: TabElements, keyPrefix: string, activeStyle?: AnimatedViewStyle) =>
     tabs.map((tab, index) =>
         cloneElement(
             tab,
@@ -46,8 +38,7 @@ export const cloneTabs = (
         ),
     );
 
-// Spread this, never `StyleSheet.absoluteFill`: react-native-web compiles the
-// latter into an opaque object, so spreading it yields an empty rule.
+// Spread this, not StyleSheet.absoluteFill: react-native-web compiles that to an opaque object.
 export const ABSOLUTE_FILL = {
     bottom: 0,
     left: 0,

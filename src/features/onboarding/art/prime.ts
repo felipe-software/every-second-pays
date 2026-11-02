@@ -8,8 +8,7 @@ const STEADY_FRAME_GAP = 25;
 const STEADY_FRAMES = 3;
 const MAX_SETTLE_WAIT = 1500;
 
-// Runs once frames come at a steady pace again, so nothing it starts gets cut short by a long
-// frame such as a mount or the screen's first draw.
+// So nothing it starts gets cut short by a long frame, such as a mount or the first draw.
 export function afterFramesSettle(run: () => void) {
     const start = performance.now();
     let last = start;
@@ -24,15 +23,17 @@ export function afterFramesSettle(run: () => void) {
     requestAnimationFrame(tick);
 }
 
-// A GPU program compiled mid-animation drops frames, enough to skip a short effect entirely on a
-// slow phone. Drawn once offscreen on the UI thread, which shares its GPU context with the
-// canvases there, the frames leave their programs compiled. Mirrors RNSkPictureView's drawing.
+// On the UI thread, sharing the canvases' GPU context: a program compiled mid-animation drops frames.
 export function primeArt(animations: SkSkottieAnimation[], frames: readonly number[], onDone: () => void) {
+    // Mirrors RNSkPictureView's drawing.
     const density = PixelRatio.get();
     runOnUI(() => {
         "worklet";
         try {
-            const surface = Skia.Surface.MakeOffscreen(Math.ceil(ARTBOARD.width * density), Math.ceil(ARTBOARD.height * density));
+            const surface = Skia.Surface.MakeOffscreen(
+                Math.ceil(ARTBOARD.width * density),
+                Math.ceil(ARTBOARD.height * density),
+            );
             if (!surface) return;
             const canvas = surface.getCanvas();
             const bounds = Skia.XYWHRect(0, 0, ARTBOARD.width, ARTBOARD.height);
