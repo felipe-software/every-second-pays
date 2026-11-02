@@ -1,0 +1,301 @@
+{
+    "anti-slop/no-chained-type-assertions": [
+        "src/components/jelly-tabs/components/pill-masked-view.tsx"
+    ],
+    "anti-slop/no-conditional-empty-object-spread": [
+        "src/features/appearance/theme-transition.ts",
+        "src/features/earnings/source-row.tsx",
+        "src/features/earnings/store.ts",
+        "src/features/i18n/i18n.tsx"
+    ],
+    "anti-slop/no-known-value-widening": [
+        "modules/noti/src/serialize.ts",
+        "src/app/settings/widgets.tsx",
+        "src/features/currency/currencies.ts"
+    ],
+    "anti-slop/no-object-parameters": [
+        "src/components/jelly-tabs/hooks/use-shallow-stable.ts"
+    ],
+    "anti-slop/no-unknown-returns": [
+        "src/components/jelly-tabs/types.ts",
+        "src/features/earnings/database.ts",
+        "src/features/onboarding/art/step-art.tsx",
+        "src/features/onboarding/intro-step.tsx"
+    ],
+    "anti-slop/no-unsafe-dictionary-type": [
+        "modules/noti/src/serialize.ts",
+        "src/components/jelly-tabs/hooks/use-shallow-stable.ts",
+        "src/features/currency/rates.ts",
+        "src/features/widgets/widget-preview-pager.tsx"
+    ],
+    "anti-slop/require-safety-comment-for-type-assertion": [
+        "goldie/goldie.config.ts",
+        "modules/noti/src/index.ts",
+        "modules/noti/src/serialize.ts",
+        "src/app/settings/widgets.tsx",
+        "src/components/jelly-tabs/components/navigation-tab-bar.tsx",
+        "src/components/jelly-tabs/components/pill-masked-view.tsx",
+        "src/components/jelly-tabs/hooks/use-distortion.ts",
+        "src/components/jelly-tabs/hooks/use-shallow-stable.ts",
+        "src/components/jelly-tabs/hooks/use-stable-array.ts",
+        "src/components/jelly-tabs/utils/navigation.ts",
+        "src/features/appearance/palettes.ts",
+        "src/features/currency/rates.ts",
+        "src/features/earnings/days-editor.tsx",
+        "src/features/earnings/store.ts",
+        "src/features/onboarding/art/sources.ts",
+        "src/features/widgets/widget-config.ts",
+        "src/features/widgets/widget-data.ts"
+    ],
+    "comment-policy/no-comment-noise": [
+        "goldie/bin/clock-off-shift.mjs",
+        "goldie/bin/clock-on-shift.mjs",
+        "goldie/bin/prepare-emulator.mjs",
+        "goldie/bin/reduce-motion.mjs",
+        "goldie/goldie.config.ts",
+        "modules/noti/scripts/generate-money-widget-resources.mjs",
+        "src/app/_layout.tsx",
+        "src/app/index.tsx",
+        "src/app/settings/_layout.tsx",
+        "src/components/app-sheet.tsx",
+        "src/components/elevated/raised.tsx",
+        "src/components/elevated/ripple.tsx",
+        "src/components/jelly-tabs/components/navigation-tab-bar.tsx",
+        "src/components/jelly-tabs/components/pill-masked-view.tsx",
+        "src/components/jelly-tabs/components/tab-bar-layers/accessibility-tabs-row.tsx",
+        "src/components/jelly-tabs/components/tab-bar-layers/shared.ts",
+        "src/components/jelly-tabs/components/tabs.tsx",
+        "src/components/jelly-tabs/constants.ts",
+        "src/components/jelly-tabs/hooks/use-distortion.ts",
+        "src/components/jelly-tabs/hooks/use-pill-jelly.ts",
+        "src/components/jelly-tabs/hooks/use-pill-shape-styles.ts",
+        "src/components/jelly-tabs/hooks/use-shallow-stable.ts",
+        "src/components/jelly-tabs/hooks/use-stable-array.ts",
+        "src/components/jelly-tabs/types.ts",
+        "src/components/jelly-tabs/utils/animation.ts",
+        "src/components/jelly-tabs/utils/navigation.ts",
+        "src/components/sheet-recede.tsx",
+        "src/features/appearance/accent-color-picker.tsx",
+        "src/features/appearance/appearance-selector.tsx",
+        "src/features/appearance/store.ts",
+        "src/features/appearance/theme-transition.ts",
+        "src/features/appearance/use-appearance-sync.ts",
+        "src/features/currency/currency-selector.tsx",
+        "src/features/earnings/earnings-header.tsx",
+        "src/features/earnings/hours/day-arc.tsx",
+        "src/features/haptics/haptics.ts",
+        "src/features/haptics/score.ts",
+        "src/features/haptics/waveform.ts",
+        "src/features/i18n/i18n.tsx",
+        "src/features/onboarding/art/prime.ts",
+        "src/features/onboarding/art/skottie.ts",
+        "src/features/onboarding/art/sources.ts",
+        "src/features/onboarding/art/step-art.tsx",
+        "src/features/onboarding/customize-step.tsx",
+        "src/features/onboarding/haptics-context.ts",
+        "src/features/onboarding/intro-labels.tsx",
+        "src/features/onboarding/intro-step.tsx",
+        "src/features/onboarding/intro-timeline.ts",
+        "src/features/onboarding/look.tsx",
+        "src/features/onboarding/motion.ts",
+        "src/features/onboarding/onboarding-background.tsx",
+        "src/features/onboarding/onboarding.tsx",
+        "src/features/onboarding/pager.tsx",
+        "src/features/onboarding/paint.ts",
+        "src/features/onboarding/privacy-step.tsx",
+        "src/features/onboarding/step-copy.tsx",
+        "src/features/onboarding/store.ts",
+        "src/features/onboarding/widget-step.tsx",
+        "src/features/widgets/earnings-schedule.ts",
+        "src/tests/haptic-score.test.js"
+    ],
+    "eslint/complexity": [
+        "modules/noti/plugin/compiler.js",
+        "modules/noti/src/serialize.ts",
+        "src/app/index.tsx",
+        "src/components/jelly-tabs/components/navigation-tab-bar.tsx",
+        "src/components/jelly-tabs/constants.ts",
+        "src/features/earnings/payment-sheet.tsx",
+        "src/features/earnings/system-time-input.android.tsx",
+        "src/features/onboarding/onboarding.tsx"
+    ],
+    "eslint/max-lines": [
+        "modules/noti/scripts/generate-money-widget-resources.mjs",
+        "modules/noti/src/serialize.ts",
+        "src/app/index.tsx",
+        "src/app/settings/widgets.tsx",
+        "src/components/jelly-tabs/components/tabs.tsx",
+        "src/components/jelly-tabs/hooks/use-pill-jelly.ts",
+        "src/features/earnings/hours/day-arc.tsx",
+        "src/features/earnings/money-counter-celebration.tsx",
+        "src/features/onboarding/customize-step.tsx",
+        "src/features/onboarding/onboarding.tsx",
+        "src/features/widgets/widget-options.tsx"
+    ],
+    "eslint/max-lines-per-function": [
+        "modules/noti/src/serialize.ts",
+        "src/app/explore.tsx",
+        "src/app/index.tsx",
+        "src/app/settings/widgets.tsx",
+        "src/components/jelly-tabs/components/navigation-tab-bar.tsx",
+        "src/components/jelly-tabs/components/tabs.tsx",
+        "src/components/jelly-tabs/hooks/use-distortion.ts",
+        "src/components/jelly-tabs/hooks/use-pill-jelly.ts",
+        "src/features/earnings/hours/day-arc.tsx",
+        "src/features/earnings/money-counter-celebration.tsx",
+        "src/features/onboarding/intro-step.tsx",
+        "src/features/onboarding/onboarding.tsx"
+    ],
+    "eslint/max-nested-callbacks": [
+        "src/app/index.tsx",
+        "src/features/earnings/money-counter-celebration.tsx",
+        "src/features/onboarding/art/step-art.tsx"
+    ],
+    "eslint/max-params": [
+        "goldie/goldie.config.ts",
+        "modules/noti/scripts/generate-money-widget-resources.mjs",
+        "src/components/elevated/ripple.tsx",
+        "src/components/jelly-tabs/hooks/use-pill-jelly.ts",
+        "src/components/jelly-tabs/utils/animation.ts",
+        "src/features/earnings/hours/day-arc.tsx",
+        "src/features/earnings/money-counter-celebration.tsx",
+        "src/features/widgets/earnings-schedule.ts"
+    ],
+    "eslint/no-nested-ternary": [
+        "modules/noti/src/index.ts",
+        "src/app/index.tsx",
+        "src/app/settings/widgets.tsx",
+        "src/components/android-tab-pager.tsx",
+        "src/components/app-tabs.android.tsx",
+        "src/components/elevated/raised.tsx",
+        "src/components/jelly-tabs/hooks/use-pill-jelly.ts",
+        "src/features/currency/currency-selector.tsx",
+        "src/features/currency/currency-sheet.tsx",
+        "src/features/currency/main-currency-sheet.tsx",
+        "src/features/earnings/earnings-background.tsx",
+        "src/features/earnings/earnings-header.tsx",
+        "src/features/earnings/payment-sheet.tsx",
+        "src/features/earnings/source-row.tsx",
+        "src/features/earnings/store.ts",
+        "src/features/onboarding/art/sources.ts",
+        "src/features/onboarding/intro-labels.tsx",
+        "src/features/onboarding/onboarding.tsx"
+    ],
+    "eslint/no-shadow": [
+        "modules/noti/scripts/generate-money-widget-resources.mjs",
+        "src/features/haptics/haptics.ts",
+        "src/features/onboarding/intro-step.tsx"
+    ],
+    "eslint/no-unused-vars": [
+        "src/components/themed-view.tsx"
+    ],
+    "eslint/no-void": [
+        "src/app/settings/index.tsx",
+        "src/app/settings/widgets.tsx",
+        "src/features/currency/currency-sheet.tsx",
+        "src/features/currency/main-currency-sheet.tsx",
+        "src/features/earnings/dev-job-controls.tsx",
+        "src/features/widgets/money-widget-sync.tsx"
+    ],
+    "import/no-named-as-default-member": [
+        "src/features/earnings/empty-sources.tsx",
+        "src/features/earnings/hours/day-arc.tsx",
+        "src/features/onboarding/privacy-step.tsx"
+    ],
+    "react/capitalized-calls": [
+        "src/components/android-tab-pager.tsx",
+        "src/components/app-tabs.tsx",
+        "src/components/jelly-tabs/hooks/use-pill-jelly.ts",
+        "src/features/earnings/earnings-header.tsx",
+        "src/features/onboarding/onboarding.tsx",
+        "src/features/widgets/widget-preview-pager.tsx"
+    ],
+    "typescript/consistent-return": [
+        "src/components/jelly-tabs/components/tabs.tsx",
+        "src/features/earnings/earnings-background.tsx",
+        "src/features/earnings/live-dot.tsx",
+        "src/features/earnings/money-counter-celebration.tsx",
+        "src/features/earnings/source-row.tsx",
+        "src/features/navigation/predictive-back.ts",
+        "src/features/onboarding/art/step-art.tsx",
+        "src/features/onboarding/customize-step.tsx",
+        "src/features/onboarding/intro-step.tsx",
+        "src/features/onboarding/onboarding.tsx",
+        "src/features/widgets/money-widget-sync.tsx"
+    ],
+    "typescript/no-base-to-string": [
+        "modules/noti/src/serialize.ts"
+    ],
+    "typescript/no-duplicate-type-constituents": [
+        "src/constants/theme.ts"
+    ],
+    "typescript/no-floating-promises": [
+        "src/app/_layout.tsx",
+        "src/components/animated-icon.tsx"
+    ],
+    "typescript/no-misused-promises": [
+        "src/components/external-link.tsx"
+    ],
+    "typescript/no-misused-spread": [
+        "src/features/currency/currencies.ts"
+    ],
+    "typescript/no-unnecessary-type-assertion": [
+        "modules/noti/src/serialize.ts",
+        "src/components/jelly-tabs/hooks/use-stable-array.ts"
+    ],
+    "typescript/no-unnecessary-type-conversion": [
+        "modules/noti/src/index.ts",
+        "modules/noti/src/serialize.ts",
+        "src/features/onboarding/onboarding.tsx"
+    ],
+    "typescript/no-unnecessary-type-parameters": [
+        "modules/noti/src/components.tsx"
+    ],
+    "typescript/no-unsafe-type-assertion": [
+        "goldie/goldie.config.ts",
+        "modules/noti/src/index.ts",
+        "modules/noti/src/serialize.ts",
+        "src/components/jelly-tabs/components/navigation-tab-bar.tsx",
+        "src/components/jelly-tabs/components/pill-masked-view.tsx",
+        "src/components/jelly-tabs/hooks/use-shallow-stable.ts",
+        "src/components/jelly-tabs/utils/navigation.ts",
+        "src/features/currency/rates.ts",
+        "src/features/onboarding/art/sources.ts",
+        "src/features/widgets/widget-data.ts"
+    ],
+    "typescript/no-unsafe-unary-minus": [
+        "modules/noti/plugin/compiler.js"
+    ],
+    "typescript/require-array-sort-compare": [
+        "src/features/earnings/days-editor.tsx",
+        "src/features/onboarding/art/skottie.ts",
+        "src/tests/i18n.test.js"
+    ],
+    "typescript/unbound-method": [
+        "src/components/elevated/raised.tsx",
+        "src/tests/i18n.test.js"
+    ],
+    "unicorn/consistent-function-scoping": [
+        "modules/noti/scripts/generate-money-widget-resources.mjs",
+        "modules/noti/src/serialize.ts",
+        "src/app/settings/index.tsx",
+        "src/app/settings/widgets.tsx",
+        "src/features/earnings/store.ts",
+        "src/tests/earnings-periods.test.js",
+        "src/tests/i18n.test.js"
+    ],
+    "unicorn/no-array-reverse": [
+        "modules/noti/src/serialize.ts"
+    ],
+    "unicorn/no-array-sort": [
+        "modules/noti/scripts/generate-money-widget-resources.mjs",
+        "src/features/currency/currency-sheet.tsx",
+        "src/features/earnings/days-editor.tsx",
+        "src/features/haptics/score.ts",
+        "src/features/i18n/i18n.tsx",
+        "src/features/onboarding/art/skottie.ts",
+        "src/features/widgets/earnings-schedule.ts",
+        "src/tests/haptic-score.test.js",
+        "src/tests/i18n.test.js"
+    ]
+}
