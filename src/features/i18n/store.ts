@@ -11,6 +11,10 @@ function parsePreference(value: unknown): LanguagePreference {
     return value === "en" || value === "pt" || value === "es" || value === "fr" ? value : "system";
 }
 
+export async function readLanguagePreference() {
+    return parsePreference(await Storage.getItem(STORAGE_KEY));
+}
+
 type LanguageState = {
     preference: LanguagePreference;
     hydrated: boolean;

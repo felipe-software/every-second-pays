@@ -1,11 +1,9 @@
 import { useCalendars, useLocales } from "expo-localization";
 import { createContext, type ReactNode, useCallback, useContext, useMemo } from "react";
 
-import { firstDayOfWeek as resolveFirstDayOfWeek } from "./first-day-of-week";
+import { interpolate, type Replacements, resolveLocale } from "./resolve";
 import { translations, type Language, type TranslationKey } from "./translations";
 import { useLanguageStore } from "./store";
-
-type Replacements = Record<string, string | number>;
 
 type I18nContextValue = {
     language: Language;
@@ -23,25 +21,7 @@ type I18nContextValue = {
     weekdayName: (day: number, width?: "long" | "short" | "narrow") => string;
 };
 
-const DEFAULT_LOCALES: Record<Language, string> = {
-    en: "en-US",
-    pt: "pt-BR",
-    es: "es-ES",
-    fr: "fr-FR",
-};
-
 const I18nContext = createContext<I18nContextValue | null>(null);
-
-function resolveLanguage(languageCode: string | null | undefined): Language {
-    return languageCode === "pt" || languageCode === "es" || languageCode === "fr" ? languageCode : "en";
-}
-
-function interpolate(value: string, replacements?: Replacements) {
-    if (!replacements) return value;
-    return value.replace(/\{\{(\w+)\}\}/g, (match, key: string) =>
-        replacements[key] === undefined ? match : String(replacements[key]),
-    );
-}
 
 // Hermes builds a native ICU formatter for every Intl constructor and every `toLocaleString`
 // with a locale, which costs about a millisecond each on Android; reuse them.
@@ -106,19 +86,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     const locales = useLocales();
     const calendars = useCalendars();
     const preference = useLanguageStore((state) => state.preference);
-    const preferredLocale = locales.find((item) => preference === "system"
-        ? item.languageCode && ["en", "pt", "es", "fr"].includes(item.languageCode)
-        : item.languageCode === preference);
-    const language = preference === "system" ? resolveLanguage(preferredLocale?.languageCode) : preference;
-    const locale = preferredLocale?.languageTag ?? DEFAULT_LOCALES[language];
+    const { language, locale, firstDayOfWeek, decimalSeparator } = resolveLocale(preference, locales, calendars);
     const uses24HourClock = calendars[0]?.uses24hourClock;
-    const firstDayOfWeek = resolveFirstDayOfWeek(
-        language,
-        calendars[0]?.firstWeekday,
-        preferredLocale?.regionCode ?? locale.split("-").at(-1),
-    );
-    const decimalSeparator = preferredLocale?.decimalSeparator
-        ?? (1.1).toLocaleString(locale, { useGrouping: false }).replace(/[0-9]/g, "");
 
     const t = useCallback(
         (key: TranslationKey, replacements?: Replacements) => interpolate(translations[language][key], replacements),
