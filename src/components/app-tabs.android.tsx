@@ -1,51 +1,29 @@
 import { router } from "expo-router";
 import { TabList, Tabs, TabTrigger, useTabTrigger } from "expo-router/ui";
 import { useCallback, useEffect, useMemo } from "react";
-import { type ColorValue, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
 
 import { RaisedPressable } from "@/components/elevated/raised";
-import { JellyTabBarHeadless, type TabsIconProps, type TabsItem } from "@/components/jelly-tabs";
+import { JellyTabBar, type JellyTabItem } from "@/components/jelly-tabs";
 import { usePaymentComposerStore } from "@/features/earnings/payment-composer-store";
 import { useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 import { AndroidTabPager, useAndroidTabPagerProgress, useIsTabSubpage } from "./android-tab-pager";
 
-type TabIconProps = { color: ColorValue; size: number };
-
 const DOCK_HIDE_OFFSET = 24;
 const DOCK_TIMING = { duration: 220, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System };
+const PAID_ICON_PATH =
+    "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91 2.02.52 4.18 1.39 4.18 3.91-.01 1.83-1.38 2.83-3.12 3.16Z";
+const SETTINGS_ICON_PATH =
+    "M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.08-.98l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.61-.22l-2.49 1a7.2 7.2 0 0 0-1.69-.98L14.5 2.42A.49.49 0 0 0 14 2h-4a.49.49 0 0 0-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1a.49.49 0 0 0-.61.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65c-.04.32-.08.66-.08.98s.03.66.08.98l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.04.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.58 1.69-.98l2.49 1c.23.08.49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.65ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z";
 
 function getSelectedTabIndex(indexFocused?: boolean, settingsFocused?: boolean) {
     if (indexFocused) return 0;
     return settingsFocused ? 1 : null;
-}
-
-function PaidIcon({ color, size }: TabIconProps) {
-    return (
-        <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
-            <Path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91 2.02.52 4.18 1.39 4.18 3.91-.01 1.83-1.38 2.83-3.12 3.16Z" />
-        </Svg>
-    );
-}
-
-function SettingsIcon({ color, size }: TabIconProps) {
-    return (
-        <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
-            <Path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.08-.98l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.61-.22l-2.49 1a7.2 7.2 0 0 0-1.69-.98L14.5 2.42A.49.49 0 0 0 14 2h-4a.49.49 0 0 0-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1a.49.49 0 0 0-.61.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65c-.04.32-.08.66-.08.98s.03.66.08.98l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.04.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.58 1.69-.98l2.49 1c.23.08.49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.65ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z" />
-        </Svg>
-    );
-}
-
-function PaidJellyIcon({ color, size }: TabsIconProps) {
-    return <PaidIcon color={color} size={size} />;
-}
-
-function SettingsJellyIcon({ color, size }: TabsIconProps) {
-    return <SettingsIcon color={color} size={size} />;
 }
 
 function AndroidTabBar() {
@@ -66,20 +44,18 @@ function AndroidTabBar() {
         hidden.set(withTiming(onSubpage ? 1 : 0, DOCK_TIMING));
     }, [hidden, onSubpage]);
     const requestNewSource = usePaymentComposerStore((state) => state.requestNewSource);
-    const items = useMemo<TabsItem[]>(
+    const items = useMemo<JellyTabItem[]>(
         () => [
             {
                 accessibilityLabel: t("tabs.earnings"),
-                activeIcon: PaidJellyIcon,
-                inactiveIcon: PaidJellyIcon,
+                iconPath: PAID_ICON_PATH,
                 key: "index",
                 label: t("tabs.earnings"),
                 testID: "today-tab",
             },
             {
                 accessibilityLabel: t("tabs.settings"),
-                activeIcon: SettingsJellyIcon,
-                inactiveIcon: SettingsJellyIcon,
+                iconPath: SETTINGS_ICON_PATH,
                 key: "settings",
                 label: t("tabs.settings"),
                 testID: "settings-tab",
@@ -89,10 +65,9 @@ function AndroidTabBar() {
     );
     const selectedIndex = getSelectedTabIndex(indexTab.trigger?.isFocused, settingsTab.trigger?.isFocused);
     const selectTab = useCallback(
-        ({ index }: { index: number }) => {
+        (index: number) => {
             const tab = index === 1 ? settingsTab : indexTab;
             tab.switchTab(index === 1 ? "settings" : "index", {});
-            return true;
         },
         [indexTab, settingsTab],
     );
@@ -112,33 +87,18 @@ function AndroidTabBar() {
         >
             <View pointerEvents="box-none" style={[styles.dockContent, { paddingBottom: Math.max(insets.bottom, 20) }]}>
                 <View pointerEvents="box-none" style={styles.jellyTrack}>
-                    <JellyTabBarHeadless
-                        backdrop={
-                            <View
-                                style={[
-                                    styles.trackFace,
-                                    { backgroundColor: colors.cardFace, borderColor: colors.cardOutline },
-                                ]}
-                            />
-                        }
+                    <JellyTabBar
                         colors={{
-                            surface: "transparent",
-                            selectedSurface: colors.accent,
+                            accent: colors.accent,
                             activeContent: colors.onAccent,
                             inactiveContent: colors.muted,
+                            outline: colors.cardOutline,
+                            surface: colors.cardFace,
                         }}
-                        config={{
-                            layout: { iconSize: 23, itemHeight: 56, trackHeight: 64 },
-                            pillJelly: { pressedScale: 1.2, frameConfig: {} },
-                            distortion: { pressedScale: 1.1 },
-                        }}
-
                         items={items}
-                        maxWidth={188}
                         onTabPress={selectTab}
                         progress={progress}
                         selectedIndex={selectedIndex}
-                        touchFeedbackColor={colors.accent}
                     />
                 </View>
 
@@ -199,11 +159,6 @@ const styles = StyleSheet.create({
     jellyTrack: {
         width: 188,
         height: 64,
-    },
-    trackFace: {
-        ...StyleSheet.absoluteFill,
-        borderRadius: 32,
-        borderWidth: 1,
     },
     actionButton: {
         width: 64,
