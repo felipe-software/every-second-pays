@@ -1,7 +1,7 @@
 {
   "name": "every-second-pays",
   "main": "index.ts",
-  "version": "1.0.34",
+  "version": "1.0.35",
   "expo": {
     "autolinking": {
       "android": {
