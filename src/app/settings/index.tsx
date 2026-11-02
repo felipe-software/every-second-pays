@@ -12,6 +12,7 @@ import { AccentColorPicker } from "@/features/appearance/accent-color-picker";
 import { AppearanceSelector } from "@/features/appearance/appearance-selector";
 import type { Appearance, PaletteId, ThemeMode } from "@/features/appearance/palettes";
 import { useAppearanceStore } from "@/features/appearance/store";
+import { useThemeHaptics } from "@/features/appearance/theme-haptics";
 import { type ThemeTransitionOrigin, useReduceMotion } from "@/features/appearance/theme-transition";
 import { CurrencyRow } from "@/features/currency/currency-selector";
 import { MainCurrencySheet } from "@/features/currency/main-currency-sheet";
@@ -46,6 +47,7 @@ export default function SettingsScreen() {
     const { appearance, loading, loadError, update, load } = useAppearanceStore();
     const language = useLanguageSetting();
     const reduceMotion = useReduceMotion();
+    const themeHaptics = useThemeHaptics();
     const [saveError, setSaveError] = useState(false);
     const [currencyOpen, setCurrencyOpen] = useState(false);
     const widgetsVisible = useWidgetsRowVisible();
@@ -83,13 +85,13 @@ export default function SettingsScreen() {
 
     const changeMode = (mode: ThemeMode, origin: ThemeTransitionOrigin) => {
         if (mode === shownLook(appearance).mode) return;
-        appHaptics.themeMode();
+        themeHaptics.mode();
         changeLook({ mode }, origin);
     };
 
     const changePalette = (palette: PaletteId, origin: ThemeTransitionOrigin) => {
         if (palette === shownLook(appearance).palette) return;
-        appHaptics.selection();
+        themeHaptics.palette();
         changeLook({ palette }, origin, PALETTE_REVEAL_MS);
     };
 

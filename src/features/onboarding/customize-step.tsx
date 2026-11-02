@@ -6,7 +6,6 @@ import Svg, { Circle, Path } from "react-native-svg";
 import { rippleConfig } from "@/components/elevated/ripple";
 import { mixColors, withAlpha } from "@/features/appearance/color";
 import { PALETTES, type PaletteId } from "@/features/appearance/palettes";
-import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 
 import { type Look, useOnboardingTheme } from "./look";
@@ -281,7 +280,6 @@ export function CustomizeStep({
                                 color={palette.accent}
                                 selected={look.palette === palette.id}
                                 onPress={() => {
-                                    appHaptics.selection();
                                     // A color keeps the mode on show, even one the demo switched to.
                                     pick((current) => ({ ...current, palette: palette.id }), swatchAt(palette.id));
                                 }}
@@ -291,7 +289,6 @@ export function CustomizeStep({
                     <View style={[styles.divider, { backgroundColor: colors.track }]} />
                     <ModeButton
                         onPress={() => {
-                            appHaptics.themeMode();
                             pick((current) => ({ ...current, dark: !current.dark }), MODE_AT);
                         }}
                     />

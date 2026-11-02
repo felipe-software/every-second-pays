@@ -22,6 +22,7 @@ import { flushLookBurst, revealChange, shownLook, transitionLook } from "theme-t
 import { PrimaryButton } from "@/components/elevated/primary-button";
 import { rippleConfig } from "@/components/elevated/ripple";
 import { useAppearanceStore } from "@/features/appearance/store";
+import { useThemeHaptics } from "@/features/appearance/theme-haptics";
 import { getEarningsColors, useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics, useOnboardingHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
@@ -132,6 +133,7 @@ export function Onboarding() {
     const window = useWindowDimensions();
     const reduced = useReducedMotion();
     const playHaptic = useOnboardingHaptics();
+    const themeHaptics = useThemeHaptics();
     const complete = useOnboardingStore((state) => state.complete);
     const uncover = useOnboardingStore((state) => state.uncover);
     const reveal = useOnboardingStore((state) => state.reveal);
@@ -240,7 +242,12 @@ export function Onboarding() {
         const current = shownLook(look);
         const next = change(current);
         if (sameLook(next, current)) return;
-        if (next.dark !== current.dark) modePicked.current = true;
+        if (next.dark !== current.dark) {
+            modePicked.current = true;
+            themeHaptics.mode();
+        } else {
+            themeHaptics.palette();
+        }
         transitionLook({
             look: next,
             from: lookFrameKey(look),

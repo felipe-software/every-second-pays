@@ -72,12 +72,11 @@ export function useScoreHaptic(haptic: ScoreHaptic) {
 
 const MONEY_LANDING = haptic([[0, 0.7, 0.8]], [[0, 0.45], [70, 0]], 0.6);
 
-const PRELOADED_PRESETS = ["Anvil", "Buzz", "Firecracker", "Strike", "Wisp"];
+const PRELOADED_PRESETS = ["Buzz", "Firecracker", "Strike", "Wisp"];
 
 export const appHaptics = {
     press: Presets.System.impactLight,
     selection: Presets.wisp,
-    themeMode: Presets.anvil,
     primaryAction: Presets.strike,
     secondaryAction: Presets.firecracker,
     dismiss: Presets.wisp,

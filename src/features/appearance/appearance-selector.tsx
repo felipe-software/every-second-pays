@@ -41,7 +41,7 @@ function AppearancePreview({
     const preview = mode === "dark" ? dark : light;
     const followsDevice = mode === "system";
     const border = active ? preview.accent : preview.track;
-    const sink = usePressSink();
+    const sink = usePressSink({ haptic: false });
 
     return (
         <Pressable
