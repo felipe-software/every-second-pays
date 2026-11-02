@@ -5,13 +5,14 @@ import { type SharedValue, useAnimatedReaction, useSharedValue } from "react-nat
 import { createSerializable } from "react-native-worklets";
 
 import { AccessibilityTabsRow } from "./accessibility-tabs-row";
-import { JellyTabs, NativeJellyTabBar } from "./native-jelly-tab-bar";
+import { type JellyTabContentStyle, JellyTabs, NativeJellyTabBar } from "./native-jelly-tab-bar";
 
 const NO_SELECTION = -1;
 
 export type JellyTabItem = {
     accessibilityLabel: string;
     iconPath: string;
+    inactiveIconPath?: string;
     key: string;
     label: string;
     testID: string;
@@ -27,6 +28,7 @@ type JellyTabBarColors = {
 
 type JellyTabBarProps = {
     colors: JellyTabBarColors;
+    contentStyle?: JellyTabContentStyle;
     items: readonly JellyTabItem[];
     onTabPress: (index: number) => void;
     progress: SharedValue<number>;
@@ -41,7 +43,7 @@ function toNativeColor(color: string) {
     return nativeColor;
 }
 
-export function JellyTabBar({ colors, items, onTabPress, progress, selectedIndex }: JellyTabBarProps) {
+export function JellyTabBar({ colors, contentStyle, items, onTabPress, progress, selectedIndex }: JellyTabBarProps) {
     const controller = useReleasingSharedObject(() => new JellyTabs.JellyTabBarController(), []);
     const lastPublishedProgress = useSharedValue(Number.NaN);
 
@@ -73,8 +75,10 @@ export function JellyTabBar({ colors, items, onTabPress, progress, selectedIndex
             <NativeJellyTabBar
                 accentColor={toNativeColor(colors.accent)}
                 activeContentColor={toNativeColor(colors.activeContent)}
+                contentStyle={contentStyle}
                 controller={controller}
                 iconPaths={items.map((item) => item.iconPath)}
+                inactiveIconPaths={items.map((item) => item.inactiveIconPath ?? "")}
                 inactiveContentColor={toNativeColor(colors.inactiveContent)}
                 labels={items.map((item) => item.label)}
                 onTabPress={handleTabPress}
@@ -83,7 +87,12 @@ export function JellyTabBar({ colors, items, onTabPress, progress, selectedIndex
                 style={StyleSheet.absoluteFill}
                 surfaceColor={toNativeColor(colors.surface)}
             />
-            <AccessibilityTabsRow items={items} onActivate={activateTab} selectedIndex={selectedIndex} />
+            <AccessibilityTabsRow
+                items={items}
+                onActivate={activateTab}
+                pillOverhang={contentStyle?.pillOverhang ?? 0}
+                selectedIndex={selectedIndex}
+            />
         </>
     );
 }

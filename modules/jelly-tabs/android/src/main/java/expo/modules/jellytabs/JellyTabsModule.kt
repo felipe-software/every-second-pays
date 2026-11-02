@@ -39,6 +39,10 @@ class JellyTabsModule : Module() {
       }
       Prop("labels") { view: JellyTabBarView, labels: List<String> -> view.setLabels(labels) }
       Prop("iconPaths") { view: JellyTabBarView, paths: List<String> -> view.setIconPaths(paths) }
+      Prop("inactiveIconPaths") { view: JellyTabBarView, paths: List<String> -> view.setInactiveIconPaths(paths) }
+      Prop("contentStyle") { view: JellyTabBarView, style: JellyTabContentStyleRecord? ->
+        view.setContentStyle(style?.toStyle() ?: JellyTabContentStyle())
+      }
       Prop("selectedIndex") { view: JellyTabBarView, index: Int -> view.setSelectedIndex(index) }
       Prop("surfaceColor") { view: JellyTabBarView, color: Int -> view.setSurfaceColor(color) }
       Prop("outlineColor") { view: JellyTabBarView, color: Int -> view.setOutlineColor(color) }

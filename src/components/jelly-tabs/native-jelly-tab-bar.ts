@@ -23,11 +23,24 @@ type WorkletSharedObjects = {
     __resolveInWorklet: (objectId: number) => JellyTabBarController;
 };
 
+export type JellyTabContentStyle = {
+    iconSize?: number;
+    iconLabelGap?: number;
+    labelFontSize?: number;
+    activeLabelFontFamily?: string;
+    inactiveLabelFontFamily?: string;
+    activeLabelFontWeight?: number;
+    inactiveLabelFontWeight?: number;
+    pillOverhang?: number;
+};
+
 export type NativeJellyTabBarProps = ViewProps & {
     accentColor: number;
     activeContentColor: number;
+    contentStyle?: JellyTabContentStyle;
     controller: JellyTabBarController;
     iconPaths: readonly string[];
+    inactiveIconPaths: readonly string[];
     inactiveContentColor: number;
     labels: readonly string[];
     onTabPress: (event: NativeSyntheticEvent<{ index: number }>) => void;

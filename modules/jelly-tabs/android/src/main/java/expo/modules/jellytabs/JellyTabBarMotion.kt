@@ -83,6 +83,7 @@ internal class JellyTabBarMotion(density: Float, private val reducedMotion: Bool
   private var trackWidth = 0.0
   private var trackHeight = 0.0
   private var tabCount = 0
+  private var pillOverhang = 0.0
 
   private val position = Spring(0.0, POSITION_SPRING, POSITION_REST)
   private val filteredVelocity = Spring(0.0, VELOCITY_SPRING, FILTERED_VELOCITY_REST)
@@ -119,10 +120,10 @@ internal class JellyTabBarMotion(density: Float, private val reducedMotion: Bool
     private set
 
   private val maxTabIndex get() = max(0, tabCount - 1)
-  private val tabWidth get() = if (tabCount > 0) max(0.0, (trackWidth - trackInset * 2.0) / tabCount) else 0.0
+  private val tabPitch get() = if (tabCount > 0) max(0.0, (trackWidth - trackInset * 2.0 - pillOverhang) / tabCount) else 0.0
 
   val positionValue get() = position.value
-  val pillOffsetX get() = position.value * tabWidth
+  val pillOffsetX get() = position.value * tabPitch
   val activeTabScale get() = 1.0 + ACTIVE_TAB_PRESSED_GROWTH * press.value
   val glowOpacity get() = glowOpacitySpring.value.coerceIn(0.0, 1.0)
   val pressedScale get() = barPressedScale.value
@@ -158,12 +159,13 @@ internal class JellyTabBarMotion(density: Float, private val reducedMotion: Bool
 
   private fun clampIndex(index: Double) = index.coerceIn(0.0, maxTabIndex.toDouble())
 
-  private fun tabIndexAt(localX: Double) = clampIndex(floor((localX - trackInset) / tabWidth))
+  private fun tabIndexAt(localX: Double) = clampIndex(floor((localX - trackInset - pillOverhang / 2.0) / tabPitch))
 
-  fun setTrack(width: Double, height: Double, count: Int) {
+  fun setTrack(width: Double, height: Double, count: Int, overhang: Double) {
     trackWidth = width
     trackHeight = height
     tabCount = count
+    pillOverhang = overhang
     pointerOriginX = width / 2.0
     pointerLocalY = height / 2.0
     positionTarget = clampIndex(positionTarget)
@@ -216,7 +218,7 @@ internal class JellyTabBarMotion(density: Float, private val reducedMotion: Bool
     pointerLocalY = localY.coerceIn(0.0, trackHeight)
 
     ownsProgress = true
-    if (tabWidth > 0.0) positionTarget = tabIndexAt(localX)
+    if (tabPitch > 0.0) positionTarget = tabIndexAt(localX)
     dragStartTarget = positionTarget
     isDragging = true
     isReleasePending = false
@@ -225,9 +227,9 @@ internal class JellyTabBarMotion(density: Float, private val reducedMotion: Bool
   }
 
   fun drag(translationX: Double, translationY: Double, rawX: Double) {
-    if (tabWidth <= 0.0) return
+    if (tabPitch <= 0.0) return
 
-    positionTarget = clampIndex(dragStartTarget + translationX / tabWidth)
+    positionTarget = clampIndex(dragStartTarget + translationX / tabPitch)
     panelOffset.snapTo(dragStartPanelOffset + translationX)
 
     val verticalProgress = min(abs(translationY) / (MAX_DISTORTION_DISTANCE_DP * density), 1.0)
@@ -244,7 +246,7 @@ internal class JellyTabBarMotion(density: Float, private val reducedMotion: Bool
     glowOpacityTarget = 0.0
     isBarScaleSettling = true
 
-    val isTap = movedDistance < TAP_SLOP_DP * density && tabWidth > 0.0
+    val isTap = movedDistance < TAP_SLOP_DP * density && tabPitch > 0.0
     val nextIndex = if (isTap) tabIndexAt(downX) else clampIndex(positionTarget.roundToInt().toDouble())
     positionTarget = nextIndex
     isReleasePending = true
