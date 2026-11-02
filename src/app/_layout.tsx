@@ -16,6 +16,7 @@ import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import { ThemeTransitionBoundary } from "theme-transition";
 import AppTabs from "@/components/app-tabs";
 import {
     SHEET_RECEDE_BACKDROP,
@@ -25,7 +26,6 @@ import {
     useSheetReceded,
 } from "@/components/sheet-recede";
 import { useCurrencyStore } from "@/features/currency/store";
-import { InterfaceTransitionBoundary } from "@/features/appearance/theme-transition";
 import { useAppearanceSync } from "@/features/appearance/use-appearance-sync";
 import { usePeriodStore } from "@/features/earnings/period-store";
 import { useEarningsTheme } from "@/features/earnings/theme";
@@ -99,7 +99,7 @@ export default function RootLayout() {
     if (!ready) return null;
 
     return (
-        <InterfaceTransitionBoundary>
+        <ThemeTransitionBoundary>
             <I18nProvider>
                 <MoneyWidgetSync />
                 <GestureHandlerRootView
@@ -124,7 +124,7 @@ export default function RootLayout() {
                     </ReanimatedTrueSheetProvider>
                 </GestureHandlerRootView>
             </I18nProvider>
-        </InterfaceTransitionBoundary>
+        </ThemeTransitionBoundary>
     );
 }
 

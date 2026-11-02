@@ -178,6 +178,25 @@ test("applies appearance immediately while persistence is pending", async () => 
     });
 });
 
+test("keeps the last appearance when changes arrive during a save", async () => {
+    await appearanceStore.getState().load();
+    holdAppearanceWrite = true;
+
+    const first = appearanceStore.getState().update({ palette: "blue" });
+    const second = appearanceStore.getState().update({ palette: "rose" });
+    expect(appearanceStore.getState().appearance.palette).toBe("rose");
+
+    await Promise.resolve();
+    holdAppearanceWrite = false;
+    releaseAppearanceWrite();
+    await Promise.all([first, second]);
+    expect(appearanceStore.getState().saving).toBe(false);
+
+    resetAppearance();
+    await appearanceStore.getState().load();
+    expect(appearanceStore.getState().appearance.palette).toBe("rose");
+});
+
 test("restores the previous appearance when persistence fails", async () => {
     await appearanceStore.getState().load();
     failWrite = true;

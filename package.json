@@ -53,8 +53,6 @@
     "react-native": "0.86.3",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-keyboard-controller": "1.21.9",
-    "react-native-nitro-modules": "^0.37.1",
-    "react-native-nitro-theme-transition": "^1.0.0",
     "react-native-pulsar": "^1.7.0",
     "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "~5.7.0",
@@ -93,7 +91,6 @@
   "private": true,
   "patchedDependencies": {
     "expo-blur@57.0.3": "src/patches/expo-blur@57.0.3.patch",
-    "react-native-nitro-theme-transition@1.0.0": "src/patches/react-native-nitro-theme-transition@1.0.0.patch",
     "@expo/ui@57.0.19": "src/patches/@expo%2Fui@57.0.19.patch",
     "@lodev09/react-native-true-sheet@3.11.14": "src/patches/@lodev09%2Freact-native-true-sheet@3.11.14.patch"
   },

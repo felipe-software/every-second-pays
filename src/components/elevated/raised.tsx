@@ -123,7 +123,7 @@ export function Raised({
     );
 }
 
-export function usePressSink() {
+export function usePressSink({ haptic = true }: { haptic?: boolean } = {}) {
     const pressed = useSharedValue(0);
     const { overlay, show, hide } = useRippleOverlay();
     const sink = (value: number) => pressed.set(withTiming(value, {
@@ -132,7 +132,7 @@ export function usePressSink() {
         reduceMotion: ReduceMotion.System,
     }));
     const onPressIn = (event?: GestureResponderEvent) => {
-        appHaptics.press();
+        if (haptic) appHaptics.press();
         sink(1);
         show(event);
     };
