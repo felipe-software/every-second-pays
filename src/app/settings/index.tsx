@@ -1,7 +1,9 @@
+import { useFocusEffect } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { flushLookBurst, shownLook, transitionLook } from "theme-transition";
 
 import { SectionLabel, SettingsCard } from "@/components/settings-card";
 import { LargeTitleScrollView } from "@/components/large-title-scroll-view";
@@ -10,11 +12,7 @@ import { AccentColorPicker } from "@/features/appearance/accent-color-picker";
 import { AppearanceSelector } from "@/features/appearance/appearance-selector";
 import type { Appearance, PaletteId, ThemeMode } from "@/features/appearance/palettes";
 import { useAppearanceStore } from "@/features/appearance/store";
-import {
-    runInterfaceTransition,
-    type ThemeTransitionOrigin,
-    useReduceMotion,
-} from "@/features/appearance/theme-transition";
+import { type ThemeTransitionOrigin, useReduceMotion } from "@/features/appearance/theme-transition";
 import { CurrencyRow } from "@/features/currency/currency-selector";
 import { MainCurrencySheet } from "@/features/currency/main-currency-sheet";
 import { useDeveloperStore } from "@/features/developer/store";
@@ -38,16 +36,20 @@ function ErrorNote({ message }: { message: string }) {
     );
 }
 
+const PALETTE_REVEAL_MS = 1000;
+
+const appearanceFrameKey = ({ palette, mode }: Pick<Appearance, "palette" | "mode">) => `settings:${palette}:${mode}`;
+
 export default function SettingsScreen() {
     const insets = useSafeAreaInsets();
     const { t } = useI18n();
-    const { appearance, saving, loading, loadError, update, load } = useAppearanceStore();
+    const { appearance, loading, loadError, update, load } = useAppearanceStore();
     const language = useLanguageSetting();
     const reduceMotion = useReduceMotion();
     const [saveError, setSaveError] = useState(false);
     const [currencyOpen, setCurrencyOpen] = useState(false);
     const widgetsVisible = useWidgetsRowVisible();
-    const disabled = saving || loading || loadError;
+    const disabled = loading || loadError;
 
     useEffect(() => {
         void useDeveloperStore.getState().load();
@@ -66,17 +68,32 @@ export default function SettingsScreen() {
         }
     };
 
+    const changeLook = (update: Pick<Appearance, "mode"> | Pick<Appearance, "palette">, origin: ThemeTransitionOrigin, durationMs?: number) => {
+        const next = { ...shownLook(appearance), ...update };
+        transitionLook({
+            look: next,
+            from: appearanceFrameKey(appearance),
+            to: appearanceFrameKey(next),
+            apply: () => { void change({ mode: next.mode, palette: next.palette }); },
+            origin,
+            reduceMotion,
+            durationMs,
+        });
+    };
+
     const changeMode = (mode: ThemeMode, origin: ThemeTransitionOrigin) => {
-        if (mode === appearance.mode) return;
+        if (mode === shownLook(appearance).mode) return;
         appHaptics.themeMode();
-        runInterfaceTransition(() => { void change({ mode }); }, origin, reduceMotion);
+        changeLook({ mode }, origin);
     };
 
     const changePalette = (palette: PaletteId, origin: ThemeTransitionOrigin) => {
-        if (palette === appearance.palette) return;
+        if (palette === shownLook(appearance).palette) return;
         appHaptics.selection();
-        runInterfaceTransition(() => { void change({ palette }); }, origin, reduceMotion, { durationMs: 1000 });
+        changeLook({ palette }, origin, PALETTE_REVEAL_MS);
     };
+
+    useFocusEffect(useCallback(() => flushLookBurst, []));
 
     return (
         <View className="flex-1 items-center bg-canvas">

@@ -12,6 +12,9 @@ type AppearanceState = {
     update: (change: Partial<Appearance>) => Promise<void>;
 };
 
+let writesInFlight = 0;
+let writeQueue: Promise<unknown> = Promise.resolve();
+
 export const useAppearanceStore = create<AppearanceState>((set, get) => ({
     appearance: DEFAULT_APPEARANCE, hydrated: false, loading: false, saving: false, loadError: false,
     load: async () => {
@@ -26,20 +29,26 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
         }
     },
     update: async (change) => {
-        if (!get().hydrated || get().loading || get().loadError || get().saving) throw new Error("Preferences unavailable.");
+        if (!get().hydrated || get().loading || get().loadError) throw new Error("Preferences unavailable");
         const previousAppearance = get().appearance;
-        const appearance = parseAppearance({ ...get().appearance, ...change });
+        const appearance = parseAppearance({ ...previousAppearance, ...change });
         if (appearance.mode === previousAppearance.mode && appearance.palette === previousAppearance.palette) return;
 
         // Apply before persisting so the control and theme update in one frame instead of flashing a disabled state.
         set({ appearance, saving: true });
+        const write = writesInFlight === 0
+            ? writeAppearancePreference(appearance)
+            : writeQueue.then(() => writeAppearancePreference(appearance));
+        writesInFlight += 1;
+        writeQueue = write.catch(() => undefined);
         try {
-            await writeAppearancePreference(appearance);
+            await write;
         } catch (error) {
-            set({ appearance: previousAppearance });
+            if (get().appearance === appearance) set({ appearance: previousAppearance });
             throw error;
         } finally {
-            set({ saving: false });
+            writesInFlight -= 1;
+            if (writesInFlight === 0) set({ saving: false });
         }
     },
 }));

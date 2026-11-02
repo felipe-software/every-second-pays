@@ -33,6 +33,37 @@ export function useArtVariants() {
     return useMemo(() => ({ lang: language, decimal: decimalSeparator === "," ? "," : "." }), [language, decimalSeparator]);
 }
 
+function useCueReaction(
+    frame: SharedValue<number>,
+    cues: Cue[] | undefined,
+    onCue: ((name: string, late: number) => void) | undefined,
+    reduced: boolean,
+    loopStart: number,
+    loopEnd: number,
+) {
+    // Both threads' `performance.now()` read the same clock.
+    const cueCrossed = (name: string, crossedAt: number) => onCue?.(name, performance.now() - crossedAt);
+    useAnimatedReaction(
+        () => frame.get(),
+        (current, previous) => {
+            if (!cues || !onCue || previous == null || reduced) return;
+            const now = performance.now();
+            // The loop jumping back to its start runs on from there, so cues past `previous`
+            // to the loop's end and from its start up to `current` have both been crossed.
+            const wrapped = current < previous;
+            for (const cue of cues) {
+                const beforeWrap = wrapped && cue.frame > previous;
+                const crossed = wrapped
+                    ? beforeWrap || (cue.frame >= loopStart && cue.frame <= current)
+                    : cue.frame > previous && cue.frame <= current;
+                if (!crossed) continue;
+                const since = beforeWrap ? loopEnd - cue.frame + current - loopStart : current - cue.frame;
+                scheduleOnRN(cueCrossed, cue.name, now - (since * 1000) / FPS);
+            }
+        },
+    );
+}
+
 /**
  * A step's illustration, drawn by Skia's Skottie from the exported design animation and laid
  * over the artboard. It plays the `intro` segment once, then repeats `loop`; it pauses while
@@ -123,27 +154,7 @@ export function StepArt({
     }, [frame, introEnd, introStart, loopSpan, playing, primed, reduced, replay, settled]);
 
     const [loopStart, loopEnd] = loopSpan ?? [introEnd, introEnd];
-    // Both threads' `performance.now()` read the same clock.
-    const cueCrossed = (name: string, crossedAt: number) => onCue?.(name, performance.now() - crossedAt);
-    useAnimatedReaction(
-        () => frame.get(),
-        (current, previous) => {
-            if (!cues || !onCue || previous == null || reduced) return;
-            const now = performance.now();
-            // The loop jumping back to its start runs on from there, so cues past `previous`
-            // to the loop's end and from its start up to `current` have both been crossed.
-            const wrapped = current < previous;
-            for (const cue of cues) {
-                const beforeWrap = wrapped && cue.frame > previous;
-                const crossed = wrapped
-                    ? beforeWrap || (cue.frame >= loopStart && cue.frame <= current)
-                    : cue.frame > previous && cue.frame <= current;
-                if (!crossed) continue;
-                const since = beforeWrap ? loopEnd - cue.frame + current - loopStart : current - cue.frame;
-                scheduleOnRN(cueCrossed, cue.name, now - (since * 1000) / FPS);
-            }
-        },
-    );
+    useCueReaction(frame, cues, onCue, reduced, loopStart, loopEnd);
 
     return (
         <Canvas pointerEvents="none" style={StyleSheet.absoluteFill}>

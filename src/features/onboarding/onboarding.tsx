@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { BackHandler, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -17,11 +17,11 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
+import { flushLookBurst, revealChange, shownLook, transitionLook } from "theme-transition";
 
 import { PrimaryButton } from "@/components/elevated/primary-button";
 import { rippleConfig } from "@/components/elevated/ripple";
 import { useAppearanceStore } from "@/features/appearance/store";
-import { runInterfaceTransition } from "@/features/appearance/theme-transition";
 import { getEarningsColors, useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics, useOnboardingHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
@@ -64,6 +64,18 @@ const HAS_WIDGETS = Platform.OS === "android" && Number(Platform.Version) >= 31;
 const PAGES: PageId[] = HAS_WIDGETS ? ["intro", "widget", "privacy", "customize"] : ["intro", "privacy", "customize"];
 const LAST_PAGE = PAGES.length - 1;
 const CUSTOMIZE_PAGE = PAGES.indexOf("customize");
+const ART_LOOK_SETTLE_MS = 600;
+
+const lookFrameKey = ({ palette, dark }: Look) => `onboarding:${palette}:${dark}`;
+
+function useSettledLook(look: Look) {
+    const [settled, setSettled] = useState(look);
+    useEffect(() => {
+        const timer = setTimeout(() => setSettled(look), ART_LOOK_SETTLE_MS);
+        return () => clearTimeout(timer);
+    }, [look]);
+    return settled;
+}
 
 function Dot({ index, position }: { index: number; position: SharedValue<number> }) {
     const { colors } = useOnboardingTheme();
@@ -99,7 +111,10 @@ export function Onboarding() {
     const appLook = useMemo<Look>(() => ({ palette, dark: isDark }), [palette, isDark]);
     // A look the customization step is showing off, worn by the whole onboarding until it ends.
     const [preview, setPreview] = useState<Look | null>(null);
+    // Uniwind reports a mode change a moment after the store, so a picked look holds the screen until it has.
+    if (preview && sameLook(preview, appLook)) setPreview(null);
     const look = preview ?? appLook;
+    const modePicked = useRef(false);
     const colors = getEarningsColors(look.palette, look.dark);
     const { t } = useI18n();
     const insets = useSafeAreaInsets();
@@ -112,6 +127,8 @@ export function Onboarding() {
 
     const [step, setStep] = useState(0);
     const [visited, setVisited] = useState(() => PAGES.map((_, index) => index === 0));
+    const settledLook = useSettledLook(appLook);
+    const artLook = step === CUSTOMIZE_PAGE ? settledLook : appLook;
     const [skipReady, setSkipReady] = useState(false);
     const [introDone, setIntroDone] = useState(false);
     const [exiting, setExiting] = useState(false);
@@ -141,10 +158,13 @@ export function Onboarding() {
         backdrop.set(withTiming(target, { duration: 1500, easing: EASE_SOFT_FN }));
     };
 
-    const visit = (...pages: number[]) => setVisited((seen) =>
-        pages.some((page) => page >= 0 && page <= LAST_PAGE && !seen[page])
-            ? seen.map((value, index) => value || pages.includes(index))
-            : seen);
+    const visit = (...pages: number[]) => {
+        flushLookBurst();
+        setVisited((seen) =>
+            pages.some((page) => page >= 0 && page <= LAST_PAGE && !seen[page])
+                ? seen.map((value, index) => value || pages.includes(index))
+                : seen);
+    };
 
     const go = (target: number) => {
         const next = Math.max(0, Math.min(LAST_PAGE, target));
@@ -162,6 +182,7 @@ export function Onboarding() {
 
     const exit = () => {
         if (exiting) return;
+        flushLookBurst();
         setExiting(true);
         reveal();
         uncover();
@@ -172,15 +193,26 @@ export function Onboarding() {
     const toScreen = (at: ArtboardPoint) => ({ x: offsetX + at.x * scale, y: offsetY + at.y * scale });
     const previewLook = (next: Look, at: ArtboardPoint) => {
         if (sameLook(next, look)) return;
-        runInterfaceTransition(() => setPreview(sameLook(next, appLook) ? null : next), toScreen(at), reduced);
+        revealChange(() => setPreview(sameLook(next, appLook) ? null : next), toScreen(at), reduced);
     };
-    const pickLook = (next: Look, at: ArtboardPoint) => {
-        runInterfaceTransition(() => {
-            setPreview(null);
-            // Only an explicit mode change replaces "follow the system".
-            const mode = next.dark === appLook.dark ? {} : { mode: next.dark ? "dark" as const : "light" as const };
-            updateAppearance({ palette: next.palette, ...mode }).catch(() => undefined);
-        }, toScreen(at), reduced);
+    const pickLook = (change: (current: Look) => Look, at: ArtboardPoint) => {
+        const current = shownLook(look);
+        const next = change(current);
+        if (sameLook(next, current)) return;
+        if (next.dark !== current.dark) modePicked.current = true;
+        transitionLook({
+            look: next,
+            from: lookFrameKey(look),
+            to: lookFrameKey(next),
+            apply: () => {
+                setPreview(next);
+                // Only an explicit mode change replaces "follow the system".
+                const mode = modePicked.current ? { mode: next.dark ? "dark" as const : "light" as const } : {};
+                updateAppearance({ palette: next.palette, ...mode }).catch(() => undefined);
+            },
+            origin: toScreen(at),
+            reduceMotion: reduced,
+        });
     };
     // Build the later steps' illustrations while the intro's promise is read, so turning a
     // page doesn't stall on it.
@@ -189,15 +221,15 @@ export function Onboarding() {
         if (!introDone) return;
         const later = PAGES.filter((page) => page === "widget" || page === "privacy");
         const timers = later.map((page, order) => setTimeout(
-            () => onboardingSkottie(ONBOARDING_ART[page](), appLook, artVariants),
+            () => onboardingSkottie(ONBOARDING_ART[page](), artLook, artVariants),
             600 + order * 400,
         ));
         return () => timers.forEach(clearTimeout);
-    }, [appLook, artVariants, introDone]);
+    }, [artLook, artVariants, introDone]);
 
     // The demo's looks were only a show: leaving the step puts the app's look back.
     const unpreview = useEffectEvent(() => {
-        if (preview && !exiting) runInterfaceTransition(() => setPreview(null), { x: window.width / 2, y: window.height / 2 }, reduced);
+        if (preview && !exiting) revealChange(() => setPreview(null), { x: window.width / 2, y: window.height / 2 }, reduced);
     });
     useEffect(() => {
         if (step !== CUSTOMIZE_PAGE) unpreview();
@@ -289,7 +321,7 @@ export function Onboarding() {
     const skipShown = skipReady && !last && !exiting;
 
     return (
-        <OnboardingLookProvider look={look} artLook={appLook}>
+        <OnboardingLookProvider look={look} artLook={artLook}>
         <StatusBar style={look.dark ? "light" : "dark"} />
         <Animated.View
             pointerEvents={exiting ? "none" : "auto"}

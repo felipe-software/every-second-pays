@@ -5,7 +5,8 @@
         "paths": {
             "@/*": ["./src/*"],
             "@/assets/*": ["./src/assets/*"],
-            "react-native-noti": ["./modules/noti/src/index.ts"]
+            "react-native-noti": ["./modules/noti/src/index.ts"],
+            "theme-transition": ["./modules/theme-transition/src/index.ts"]
         }
     },
     "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
