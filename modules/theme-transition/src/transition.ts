@@ -136,6 +136,12 @@ function flipLook({ from, to, apply, origin, reduceMotion, durationMs = REVEAL_D
         return;
     }
 
+    // The reveal hasn't rendered yet, so this change joins that same render.
+    if (pendingReveal) {
+        apply();
+        return;
+    }
+
     const shown = burst?.shown ?? from;
     if (shown === to) return;
     keepFrames(Math.max(FRAME_LIFETIME_MS, durationMs + QUIET_AFTER_REVEAL_MS * 2));
@@ -153,7 +159,7 @@ function flipLook({ from, to, apply, origin, reduceMotion, durationMs = REVEAL_D
 export function createLookTransition<T>() {
     let flipped: { look: T } | null = null;
     return {
-        shownLook: (committed: T) => (burst && flipped ? flipped.look : committed),
+        shownLook: (committed: T) => ((burst || pendingReveal) && flipped ? flipped.look : committed),
         transitionLook: ({ look, ...flip }: LookChange<T>) => {
             flipped = { look };
             flipLook(flip);

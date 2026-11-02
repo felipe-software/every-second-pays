@@ -59,9 +59,10 @@ test("reveals through React when the frames aren't cached yet", async () => {
 
     expect(applied).toEqual(["dark"]);
     expect(renders).toBe(1);
-    expect(look.shownLook("light")).toBe("light");
+    expect(look.shownLook("light")).toBe("dark");
 
     commitPendingTransition();
+    expect(look.shownLook("light")).toBe("light");
     expect(callsNamed("begin")).toEqual([["begin", "light"]]);
 
     await afterMicrotasks();
@@ -107,6 +108,21 @@ test("skips the render when a burst ends on the look already rendered", () => {
     expect(renders).toBe(0);
     expect(callsNamed("endBurst")).toEqual([["endBurst", 0, 120]]);
     expect(look.shownLook("light")).toBe("light");
+});
+
+test("counts a tap that lands before the previous change has rendered", () => {
+    flipSucceeds = false;
+
+    change("light", "dark");
+    change("light", "light");
+    change("light", "dark");
+
+    expect(applied).toEqual(["dark", "light", "dark"]);
+    expect(callsNamed("flip").length).toBe(1);
+    expect(look.shownLook("light")).toBe("dark");
+
+    commitPendingTransition();
+    expect(callsNamed("begin")).toEqual([["begin", "light"]]);
 });
 
 test("settles by itself once the taps stop", async () => {
