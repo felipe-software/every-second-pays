@@ -3,6 +3,7 @@ import { BackHandler } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
 import { cancelAnimation, useSharedValue, withTiming } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
+import { flushLookBurst } from "theme-transition";
 
 import { appHaptics } from "@/features/haptics/haptics";
 
@@ -34,12 +35,14 @@ export function useOnboardingPager({ exiting, introDone, scale }: PagerOptions) 
         backdrop.set(withTiming(target, { duration: 1500, easing: EASE_SOFT_FN }));
     };
 
-    const visit = (...pages: number[]) =>
+    const visit = (...pages: number[]) => {
+        flushLookBurst();
         setVisited((seen) =>
             pages.some((page) => page >= 0 && page <= LAST_PAGE && !seen[page])
                 ? seen.map((value, index) => value || pages.includes(index))
                 : seen,
         );
+    };
 
     const go = (target: number) => {
         const next = Math.max(0, Math.min(LAST_PAGE, target));

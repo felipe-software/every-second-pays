@@ -19,7 +19,7 @@ export type OnboardingPageProps = {
     notifications: NotificationAnswer;
     board: Look;
     onPreview: (look: Look, at: ArtboardPoint) => void;
-    onPick: (look: Look, at: ArtboardPoint) => void;
+    onPick: (change: (current: Look) => Look, at: ArtboardPoint) => void;
 };
 
 export function OnboardingPage({

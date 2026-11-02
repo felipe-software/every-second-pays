@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { flushLookBurst } from "theme-transition";
 
 import { useOnboardingStore } from "./store";
 
@@ -13,6 +14,7 @@ export function useOnboardingExit() {
 
     const exit = () => {
         if (exiting) return;
+        flushLookBurst();
         setExiting(true);
         reveal();
         uncover();

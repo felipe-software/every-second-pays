@@ -3,7 +3,6 @@ import type { Note } from "./score";
 export const appHaptics = {
     press: () => {},
     selection: () => {},
-    themeMode: () => {},
     primaryAction: () => {},
     secondaryAction: () => {},
     dismiss: () => {},

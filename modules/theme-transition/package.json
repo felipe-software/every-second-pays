@@ -1,0 +1,9 @@
+{
+    "name": "theme-transition",
+    "version": "0.1.0",
+    "description": "Circular theme reveal with native burst flipping",
+    "license": "MIT",
+    "author": "felipe-software",
+    "homepage": "https://github.com/felipe-software/every-second-pays",
+    "private": true
+}

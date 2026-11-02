@@ -43,8 +43,7 @@ export function Onboarding() {
     const { scale, offsetX, offsetY } = fit;
     const { step, visited, position, backdrop, pager, go, pan } = useOnboardingPager({ exiting, introDone, scale });
     const { notifications, askingSystem, askForNotifications, declineNotifications } = useNotificationAnswer();
-    usePrebuiltArt(appLook, introDone);
-    const { look, previewLook, pickLook } = useLookPreview({
+    const { look, artLook, previewLook, pickLook } = useLookPreview({
         appLook,
         updateAppearance,
         step,
@@ -53,6 +52,7 @@ export function Onboarding() {
         window,
         fit,
     });
+    usePrebuiltArt(artLook, introDone);
     useBackThroughPages({ exiting, step, go });
     const trackStyle = useAnimatedStyle(() => ({
         transform: [{ translateX: -position.get() * PAGE_WIDTH }],
@@ -65,7 +65,7 @@ export function Onboarding() {
     const skipShown = skipReady && !last && !exiting && (!onNotificationsPage || awaitingAnswer);
 
     return (
-        <OnboardingLookProvider look={look} artLook={appLook}>
+        <OnboardingLookProvider look={look} artLook={artLook}>
             <StatusBar style={look.dark ? "light" : "dark"} />
             <Animated.View
                 pointerEvents={exiting ? "none" : "auto"}
