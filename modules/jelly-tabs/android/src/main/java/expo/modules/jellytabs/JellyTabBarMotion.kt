@@ -9,7 +9,7 @@ import kotlin.math.sign
 import kotlin.math.sqrt
 
 private const val MAX_FRAME_DELTA_SECONDS = 0.064
-// A spring stops once what's left of it moves pixels by about a quarter or less; frames past that can't be seen.
+// Springs stop once what's left moves pixels by about a quarter or less.
 private const val POSITION_REST = 0.001
 private const val FILTERED_VELOCITY_REST = 0.02
 private const val PRESS_REST = 0.01
@@ -54,7 +54,6 @@ private fun cubicBezierCoordinate(parameter: Double, secondControlPoint: Double)
   return parameter * parameter * (3.0 * inverse * secondControlPoint + parameter)
 }
 
-// Compose's EaseOut is CubicBezierEasing(0, 0, 0.58, 1).
 private fun easeOut(input: Double): Double {
   val x = input.coerceIn(0.0, 1.0)
   var low = 0.0

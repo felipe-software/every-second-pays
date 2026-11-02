@@ -244,7 +244,7 @@ class JellyTabBarView(context: Context, appContext: AppContext) :
   private fun scheduleFrame() {
     if (isFrameScheduled) return
     isFrameScheduled = true
-    // Reanimated runs in the later NATIVE_ANIMATED_MODULE queue, so the page follows the pill in the same frame.
+    // Must run before Reanimated's NATIVE_ANIMATED_MODULE queue so the page moves in the same frame.
     ReactChoreographer.getInstance().postFrameCallback(ReactChoreographer.CallbackType.DISPATCH_UI, this)
   }
 
@@ -352,7 +352,6 @@ class JellyTabBarView(context: Context, appContext: AppContext) :
     applyGlow()
   }
 
-  // The active row undoes the pill's transform, so its content stays still while the rounded clip moves over it.
   private fun applyPill() {
     val offset = motion.pillOffsetX.toFloat()
     val pillScaleX = motion.pillScaleXValue.toFloat()

@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""usage: run.py <reps> <bar> [<bar> ...]
-Isolated jelly benchmark on a physical phone: one finger run is 4 press-drag-hold-release gestures, 2 landing on each page.
-Bars alternate within each rep. Bars: native, reanimated; add :idle to measure the same screen with no finger. Prints medians of CPU (ms per second) and frame stats.
-Env: BENCH_SERIAL, BENCH_OUT, BENCH_INSTALL=1 to install and compile the APK first, BENCH_LABEL to tag the saved JSON.
-"""
 import json, os, re, statistics as st, subprocess, sys, time
 
 PKG = "software.felipe.everysecondpays.dev"

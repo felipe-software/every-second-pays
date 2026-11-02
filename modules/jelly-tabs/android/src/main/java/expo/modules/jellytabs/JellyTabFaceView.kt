@@ -58,7 +58,7 @@ private fun textBoxSpan(start: Float, length: Float): Int {
   return roundedEnd.toInt() - floor(start + ROUNDING_TOLERANCE).toInt()
 }
 
-// Text scaled per frame re-rasterizes its glyphs, so a face draws from bitmaps baked once: one for rest, one for the pressed scale.
+// Baked because text scaled per frame re-rasterizes its glyphs.
 internal class JellyTabFaceView(
   context: Context,
   isActive: Boolean,
@@ -119,7 +119,6 @@ internal class JellyTabFaceView(
     invalidate()
   }
 
-  // Mirrors the Yoga column it replaces: an icon over a label, centered in the unrounded tab box.
   fun place(
     left: Int,
     top: Int,

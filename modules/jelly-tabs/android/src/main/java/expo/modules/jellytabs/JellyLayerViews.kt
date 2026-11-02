@@ -16,7 +16,6 @@ private const val GLOW_CENTER_ALPHA = 38
 private const val GLOW_MIDDLE_ALPHA = 16
 private const val GLOW_MIDDLE_STOP = 0.45f
 
-// Children are placed by hand and moved through render properties, so nothing here records per frame.
 internal open class JellyLayerView(context: Context) : ViewGroup(context) {
   init {
     clipChildren = false

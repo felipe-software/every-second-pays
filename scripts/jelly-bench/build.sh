@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# usage: build.sh  (run after :app:assembleRelease; writes the isolated bench APK to $OUT/bench.apk)
 set -euo pipefail
 BENCH_DIR=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$BENCH_DIR/../.." && pwd)
