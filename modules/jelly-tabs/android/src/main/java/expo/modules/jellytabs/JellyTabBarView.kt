@@ -53,6 +53,8 @@ class JellyTabBarView(context: Context, appContext: AppContext) :
   private val icons = HashMap<String, Bitmap>()
   private var labels = emptyList<String>()
   private var iconPaths = emptyList<String>()
+  private var inactiveIconPaths = emptyList<String>()
+  private var contentStyle = JellyTabContentStyle()
   private var areFacesStale = false
 
   private var activeContentColor = Color.BLACK
@@ -94,6 +96,17 @@ class JellyTabBarView(context: Context, appContext: AppContext) :
 
   fun setIconPaths(next: List<String>) {
     iconPaths = next
+    areFacesStale = true
+  }
+
+  fun setInactiveIconPaths(next: List<String>) {
+    inactiveIconPaths = next
+    areFacesStale = true
+  }
+
+  internal fun setContentStyle(next: JellyTabContentStyle) {
+    if (next == contentStyle) return
+    contentStyle = next
     areFacesStale = true
   }
 
@@ -258,8 +271,10 @@ class JellyTabBarView(context: Context, appContext: AppContext) :
 
   private fun addFace(row: JellyLayerView, index: Int, isActive: Boolean, color: Int): JellyTabFaceView {
     val pressedRasterScale = if (isActive) ACTIVE_PRESSED_RASTER_SCALE else INACTIVE_PRESSED_RASTER_SCALE
-    val face = JellyTabFaceView(context, isActive, pressedRasterScale)
-    face.setContent(labels[index], iconPaths[index])
+    val face = JellyTabFaceView(context, isActive, contentStyle, pressedRasterScale)
+    val inactiveIconPath = inactiveIconPaths.getOrNull(index)?.takeIf { it.isNotEmpty() }
+    val iconPath = if (isActive) iconPaths[index] else inactiveIconPath ?: iconPaths[index]
+    face.setContent(labels[index], iconPath)
     face.setContentColor(color)
     row.addView(face)
     return face
@@ -275,7 +290,8 @@ class JellyTabBarView(context: Context, appContext: AppContext) :
     inactiveRow.layout(0, 0, width, height)
 
     val tabCount = inactiveFaces.size
-    motion.setTrack(width.toDouble(), height.toDouble(), tabCount)
+    val overhang = contentStyle.pillOverhangDp * density
+    motion.setTrack(width.toDouble(), height.toDouble(), tabCount, overhang.toDouble())
 
     val inset = TRACK_INSET_DP * density
     val insetPx = inset.roundToInt()
@@ -284,9 +300,10 @@ class JellyTabBarView(context: Context, appContext: AppContext) :
     // Yoga rounds each box from unrounded positions, which sit on whole dps horizontally for this bar.
     val unroundedLeft = (absoluteLeftInRoot() / density).roundToInt() * density
     val unroundedWidth = (width / density).roundToInt() * density
-    val unroundedTabWidth = if (tabCount == 0) 0f else (unroundedWidth - inset * 2f) / tabCount
+    val tabPitch = if (tabCount == 0) 0f else (unroundedWidth - inset * 2f - overhang) / tabCount
+    val slotWidth = tabPitch + overhang
 
-    val pillWidth = roundedSpan(unroundedLeft + inset, unroundedTabWidth)
+    val pillWidth = roundedSpan(unroundedLeft + inset, slotWidth)
     val pillHeight = roundedSpan(absoluteTopInRoot() + inset, itemHeight)
     pill.layout(insetPx, insetPx, insetPx + pillWidth, insetPx + pillHeight)
     activeRow.layout(-insetPx, -insetPx, width - insetPx, height - insetPx)
@@ -294,8 +311,8 @@ class JellyTabBarView(context: Context, appContext: AppContext) :
     activeRow.pivotY = insetPx + pillHeight / 2f
 
     for (index in 0 until tabCount) {
-      val tabOffset = inset + unroundedTabWidth * index
-      val box = TabBox(unroundedLeft + tabOffset, absoluteTopInRoot() + inset, unroundedTabWidth, itemHeight)
+      val tabOffset = inset + tabPitch * index
+      val box = TabBox(unroundedLeft + tabOffset, absoluteTopInRoot() + inset, slotWidth, itemHeight)
       inactiveFaces[index].place(tabOffset.roundToInt(), insetPx, box, ::tabIcon)
       activeFaces[index].place(tabOffset.roundToInt(), insetPx, box, ::tabIcon)
     }

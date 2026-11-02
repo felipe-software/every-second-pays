@@ -29,12 +29,7 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 private const val ICON_VIEWPORT = 24f
-private const val ICON_SIZE_DP = 23f
-private const val ICON_OFFSET_DP = 2f
-private const val LABEL_TEXT_SIZE_SP = 13f
 private const val LABEL_PADDING_DP = 4f
-private const val ACTIVE_FONT_WEIGHT = 700
-private const val INACTIVE_FONT_WEIGHT = 400
 private const val ROUNDING_TOLERANCE = 0.0001f
 
 internal fun rasterizeTabIcon(pathData: String, width: Int, height: Int): Bitmap {
@@ -62,22 +57,16 @@ private fun textBoxSpan(start: Float, length: Float): Int {
 internal class JellyTabFaceView(
   context: Context,
   isActive: Boolean,
+  private val style: JellyTabContentStyle,
   private val pressedRasterScale: Float,
 ) : View(context) {
   private val density = resources.displayMetrics.density
   private val maskPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
   private val labelPaint = TextPaint(TextPaint.ANTI_ALIAS_FLAG)
   private val iconBakePaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-  // A themed TextView's default face isn't Typeface.DEFAULT, and React Native's text starts from the former.
   private val labelStyle = LabelStyleSpan(
-    size = ceil(PixelUtil.toPixelFromSP(LABEL_TEXT_SIZE_SP)),
-    face = ReactTypefaceUtils.applyStyles(
-      TextView(context).typeface,
-      ReactConstants.UNSET,
-      if (isActive) ACTIVE_FONT_WEIGHT else INACTIVE_FONT_WEIGHT,
-      null,
-      context.assets,
-    ),
+    size = ceil(PixelUtil.toPixelFromSP(style.labelFontSizeSp)),
+    face = labelTypeface(context, if (isActive) style.active else style.inactive),
   )
   private val pressedBounds = RectF()
   private var iconPath = ""
@@ -134,17 +123,18 @@ internal class JellyTabFaceView(
     labelLayout = textLayout
     labelLeft = padding.toFloat()
 
-    iconSize = ICON_SIZE_DP * density
+    iconSize = style.iconSizeDp * density
+    val gap = style.iconLabelGapDp * density
     val iconInsetX = (box.width - iconSize) / 2f
-    val iconInsetY = (box.height - iconSize - textLayout.height) / 2f
+    val iconInsetY = (box.height - iconSize - gap - textLayout.height) / 2f
     icon = iconFor(
       iconPath,
       roundedSpan(box.absoluteLeft + iconInsetX, iconSize),
       roundedSpan(box.absoluteTop + iconInsetY, iconSize),
     )
     iconLeft = iconInsetX.roundToInt().toFloat()
-    iconTop = iconInsetY.roundToInt() + ICON_OFFSET_DP * density
-    labelTop = floor(iconInsetY + iconSize)
+    iconTop = iconInsetY.roundToInt().toFloat()
+    labelTop = (iconInsetY + iconSize + gap).roundToInt().toFloat()
     bakeMasks()
     invalidate()
   }
@@ -201,7 +191,7 @@ internal class JellyTabFaceView(
     val builder = StaticLayout.Builder.obtain(text, 0, text.length, labelPaint, width.coerceAtLeast(0))
       .setAlignment(Layout.Alignment.ALIGN_CENTER)
       .setLineSpacing(0f, 1f)
-      .setIncludePad(true)
+      .setIncludePad(false)
       .setEllipsize(TextUtils.TruncateAt.END)
       .setMaxLines(1)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -209,6 +199,18 @@ internal class JellyTabFaceView(
     }
     return builder.build()
   }
+}
+
+// A themed TextView's default face isn't Typeface.DEFAULT, and React Native's text starts from the former.
+private fun labelTypeface(context: Context, font: JellyTabLabelFont): Typeface {
+  val unsetWeight = if (font.family == null) font.defaultWeight else ReactConstants.UNSET
+  return ReactTypefaceUtils.applyStyles(
+    TextView(context).typeface,
+    ReactConstants.UNSET,
+    font.weight ?: unsetWeight,
+    font.family,
+    context.assets,
+  )
 }
 
 // Keep in sync with React Native's CustomStyleSpan: linear text changes the glyph advances.
