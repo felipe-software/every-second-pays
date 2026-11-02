@@ -26,8 +26,6 @@ private const val GLOW_RADIUS_DP = 300f
 private const val ACTIVE_PRESSED_RASTER_SCALE = 1.35f
 private const val INACTIVE_PRESSED_RASTER_SCALE = 1.12f
 private const val PRESSED_RASTER_THRESHOLD = 1.004
-private const val HIGH_REFRESH_VSYNC_SECONDS = 1.0 / 90.0
-private const val SLOW_DP_PER_SECOND = 24.0
 
 @SuppressLint("ViewConstructor")
 class JellyTabBarView(context: Context, appContext: AppContext) :
@@ -68,11 +66,8 @@ class JellyTabBarView(context: Context, appContext: AppContext) :
   private var panStartRawX = 0f
   private var panStartRawY = 0f
 
-  private val slowPixelsPerSecond = SLOW_DP_PER_SECOND * density
   private var isFrameScheduled = false
-  private var isSkippingVsync = false
   private var lastFrameNanos = 0L
-  private var lastVsyncNanos = 0L
 
   init {
     clipChildren = false
@@ -120,7 +115,7 @@ class JellyTabBarView(context: Context, appContext: AppContext) :
     pill.visibility = if (index >= 0) View.VISIBLE else View.INVISIBLE
     if (hasSelection) {
       motion.selectIndex(index)
-      wakeFrames()
+      scheduleFrame()
     } else {
       hasSelection = true
       motion.snapToIndex(index)
@@ -160,7 +155,7 @@ class JellyTabBarView(context: Context, appContext: AppContext) :
 
   internal fun activateTab(index: Int) {
     motion.activateIndex(index)
-    wakeFrames()
+    scheduleFrame()
     emitTabPress(index)
   }
 
@@ -197,7 +192,7 @@ class JellyTabBarView(context: Context, appContext: AppContext) :
 
   override fun onAttachedToWindow() {
     super.onAttachedToWindow()
-    if (motion.isActive) wakeFrames()
+    if (motion.isActive) scheduleFrame()
   }
 
   override fun onDetachedFromWindow() {
@@ -207,14 +202,6 @@ class JellyTabBarView(context: Context, appContext: AppContext) :
 
   override fun doFrame(frameTimeNanos: Long) {
     isFrameScheduled = false
-    val vsyncSeconds = (frameTimeNanos - lastVsyncNanos) / NANOS_PER_SECOND
-    lastVsyncNanos = frameTimeNanos
-    if (isSkippingVsync) {
-      isSkippingVsync = false
-      scheduleFrame()
-      return
-    }
-
     val previousFrameNanos = lastFrameNanos
     lastFrameNanos = frameTimeNanos
     val deltaSeconds = if (previousFrameNanos == 0L) NOMINAL_FRAME_SECONDS else (frameTimeNanos - previousFrameNanos) / NANOS_PER_SECOND
@@ -225,9 +212,6 @@ class JellyTabBarView(context: Context, appContext: AppContext) :
       motion.releaseProgressIfSettled()
     }
     if (motion.isActive) {
-      // Moving under a pixel per 60 Hz frame looks the same at half of a 120 Hz display's rate.
-      val isHighRefreshRate = vsyncSeconds < HIGH_REFRESH_VSYNC_SECONDS
-      isSkippingVsync = isHighRefreshRate && motion.fastestPixelSpeed < slowPixelsPerSecond
       scheduleFrame()
     } else {
       lastFrameNanos = 0L
@@ -241,7 +225,7 @@ class JellyTabBarView(context: Context, appContext: AppContext) :
     NativeGestureUtil.notifyNativeGestureStarted(this, event)
     motion.begin(event.x.toDouble(), event.y.toDouble(), event.rawX.toDouble())
     applyInteraction()
-    wakeFrames()
+    scheduleFrame()
   }
 
   private fun finishTouch() {
@@ -249,17 +233,12 @@ class JellyTabBarView(context: Context, appContext: AppContext) :
     isTracking = false
     parent?.requestDisallowInterceptTouchEvent(false)
     val nextIndex = motion.finish()
-    wakeFrames()
+    scheduleFrame()
     if (inactiveFaces.isNotEmpty()) emitTabPress(nextIndex)
   }
 
   private fun emitTabPress(index: Int) {
     onTabPress(mapOf("index" to index))
-  }
-
-  private fun wakeFrames() {
-    isSkippingVsync = false
-    scheduleFrame()
   }
 
   private fun scheduleFrame() {
@@ -274,7 +253,6 @@ class JellyTabBarView(context: Context, appContext: AppContext) :
       ReactChoreographer.getInstance().removeFrameCallback(ReactChoreographer.CallbackType.DISPATCH_UI, this)
     }
     isFrameScheduled = false
-    isSkippingVsync = false
     lastFrameNanos = 0L
   }
 

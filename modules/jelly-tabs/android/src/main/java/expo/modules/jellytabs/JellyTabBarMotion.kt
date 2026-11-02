@@ -20,9 +20,6 @@ private const val PANEL_REST_DP = 2.0
 private const val TRANSLATE_REST_DP = 0.1
 private const val OWNERSHIP_REST = 0.001
 
-private const val VELOCITY_SCALE_PER_UNIT = 0.075
-private const val GLOW_PIXELS_PER_OPACITY = 100.0
-
 private const val PILL_PRESSED_SCALE = 1.2
 private const val BAR_PRESSED_SCALE = 1.1
 private const val ACTIVE_TAB_PRESSED_GROWTH = 0.2
@@ -157,21 +154,6 @@ internal class JellyTabBarMotion(density: Float, private val reducedMotion: Bool
       !barPressedScale.isAtRest(barPressedScaleTarget) ||
       !glowOpacitySpring.isAtRest(glowOpacityTarget) ||
       (!isDragging && (!panelOffset.isAtRest(0.0) || !barTranslateY.isAtRest(0.0) || !barScaleX.isAtRest(1.0)))
-
-  val fastestPixelSpeed: Double
-    get() {
-      val halfTab = tabWidth / 2.0
-      val halfTrack = trackWidth / 2.0
-      return maxOf(
-        abs(position.velocity) * tabWidth,
-        maxOf(abs(pillScaleX.velocity), abs(pillScaleY.velocity)) * halfTab,
-        abs(filteredVelocity.velocity) * VELOCITY_SCALE_PER_UNIT * halfTab,
-        abs(press.velocity) * ACTIVE_TAB_PRESSED_GROWTH * halfTab,
-        maxOf(abs(barPressedScale.velocity), abs(barScaleX.velocity)) * halfTrack,
-        abs(barTranslateY.velocity),
-        abs(glowOpacitySpring.velocity) * GLOW_PIXELS_PER_OPACITY,
-      )
-    }
 
   private fun velocityScale() = filteredVelocity.value / 10.0
 
