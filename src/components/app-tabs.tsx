@@ -11,9 +11,11 @@ export default function AppTabs() {
     const { colors } = useEarningsTheme();
     const { t } = useI18n();
     const requestNewSource = usePaymentComposerStore((state) => state.requestNewSource);
-    const nativeLabelColor = Platform.OS === "ios"
-        ? DynamicColorIOS({ light: "#3F3329", dark: "#D8CBC1" })
-        : colors.muted;
+    const nativeLabelColor =
+        Platform.OS === "ios"
+            ? // oxlint-disable-next-line react/capitalized-calls
+              DynamicColorIOS({ light: "#3F3329", dark: "#D8CBC1" })
+            : colors.muted;
     const openPaymentComposer = () => {
         appHaptics.secondaryAction();
         requestNewSource();
@@ -29,7 +31,10 @@ export default function AppTabs() {
         >
             <NativeTabs.Trigger name="index">
                 <NativeTabs.Trigger.Label>{t("tabs.earnings")}</NativeTabs.Trigger.Label>
-                <NativeTabs.Trigger.Icon sf={{ default: "dollarsign.circle", selected: "dollarsign.circle.fill" }} md="paid" />
+                <NativeTabs.Trigger.Icon
+                    sf={{ default: "dollarsign.circle", selected: "dollarsign.circle.fill" }}
+                    md="paid"
+                />
             </NativeTabs.Trigger>
 
             <NativeTabs.Trigger name="settings">

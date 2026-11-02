@@ -2,22 +2,12 @@ import { Skia, type SkSkottieAnimation } from "@shopify/react-native-skia";
 
 import type { PaletteId } from "@/features/appearance/palettes";
 
-/**
- * One onboarding animation as `scripts/onboarding-lottie` exports it: a Lottie template in which
- * every value that depends on the look is a `"#n"` token and every text variant's visibility is
- * an `"@key=value"` marker.
- */
 export type OnboardingAnimation = {
     animation: unknown;
-    /** `tokens[n][look]`: token n's value in each look, ordered as `looks`. */
     tokens: unknown[][];
-    /** `"<palette>-<dark|light>"`. */
     looks: string[];
-    /** The variant values the template was captured in, e.g. `{ lang: "en" }`. */
     variants: Record<string, string>;
-    /** Named spans of the timeline, in frames. */
     segments: Record<string, [number, number]>;
-    /** Moments in the timeline worth acting on (an impact for a haptic), in frames. */
     cues: Cue[];
 };
 
@@ -35,8 +25,13 @@ const built = new Map<string, SkSkottieAnimation>();
 const names = new WeakMap<OnboardingAnimation, string>();
 let nextName = 0;
 
-/** Keeps the most recently used animations and looks; each holds a whole scene graph. */
+// Each cached animation holds a whole scene graph.
 const CACHE_SIZE = 8;
+
+function compareText(a: string, b: string) {
+    if (a < b) return -1;
+    return a > b ? 1 : 0;
+}
 
 function templateOf(source: OnboardingAnimation) {
     let template = templates.get(source);
@@ -47,7 +42,6 @@ function templateOf(source: OnboardingAnimation) {
     return template;
 }
 
-/** The animation in one look and one set of text variants, ready to draw. */
 export function onboardingSkottie(source: OnboardingAnimation, look: AnimationLook, variants: AnimationVariants = {}) {
     let name = names.get(source);
     if (!name) {
@@ -56,7 +50,9 @@ export function onboardingSkottie(source: OnboardingAnimation, look: AnimationLo
     }
     const lookId = `${look.palette}-${look.dark ? "dark" : "light"}`;
     const chosen = { ...source.variants, ...variants };
-    const key = `${name}|${lookId}|${Object.entries(chosen).sort().join(",")}`;
+    const variantKeys = Object.entries(chosen).map(String);
+    variantKeys.sort(compareText);
+    const key = `${name}|${lookId}|${variantKeys.join(",")}`;
     const cached = built.get(key);
     if (cached) {
         built.delete(key);

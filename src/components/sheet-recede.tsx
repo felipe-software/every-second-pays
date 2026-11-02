@@ -52,7 +52,7 @@ export function SheetRecede({ children }: PropsWithChildren) {
     if (!SHEET_RECEDE_ENABLED) return children;
 
     return (
-        // Reanimated can sync a stale receded frame back through React after the sheet closes, so commit a plain style at rest.
+        // Reanimated can sync a stale receded frame through React after close, so rest on a plain style.
         <Animated.View style={[styles.page, { backgroundColor: colors.canvas }, active ? recededStyle : styles.rest]}>
             {children}
         </Animated.View>

@@ -14,7 +14,8 @@ const COPY = {
     },
     "pt-BR": {
         name: "Todo Segundo Paga",
-        description: "Acompanhe seus ganhos em tempo real, direto no seu aparelho. Sem conta, anúncios, análises ou rastreamento.",
+        description:
+            "Acompanhe seus ganhos em tempo real, direto no seu aparelho. Sem conta, anúncios, análises ou rastreamento.",
         tick: "brl",
         today: ["Veja todo\nsegundo pagar", "Acompanhe seus ganhos em tempo real."],
         "widget-home": ["Direto na sua\ntela inicial", "Continua contando sem abrir o app."],
@@ -25,7 +26,8 @@ const COPY = {
     },
     "es-ES": {
         name: "Every Second Pays",
-        description: "Sigue tus ganancias en tiempo real, directamente en tu dispositivo. Sin cuenta, anuncios, analíticas ni rastreo.",
+        description:
+            "Sigue tus ganancias en tiempo real, directamente en tu dispositivo. Sin cuenta, anuncios, analíticas ni rastreo.",
         tick: "eur",
         today: ["Mira cómo paga\ncada segundo", "Sigue tus ganancias en tiempo real."],
         "widget-home": ["En tu pantalla\nde inicio", "Sigue contando sin abrir la app."],
@@ -36,7 +38,8 @@ const COPY = {
     },
     "fr-FR": {
         name: "Every Second Pays",
-        description: "Suivez vos gains en temps réel, directement sur votre appareil. Sans compte, publicités, analyses ni suivi.",
+        description:
+            "Suivez vos gains en temps réel, directement sur votre appareil. Sans compte, publicités, analyses ni suivi.",
         tick: "eur",
         today: ["Chaque seconde\nvous rapporte", "Suivez vos gains en temps réel."],
         "widget-home": ["Directement sur\nl’écran d’accueil", "Le compteur tourne sans ouvrir l’app."],
@@ -47,13 +50,24 @@ const COPY = {
     },
 } as const;
 
-// Goldie shares one Android capture across its locales, so goldie/bin/locales.mjs runs it once per language.
-const LOCALE = (process.env.GOLDIE_LOCALE ?? "en-US") as keyof typeof COPY;
+type Locale = keyof typeof COPY;
+
+const isLocale = (value: string): value is Locale => Object.hasOwn(COPY, value);
+
+function resolveLocale(value: string): Locale {
+    if (!isLocale(value)) throw new Error(`Unsupported GOLDIE_LOCALE: ${value}`);
+    return value;
+}
+
+// Goldie shares one Android capture across locales, so goldie/bin/locales.mjs runs once per language.
+const LOCALE = resolveLocale(process.env.GOLDIE_LOCALE ?? "en-US");
 const copy = COPY[LOCALE];
 
 const BACKGROUND_STOPS = ["#2F6F35", "#2B6531", "#265A2D", "#215029", "#1C4625", "#183D21", "#14341D"];
 
-const image = (name: string, x: number, y: number, width: number, rotate?: number) => ({
+type ImagePlacement = { x: number; y: number; width: number; rotate?: number };
+
+const image = (name: string, { x, y, width, rotate }: ImagePlacement) => ({
     kind: "image" as const,
     src: `art/${name}.png`,
     x,
@@ -62,9 +76,9 @@ const image = (name: string, x: number, y: number, width: number, rotate?: numbe
     rotate,
 });
 
-const bill = (x: number, y: number, width: number, rotate: number) => image("bill", x, y, width, rotate);
+const bill = (x: number, y: number, width: number, rotate: number) => image("bill", { x, y, width, rotate });
 
-const GLOW = image("glow", -0.25, 0.02, 1.5);
+const GLOW = image("glow", { x: -0.25, y: 0.02, width: 1.5 });
 
 // x runs in tile widths from the strip's left edge, so a layer on a seam draws in both tiles.
 const STRIP_BILLS = [
@@ -78,9 +92,13 @@ const STRIP_BILLS = [
 ];
 
 const stripBills = (tile: number) =>
-    STRIP_BILLS.filter(({ x, width }) => x < tile + 1 && x + width > tile).map((layer) => ({ ...layer, x: layer.x - tile }));
+    STRIP_BILLS.filter(({ x, width }) => x < tile + 1 && x + width > tile).map((layer) => ({
+        ...layer,
+        x: layer.x - tile,
+    }));
 
-const backdrop = (tile: number) => `linear-gradient(90deg, ${BACKGROUND_STOPS[tile]} 0%, ${BACKGROUND_STOPS[tile + 1]} 100%)`;
+const backdrop = (tile: number) =>
+    `linear-gradient(90deg, ${BACKGROUND_STOPS[tile]} 0%, ${BACKGROUND_STOPS[tile + 1]} 100%)`;
 
 const SCREENS = [
     {
@@ -88,9 +106,9 @@ const SCREENS = [
         flow: "store-01-today",
         layout: "hero",
         art: [
-            image(`tick-${copy.tick}`, 0.04, 0.183, 0.27),
-            image(`tick-${copy.tick}`, 0.69, 0.177, 0.22),
-            image(`tick-${copy.tick}-faded`, 0.47, 0.179, 0.16),
+            image(`tick-${copy.tick}`, { x: 0.04, y: 0.183, width: 0.27 }),
+            image(`tick-${copy.tick}`, { x: 0.69, y: 0.177, width: 0.22 }),
+            image(`tick-${copy.tick}-faded`, { x: 0.47, y: 0.179, width: 0.16 }),
         ],
     },
     {
@@ -130,11 +148,11 @@ const SCREENS = [
         flow: "store-05-settings",
         layout: "tilt-right",
         art: [
-            image("orb-orange", 0.129, 0.225, 0.2),
-            image("orb-green", 0.093, 0.34, 0.2),
-            image("orb-blue", 0.056, 0.454, 0.2),
-            image("orb-rose", 0.02, 0.569, 0.2),
-            image("orb-lavender", -0.015, 0.683, 0.2),
+            image("orb-orange", { x: 0.129, y: 0.225, width: 0.2 }),
+            image("orb-green", { x: 0.093, y: 0.34, width: 0.2 }),
+            image("orb-blue", { x: 0.056, y: 0.454, width: 0.2 }),
+            image("orb-rose", { x: 0.02, y: 0.569, width: 0.2 }),
+            image("orb-lavender", { x: -0.015, y: 0.683, width: 0.2 }),
         ],
     },
     {

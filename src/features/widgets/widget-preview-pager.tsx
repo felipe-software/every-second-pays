@@ -25,13 +25,19 @@ const PREVIEW_HEIGHT: Record<PreviewSize, number> = { small: 168, wide: 150, lar
 const STAGE_PADDING = 16;
 const STAGE_HEIGHTS = PREVIEW_SIZES.map((size) => PREVIEW_HEIGHT[size] + STAGE_PADDING * 2);
 
+type WidgetsParamList = { "settings/widgets": undefined };
+
 function useTransitionFinished() {
-    const navigation = useNavigation<NativeStackNavigationProp<Record<string, object | undefined>>>();
+    const navigation = useNavigation<NativeStackNavigationProp<WidgetsParamList>>();
     const [finished, setFinished] = useState(false);
 
-    useEffect(() => navigation.addListener("transitionEnd", (event) => {
-        if (!event.data.closing) setFinished(true);
-    }), [navigation]);
+    useEffect(
+        () =>
+            navigation.addListener("transitionEnd", (event) => {
+                if (!event.data.closing) setFinished(true);
+            }),
+        [navigation],
+    );
 
     return finished;
 }
@@ -59,7 +65,11 @@ export function WidgetPreviewPager({
     const shown = useSharedValue(page);
     const pageOffsets = PREVIEW_SIZES.map((_, index) => index * width);
     // Claims the swipe natively so the enclosing tab pager doesn't switch tabs.
-    const native = useMemo(() => Gesture.Native().disallowInterruption(true), []);
+    const native = useMemo(
+        // oxlint-disable-next-line react/capitalized-calls
+        () => Gesture.Native().disallowInterruption(true),
+        [],
+    );
 
     const swiped = (next: number) => {
         appHaptics.selection();
@@ -122,7 +132,10 @@ export function WidgetPreviewPager({
                                     config={config}
                                     revision={revision}
                                     active={item === size}
-                                    style={{ width: item === "small" ? 168 : width - PAGE_GUTTER * 2, height: PREVIEW_HEIGHT[item] }}
+                                    style={{
+                                        width: item === "small" ? 168 : width - PAGE_GUTTER * 2,
+                                        height: PREVIEW_HEIGHT[item],
+                                    }}
                                 />
                             ) : null}
                         </View>

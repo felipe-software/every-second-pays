@@ -1,21 +1,20 @@
 import { useIsFocused } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Platform, ScrollView, Text, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { PrimaryButton } from "@/components/elevated/primary-button";
-import { appHaptics } from "@/features/haptics/haptics";
 import { useMainCurrencySources } from "@/features/currency/use-main-currency-sources";
 import { EarningsBackground } from "@/features/earnings/earnings-background";
 import { EarningsHeader } from "@/features/earnings/earnings-header";
-import { MONEY_IMPACT_DELAY, type MoneyTransfer } from "@/features/earnings/money-counter-celebration";
-import { EmptySourcesCallout, EmptySourcesMessage } from "@/features/earnings/empty-sources";
-import { type PaymentDraft, currentShift, earnedInPeriod, earnedToday, ratePerSecond } from "@/features/earnings/model";
+import { EarningsSourceList } from "@/features/earnings/earnings-source-list";
+import { EmptySourcesCallout } from "@/features/earnings/empty-sources";
+import { earnedInPeriod } from "@/features/earnings/model";
 import { usePaymentComposerStore } from "@/features/earnings/payment-composer-store";
 import { PaymentSheet } from "@/features/earnings/payment-sheet";
+import { paymentSourceActions } from "@/features/earnings/payment-source-actions";
 import { usePeriodStore } from "@/features/earnings/period-store";
-import { SourceRow } from "@/features/earnings/source-row";
 import { useEarningsStore } from "@/features/earnings/store";
+import { useMoneyTransferDisplay } from "@/features/earnings/use-money-transfer-display";
 import { useI18n } from "@/features/i18n/i18n";
 import { useOnboardingStore } from "@/features/onboarding/store";
 
@@ -33,20 +32,6 @@ function useLiveClock(tickMs: number) {
 const FOCUSED_TICK_MS = 200;
 // Stays mounted behind Settings and can be swiped into view, so it slows down instead of stopping.
 const HIDDEN_TICK_MS = 5000;
-const MIN_TRANSFER_INTERVAL = 950;
-const SOURCE_TRANSFER_STAGGER = 90;
-const MAX_SOURCE_TRANSFER_STAGGER = 450;
-
-function firstChangedDigitIndex(previousValue: number, nextValue: number) {
-    const previous = String(previousValue);
-    const next = String(nextValue);
-
-    if (previous.length !== next.length) return 0;
-
-    let index = 0;
-    while (index < next.length && previous[index] === next[index]) index += 1;
-    return index;
-}
 
 export default function EarningsScreen() {
     const isFocused = useIsFocused();
@@ -64,7 +49,6 @@ export default function EarningsScreen() {
     const newSourceRequest = usePaymentComposerStore((state) => state.newSourceRequest);
     const revealed = useOnboardingStore((state) => state.revealed);
     const handledNewSourceRequest = useRef(0);
-    const pendingCelebrationSourceId = useRef<number | null>(null);
     const [sheetOpen, setSheetOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -82,156 +66,16 @@ export default function EarningsScreen() {
         () => converted.reduce((sum, source) => sum + earnedInPeriod(source, period, now, firstDayOfWeek), 0),
         [converted, firstDayOfWeek, now, period],
     );
-    const [displayedTotal, setDisplayedTotal] = useState(0);
-    const [moneyTransfer, setMoneyTransfer] = useState<MoneyTransfer | null>(null);
-    const displayedCentsRef = useRef(0);
-    const lastTransferAt = useRef(0);
-    const nextTransferId = useRef(0);
-    const updateTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
-    const pendingTargetCents = useRef<number | null>(null);
-    const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const initializedDisplay = useRef(false);
-    const displayedPeriod = useRef(period);
-    const sourceValueNodes = useRef(new Map<number, View>());
-
-    const registerSourceValueNode = useCallback((sourceId: number, node: View | null) => {
-        if (node) sourceValueNodes.current.set(sourceId, node);
-        else sourceValueNodes.current.delete(sourceId);
-    }, []);
-
-    const updateDisplayedTotal = useCallback((cents: number) => {
-        displayedCentsRef.current = cents;
-        setDisplayedTotal(cents / 100);
-    }, []);
-
-    const syncDisplayedTotal = useCallback((cents: number) => {
-        if (syncTimer.current) clearTimeout(syncTimer.current);
-        syncTimer.current = setTimeout(() => {
-            syncTimer.current = null;
-            updateDisplayedTotal(cents);
-        }, 0);
-    }, [updateDisplayedTotal]);
-
-    const clearUpdateTimers = useCallback(() => {
-        updateTimers.current.forEach(clearTimeout);
-        updateTimers.current = [];
-        pendingTargetCents.current = null;
-    }, []);
-
-    useEffect(() => {
-        if (!ready) return;
-
-        const calculatedCents = Math.round(calculatedTotal * 100);
-        if (displayedPeriod.current !== period) {
-            displayedPeriod.current = period;
-            clearUpdateTimers();
-            syncDisplayedTotal(calculatedCents);
-            return;
-        }
-
-        if (!isFocused) {
-            clearUpdateTimers();
-            initializedDisplay.current = true;
-            syncDisplayedTotal(calculatedCents);
-            return;
-        }
-
-        // Wait for the sheet to dismiss: new source rows need valid window coordinates, and the flight would play behind it.
-        if (sheetOpen) return;
-
-        if (!initializedDisplay.current) {
-            initializedDisplay.current = true;
-            syncDisplayedTotal(calculatedCents);
-            return;
-        }
-
-        if (updateTimers.current.length
-            && pendingTargetCents.current != null
-            && calculatedCents < pendingTargetCents.current) {
-            clearUpdateTimers();
-        }
-
-        const celebrationSourceId = pendingCelebrationSourceId.current;
-        const celebrating = celebrationSourceId != null;
-        pendingCelebrationSourceId.current = null;
-        if (celebrating) clearUpdateTimers();
-
-        const displayedCents = displayedCentsRef.current;
-        if (!celebrating) {
-            if (calculatedCents <= displayedCents) {
-                if (calculatedCents < displayedCents) {
-                    syncDisplayedTotal(calculatedCents);
-                }
-                return;
-            }
-
-            if (updateTimers.current.length || Date.now() - lastTransferAt.current < MIN_TRANSFER_INTERVAL) return;
-        }
-
-        const launchingSources = celebrating
-            ? sources.filter((source) => source.id === celebrationSourceId)
-            : converted.filter((source) => currentShift(source, now));
-        if (!launchingSources.length) {
-            syncDisplayedTotal(calculatedCents);
-            return;
-        }
-
-        const origins = launchingSources.flatMap((source, index) => {
-            const node = sourceValueNodes.current.get(source.id);
-            return node ? [{
-                delay: Math.min(index * SOURCE_TRANSFER_STAGGER, MAX_SOURCE_TRANSFER_STAGGER),
-                node,
-                rate: ratePerSecond(source, now),
-                sourceId: source.id,
-            }] : [];
-        });
-        if (!origins.length) {
-            syncDisplayedTotal(calculatedCents);
-            return;
-        }
-
-        nextTransferId.current += 1;
-        lastTransferAt.current = Date.now();
-        const displayedWhole = Math.floor(displayedCents / 100);
-        const calculatedWhole = Math.floor(calculatedCents / 100);
-        const transferTarget = celebrating
-            ? { target: "whole" as const, nextWhole: calculatedWhole, changedDigitIndex: 0 }
-            : displayedWhole === calculatedWhole
-                ? { target: "cents" as const }
-                : {
-                    target: "whole" as const,
-                    nextWhole: calculatedWhole,
-                    changedDigitIndex: firstChangedDigitIndex(displayedWhole, calculatedWhole),
-                };
-
-        setMoneyTransfer({
-            id: nextTransferId.current,
-            origins: origins.map(({ delay, node, sourceId }) => ({ delay, node, sourceId })),
-            ...transferTarget,
-        });
-
-        const totalRate = origins.reduce((sum, origin) => sum + origin.rate, 0);
-        const centsToAdd = calculatedCents - displayedCents;
-        let cumulativeRate = 0;
-        pendingTargetCents.current = calculatedCents;
-        updateTimers.current = origins.map((origin, index) => {
-            cumulativeRate += origin.rate;
-            const nextCents = index === origins.length - 1
-                ? calculatedCents
-                : displayedCents + Math.round(centsToAdd * cumulativeRate / totalRate);
-            const timer = setTimeout(() => {
-                updateTimers.current = updateTimers.current.filter((item) => item !== timer);
-                if (!updateTimers.current.length) pendingTargetCents.current = null;
-                updateDisplayedTotal(nextCents);
-            }, MONEY_IMPACT_DELAY + origin.delay);
-            return timer;
-        });
-    }, [calculatedTotal, clearUpdateTimers, converted, isFocused, now, period, ready, sheetOpen, sources, syncDisplayedTotal, updateDisplayedTotal]);
-
-    useEffect(() => () => {
-        clearUpdateTimers();
-        if (syncTimer.current) clearTimeout(syncTimer.current);
-    }, [clearUpdateTimers]);
+    const { celebrateSource, displayedTotal, moneyTransfer, registerSourceValueNode } = useMoneyTransferDisplay({
+        calculatedTotal,
+        converted,
+        isFocused,
+        now,
+        period,
+        ready,
+        sheetOpen,
+        sources,
+    });
 
     const openNewSource = () => {
         setEditingId(null);
@@ -250,38 +94,17 @@ export default function EarningsScreen() {
         setEditingId(null);
     };
 
-    const saveSource = async (draft: PaymentDraft, id?: number) => {
-        if (useEarningsStore.getState().saving) return;
-        try {
-            const isFirstJob = useEarningsStore.getState().sources.length === 0;
-            await save(draft, id);
-            const created = id == null ? useEarningsStore.getState().sources.at(-1) : undefined;
-            if (created && (isFirstJob || earnedToday(created, new Date()) === 0)) {
-                pendingCelebrationSourceId.current = created.id;
-            }
-        } catch {
-            Alert.alert(t("home.saveErrorTitle"), t("home.saveErrorBody"));
-            throw new Error("Could not save payment source");
-        }
-    };
-
-    const removeSource = async (id: number) => {
-        if (useEarningsStore.getState().saving) return;
-        try {
-            await remove(id);
-        } catch {
-            Alert.alert(t("home.deleteErrorTitle"), t("home.deleteErrorBody"));
-            throw new Error("Could not delete payment source");
-        }
-    };
+    const { saveSource, removeSource } = paymentSourceActions({
+        onCelebrate: celebrateSource,
+        remove,
+        save,
+        t,
+    });
 
     return (
         <View className="flex-1 items-center bg-canvas">
             <View className="relative w-full max-w-[430px] flex-1 overflow-hidden bg-canvas">
-                <EarningsBackground
-                    celebrationId={moneyTransfer?.id}
-                    celebrationTarget={moneyTransfer?.target}
-                />
+                <EarningsBackground celebrationId={moneyTransfer?.id} celebrationTarget={moneyTransfer?.target} />
 
                 <View className="flex-1" style={{ paddingTop: insets.top }}>
                     <EarningsHeader
@@ -292,51 +115,23 @@ export default function EarningsScreen() {
                         moneyTransfer={moneyTransfer}
                     />
 
-                    <ScrollView
-                        // 38.6 keeps the list where it sat under the old rate line: 16 + 13.6 + 56 - 12 - 35.
-                        className="mt-[38.6px] flex-1 px-[22px]"
-                        contentContainerStyle={{ gap: 10, paddingBottom: Platform.OS === "android" ? 124 : 32 }}
-                        showsVerticalScrollIndicator={false}
-                    >
-                        {loadError ? (
-                            <View className="gap-3 py-4">
-                                <Text className="text-center font-sans text-[14px] text-muted">{t("home.loadError")}</Text>
-                                <PrimaryButton
-                                    label={t("common.tryAgain")}
-                                    onPress={() => {
-                                        appHaptics.primaryAction();
-                                        void load();
-                                    }}
-                                />
-                            </View>
-                        ) : ready && sources.length === 0 ? (
-                            <EmptySourcesMessage />
-                        ) : null}
-                        {sources.map((source, index) => (
-                            <SourceRow
-                                key={source.id}
-                                source={source}
-                                currency={source.currency ?? mainCurrency}
-                                index={index}
-                                now={now}
-                                earned={earnedBySource.get(source.id) ?? 0}
-                                onPress={() => {
-                                    setEditingId(source.id);
-                                    setSheetOpen(true);
-                                }}
-                                onValueNodeChange={registerSourceValueNode}
-                                transferId={moneyTransfer?.origins.some((origin) => origin.sourceId === source.id)
-                                    ? moneyTransfer.id
-                                    : null}
-                                transferDelay={moneyTransfer?.origins.find((origin) => origin.sourceId === source.id)?.delay ?? 0}
-                            />
-                        ))}
-                        {ready && unconverted.length ? (
-                            <Text accessibilityLiveRegion="polite" className="px-2 pt-1 text-center font-sans text-[12.5px] leading-[17px] text-muted">
-                                {t(custom ? "home.notConvertible" : "home.ratesMissing")}
-                            </Text>
-                        ) : null}
-                    </ScrollView>
+                    <EarningsSourceList
+                        custom={custom}
+                        earnedBySource={earnedBySource}
+                        loadError={loadError}
+                        mainCurrency={mainCurrency}
+                        moneyTransfer={moneyTransfer}
+                        now={now}
+                        onEditSource={(sourceId) => {
+                            setEditingId(sourceId);
+                            setSheetOpen(true);
+                        }}
+                        onRetry={load}
+                        onValueNodeChange={registerSourceValueNode}
+                        ready={ready}
+                        sources={sources}
+                        unconvertedCount={unconverted.length}
+                    />
 
                     {ready && revealed && sources.length === 0 && !loadError && !sheetOpen ? (
                         <EmptySourcesCallout bottomInset={insets.bottom} />
