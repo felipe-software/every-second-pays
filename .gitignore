@@ -44,3 +44,5 @@ example
 *.mp4
 *.mov
 /modules/*/android/build/
+
+.build/
