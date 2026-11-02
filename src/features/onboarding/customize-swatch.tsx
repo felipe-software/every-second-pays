@@ -39,7 +39,7 @@ export function CustomizeSwatch({
             accessibilityState={{ checked: selected }}
             hitSlop={5}
             onPress={onPress}
-            android_ripple={rippleConfig(colors.ink, 18)}
+            android_ripple={rippleConfig(colors.ink, 20)}
             style={[styles.swatch, { left: SWATCH_X[index] - BAR.x - 18 }]}
         >
             <View style={[styles.swatchEdge, { backgroundColor: mixColors(color, "#000000", 0.32) }]} />
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
         position: "absolute",
         top: 12,
         width: 36,
-        height: 36,
+        height: 39,
     },
     swatchEdge: {
         position: "absolute",
@@ -94,20 +94,28 @@ const styles = StyleSheet.create({
         borderRadius: 18,
     },
     swatchFace: {
-        ...StyleSheet.absoluteFill,
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: 36,
+        height: 36,
         borderRadius: 18,
     },
     swatchRing: {
         position: "absolute",
         left: -6,
-        top: -6,
+        top: -4.5,
         width: 48,
         height: 48,
         borderRadius: 24,
         borderWidth: 2,
     },
     swatchCheck: {
-        ...StyleSheet.absoluteFill,
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: 36,
+        height: 36,
         alignItems: "center",
         justifyContent: "center",
     },

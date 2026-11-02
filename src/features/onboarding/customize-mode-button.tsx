@@ -24,11 +24,11 @@ export function CustomizeModeButton({ onPress }: { onPress: () => void }) {
             accessibilityLabel={t(look.dark ? "onboarding.customize.toLight" : "onboarding.customize.toDark")}
             hitSlop={5}
             onPress={onPress}
-            android_ripple={rippleConfig(colors.ink, 18)}
+            android_ripple={rippleConfig(colors.ink, 20)}
             style={styles.mode}
         >
-            <View style={[styles.modeEdge, { backgroundColor: colors.edgeFill }]} />
-            <View style={[styles.modeFace, { backgroundColor: colors.fill }]} />
+            <View style={[styles.modeEdge, { backgroundColor: colors.edgeRow }]} />
+            <View style={[styles.modeFace, { backgroundColor: colors.cardFace, borderColor: colors.cardOutline }]} />
             <Animated.View
                 pointerEvents="none"
                 style={[
@@ -81,19 +81,24 @@ const styles = StyleSheet.create({
         left: 268,
         top: 12,
         width: 36,
-        height: 36,
+        height: 39,
     },
     modeEdge: {
         position: "absolute",
-        left: -1,
-        right: -1,
-        top: -1,
-        bottom: -3,
-        borderRadius: 19,
+        left: 0,
+        top: 3,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
     },
     modeFace: {
-        ...StyleSheet.absoluteFill,
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: 36,
+        height: 36,
         borderRadius: 18,
+        borderWidth: 1,
     },
     modeIcon: {
         position: "absolute",
