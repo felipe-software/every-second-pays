@@ -90,6 +90,7 @@ export default (): ExpoConfig => ({
         },
         predictiveBackGestureEnabled: true,
         package: IS_DEVELOPMENT ? `${APP_IDENTIFIER}.dev` : APP_IDENTIFIER,
+        permissions: ["android.permission.POST_NOTIFICATIONS"],
     },
     web: {
         output: "static",
