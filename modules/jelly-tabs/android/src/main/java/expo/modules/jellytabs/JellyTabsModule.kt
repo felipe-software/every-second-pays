@@ -15,7 +15,7 @@ class JellyTabsModule : Module() {
     Class("JellyTabBarController", JellyTabBarController::class) {
       Constructor { JellyTabBarController() }
 
-      Property("__jelly_tab_bar_controller__") { _: JellyTabBarController -> true }
+      Property("isJellyTabBarController") { _: JellyTabBarController -> true }
 
       // Runs on the UI worklet runtime, which is Android's main thread.
       Function("setProgress") { controller: JellyTabBarController, progress: Double ->

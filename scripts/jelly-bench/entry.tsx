@@ -10,6 +10,7 @@ import Animated, {
     useSharedValue,
     withTiming,
 } from "react-native-reanimated";
+import Svg, { Path } from "react-native-svg";
 
 type BarProps = {
     onSelect: (index: number) => void;
@@ -23,8 +24,10 @@ type PageProps = {
     position: SharedValue<number>;
 };
 
-const PAID_ICON_PATH = "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91 2.02.52 4.18 1.39 4.18 3.91-.01 1.83-1.38 2.83-3.12 3.16Z";
-const SETTINGS_ICON_PATH = "M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.08-.98l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.61-.22l-2.49 1a7.2 7.2 0 0 0-1.69-.98L14.5 2.42A.49.49 0 0 0 14 2h-4a.49.49 0 0 0-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1a.49.49 0 0 0-.61.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65c-.04.32-.08.66-.08.98s.03.66.08.98l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.04.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.58 1.69-.98l2.49 1c.23.08.49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.65ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z";
+const PAID_ICON_PATH =
+    "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91 2.02.52 4.18 1.39 4.18 3.91-.01 1.83-1.38 2.83-3.12 3.16Z";
+const SETTINGS_ICON_PATH =
+    "M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.08-.98l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.61-.22l-2.49 1a7.2 7.2 0 0 0-1.69-.98L14.5 2.42A.49.49 0 0 0 14 2h-4a.49.49 0 0 0-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1a.49.49 0 0 0-.61.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65c-.04.32-.08.66-.08.98s.03.66.08.98l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.04.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.58 1.69-.98l2.49 1c.23.08.49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.65ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z";
 const COLORS = {
     accent: "#D8819C",
     activeContent: "#FFF5F8",
@@ -37,11 +40,33 @@ const COLORS = {
 const LABELS = ["Revenus", "Réglages"];
 const PAGE_TIMING = { duration: 260, easing: Easing.out(Easing.cubic) };
 
+function icon(path: string) {
+    return function BarIcon({ color, size }: { color: string; size: number }) {
+        return (
+            <Svg fill={color} height={size} viewBox="0 0 24 24" width={size}>
+                <Path d={path} />
+            </Svg>
+        );
+    };
+}
+
 function loadNativeBar(): ComponentType<BarProps> {
     const { JellyTabBar } = require("@/components/jelly-tabs");
     const items = [
-        { accessibilityLabel: LABELS[0], iconPath: PAID_ICON_PATH, key: "index", label: LABELS[0], testID: "today-tab" },
-        { accessibilityLabel: LABELS[1], iconPath: SETTINGS_ICON_PATH, key: "settings", label: LABELS[1], testID: "settings-tab" },
+        {
+            accessibilityLabel: LABELS[0],
+            iconPath: PAID_ICON_PATH,
+            key: "index",
+            label: LABELS[0],
+            testID: "today-tab",
+        },
+        {
+            accessibilityLabel: LABELS[1],
+            iconPath: SETTINGS_ICON_PATH,
+            key: "settings",
+            label: LABELS[1],
+            testID: "settings-tab",
+        },
     ];
 
     return function NativeBar({ onSelect, progress, selectedIndex }) {
@@ -65,19 +90,25 @@ function loadNativeBar(): ComponentType<BarProps> {
 
 function loadReanimatedBar(): ComponentType<BarProps> {
     const { JellyTabBarHeadless } = require("./.old-fork/src/components/jelly-tabs");
-    const { default: Svg, Path } = require("react-native-svg");
-    const icon = (path: string) => function BarIcon({ color, size }: { color: string; size: number }) {
-        return (
-            <Svg fill={color} height={size} viewBox="0 0 24 24" width={size}>
-                <Path d={path} />
-            </Svg>
-        );
-    };
     const paidIcon = icon(PAID_ICON_PATH);
     const settingsIcon = icon(SETTINGS_ICON_PATH);
     const items = [
-        { accessibilityLabel: LABELS[0], activeIcon: paidIcon, inactiveIcon: paidIcon, key: "index", label: LABELS[0], testID: "today-tab" },
-        { accessibilityLabel: LABELS[1], activeIcon: settingsIcon, inactiveIcon: settingsIcon, key: "settings", label: LABELS[1], testID: "settings-tab" },
+        {
+            accessibilityLabel: LABELS[0],
+            activeIcon: paidIcon,
+            inactiveIcon: paidIcon,
+            key: "index",
+            label: LABELS[0],
+            testID: "today-tab",
+        },
+        {
+            accessibilityLabel: LABELS[1],
+            activeIcon: settingsIcon,
+            inactiveIcon: settingsIcon,
+            key: "settings",
+            label: LABELS[1],
+            testID: "settings-tab",
+        },
     ];
     const config = {
         distortion: { pressedScale: 1.1 },
@@ -144,7 +175,7 @@ function BenchRoot() {
     const [Bar, setBar] = useState<ComponentType<BarProps> | null>(null);
 
     useEffect(() => {
-        Linking.getInitialURL().then((url) => {
+        void Linking.getInitialURL().then((url) => {
             const load = url?.includes("bar=reanimated") ? loadReanimatedBar : loadNativeBar;
             setBar(() => load());
             SplashScreen.hide();

@@ -5,6 +5,7 @@ import type { NativeSyntheticEvent, ViewProps } from "react-native";
 import { getUIRuntimeHolder, registerCustomSerializable, type SerializableRef } from "react-native-worklets";
 
 export type JellyTabBarController = SharedObject & {
+    __expo_shared_object_id__: number;
     activateTab(index: number): void;
     setProgress(progress: number): void;
     setProgressListener(listener: SerializableRef<(progress: number) => void>): void;
@@ -16,9 +17,10 @@ type JellyTabsModule = NativeModule & {
 
 type PackedController = { objectId: number };
 
-type BrandedController = JellyTabBarController & {
-    __expo_shared_object_id__: number;
-    __jelly_tab_bar_controller__: true;
+type ExpoSharedObjects = typeof globalThis.expo.SharedObject;
+
+type WorkletSharedObjects = {
+    __resolveInWorklet: (objectId: number) => JellyTabBarController;
 };
 
 export type NativeJellyTabBarProps = ViewProps & {
@@ -36,25 +38,33 @@ export type NativeJellyTabBarProps = ViewProps & {
 
 installOnUIRuntime(getUIRuntimeHolder());
 
+function hasWorkletResolver(
+    sharedObjects: ExpoSharedObjects,
+): sharedObjects is ExpoSharedObjects & WorkletSharedObjects {
+    "worklet";
+    return "__resolveInWorklet" in sharedObjects;
+}
+
 registerCustomSerializable<JellyTabBarController, PackedController>({
     name: "JellyTabBarController",
     determine: (value): value is JellyTabBarController => {
         "worklet";
-        return (value as Partial<BrandedController>).__jelly_tab_bar_controller__ === true;
+        return "isJellyTabBarController" in value;
     },
-    pack: (value) => {
+    pack: ({ __expo_shared_object_id__: objectId }) => {
         "worklet";
-        return { objectId: (value as BrandedController).__expo_shared_object_id__ };
+        return { objectId };
     },
     unpack: ({ objectId }) => {
         "worklet";
-        return (globalThis as unknown as JellyWorkletGlobal).expo.SharedObject.__resolveInWorklet(objectId);
+        const sharedObjects = globalThis.expo.SharedObject;
+        if (!hasWorkletResolver(sharedObjects)) {
+            throw new Error("Expo's worklet shared object resolver is not installed");
+        }
+        const { __resolveInWorklet: resolveInWorklet } = sharedObjects;
+        return resolveInWorklet(objectId);
     },
 });
-
-type JellyWorkletGlobal = {
-    expo: { SharedObject: { __resolveInWorklet(objectId: number): JellyTabBarController } };
-};
 
 export const JellyTabs = requireNativeModule<JellyTabsModule>("JellyTabs");
 

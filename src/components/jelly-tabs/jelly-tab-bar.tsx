@@ -17,7 +17,7 @@ export type JellyTabItem = {
     testID: string;
 };
 
-export type JellyTabBarColors = {
+type JellyTabBarColors = {
     accent: string;
     activeContent: string;
     inactiveContent: string;
@@ -34,7 +34,11 @@ type JellyTabBarProps = {
 };
 
 function toNativeColor(color: string) {
-    return processColor(color) as number;
+    const nativeColor = processColor(color);
+    if (typeof nativeColor !== "number") {
+        throw new Error(`Unsupported tab bar color: ${color}`);
+    }
+    return nativeColor;
 }
 
 export function JellyTabBar({ colors, items, onTabPress, progress, selectedIndex }: JellyTabBarProps) {
@@ -42,11 +46,13 @@ export function JellyTabBar({ colors, items, onTabPress, progress, selectedIndex
     const lastPublishedProgress = useSharedValue(Number.NaN);
 
     useEffect(() => {
-        controller.setProgressListener(createSerializable((next: number) => {
-            "worklet";
-            lastPublishedProgress.set(next);
-            progress.set(next);
-        }));
+        controller.setProgressListener(
+            createSerializable((next: number) => {
+                "worklet";
+                lastPublishedProgress.set(next);
+                progress.set(next);
+            }),
+        );
     }, [controller, lastPublishedProgress, progress]);
 
     useAnimatedReaction(
