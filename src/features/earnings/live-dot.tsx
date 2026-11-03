@@ -1,3 +1,4 @@
+import { useIsFocused } from "expo-router";
 import { useEffect } from "react";
 import { View } from "react-native";
 import Animated, {
@@ -7,36 +8,52 @@ import Animated, {
     useAnimatedStyle,
     useSharedValue,
     withRepeat,
+    withSequence,
     withTiming,
 } from "react-native-reanimated";
 
 import { useEarningsTheme } from "./theme";
 
+const PULSE_DURATION = 1800;
+
+function pulseTiming(duration: number) {
+    return withTiming(1, { duration, easing: Easing.linear, reduceMotion: ReduceMotion.System });
+}
+
 export function LiveDot({ live, size = 8 }: { live: boolean; size?: number }) {
     const { colors } = useEarningsTheme();
-    const pulse = useSharedValue(0);
-    const ringStyle = useAnimatedStyle(() => ({
-        opacity: 0.55 * (1 - pulse.get()),
-        transform: [{ scale: 1 + pulse.get() * 1.6 }],
-    }));
+    const isFocused = useIsFocused();
+    const phase = useSharedValue(0);
+    const ringStyle = useAnimatedStyle(() => {
+        const remaining = 1 - phase.get();
+        const pulse = 1 - remaining * remaining;
+        return {
+            opacity: 0.55 * (1 - pulse),
+            transform: [{ scale: 1 + pulse * 1.6 }],
+        };
+    });
 
     useEffect(() => {
         if (!live) {
-            cancelAnimation(pulse);
-            pulse.set(0);
+            cancelAnimation(phase);
+            phase.set(0);
             return undefined;
         }
-        pulse.set(
-            withRepeat(
-                withTiming(1, { duration: 1800, easing: Easing.out(Easing.quad), reduceMotion: ReduceMotion.System }),
-                -1,
-                false,
-                undefined,
+        // Hidden behind another tab, the ring holds its phase instead of drawing frames nobody sees.
+        if (!isFocused) {
+            cancelAnimation(phase);
+            return undefined;
+        }
+        phase.set(
+            withSequence(
                 ReduceMotion.System,
+                pulseTiming((1 - phase.get()) * PULSE_DURATION),
+                withTiming(0, { duration: 0, reduceMotion: ReduceMotion.System }),
+                withRepeat(pulseTiming(PULSE_DURATION), -1, false, undefined, ReduceMotion.System),
             ),
         );
-        return () => cancelAnimation(pulse);
-    }, [live, pulse]);
+        return () => cancelAnimation(phase);
+    }, [isFocused, live, phase]);
 
     return (
         <View style={{ width: size, height: size }}>
