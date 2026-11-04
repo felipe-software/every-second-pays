@@ -3,7 +3,8 @@ import { describe, expect, test } from "bun:test";
 import bell from "../assets/onboarding/notifications.json";
 import { ALLOWED, BELL_CUES, COIN_EVERY, DECLINED, ENTER } from "../features/onboarding/bell-timeline";
 
-const frames = (ms) => Math.round((ms * bell.animation.fr) / 1000);
+const animation = JSON.parse(bell.animation);
+const frames = (ms) => Math.round((ms * animation.fr) / 1000);
 const within = ([from, to], frame) => frame >= from && frame <= to;
 
 describe("the service bell's art", () => {
@@ -19,7 +20,7 @@ describe("the service bell's art", () => {
         const { loop, allowed, declined } = bell.segments;
         expect(allowed[0]).toBeGreaterThan(loop[1]);
         expect(declined[0]).toBeGreaterThan(allowed[1]);
-        expect(bell.animation.op).toBeGreaterThan(declined[1]);
+        expect(animation.op).toBeGreaterThan(declined[1]);
     });
 
     test("every cue fires inside its scene, at its time", () => {

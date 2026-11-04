@@ -1,11 +1,4 @@
-import {
-    DropdownMenu,
-    DropdownMenuItem,
-    Host,
-    Icon,
-    RNHostView,
-    Text as ComposeText,
-} from "@expo/ui/jetpack-compose";
+import { DropdownMenu, DropdownMenuItem, Host, Icon, RNHostView, Text as ComposeText } from "@expo/ui/jetpack-compose";
 import { useState } from "react";
 import { Pressable, useWindowDimensions, View } from "react-native";
 
@@ -23,6 +16,8 @@ const MENU_RADIUS = 24;
 
 export function LanguageMenu({ preference, disabled, onOpen, onPressIn, onPressOut, onChange }: LanguageMenuProps) {
     const [open, setOpen] = useState(false);
+    // The Compose menu costs ~190 ms of UI thread on a low-end phone, so it mounts on first touch.
+    const [menuMounted, setMenuMounted] = useState(false);
     const { t } = useI18n();
     const { colors, isDark } = useEarningsTheme();
     const { width } = useWindowDimensions();
@@ -30,6 +25,7 @@ export function LanguageMenu({ preference, disabled, onOpen, onPressIn, onPressO
     const selected = LANGUAGE_OPTIONS.find((option) => option.value === preference)!;
     const openMenu = () => {
         onOpen();
+        setMenuMounted(true);
         setOpen(true);
     };
 
@@ -42,7 +38,10 @@ export function LanguageMenu({ preference, disabled, onOpen, onPressIn, onPressO
             accessibilityState={{ disabled, expanded: open }}
             disabled={disabled}
             onPress={openMenu}
-            onPressIn={onPressIn}
+            onPressIn={() => {
+                setMenuMounted(true);
+                onPressIn?.();
+            }}
             onPressOut={onPressOut}
             android_ripple={rippleConfig(colors.ink)}
             className="flex-row items-center gap-3 px-4"
@@ -53,6 +52,7 @@ export function LanguageMenu({ preference, disabled, onOpen, onPressIn, onPressO
     );
 
     if (disabled) return trigger;
+    if (!menuMounted) return <View style={{ width: menuWidth }}>{trigger}</View>;
 
     return (
         <View style={{ width: menuWidth }}>

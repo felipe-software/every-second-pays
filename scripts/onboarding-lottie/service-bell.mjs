@@ -170,7 +170,7 @@ const moments = (name, starts) => starts.map((start) => ({ frame: start + frames
 writeFileSync(
     OUTPUT,
     `${JSON.stringify({
-        animation: {
+        animation: JSON.stringify({
             v: "5.12.0",
             fr: FPS,
             ip: 0,
@@ -181,7 +181,7 @@ writeFileSync(
             ddd: 0,
             assets: [asset("coin", ...ASSET_SIZE.coin, COIN_ART), asset("bill", ...ASSET_SIZE.bill, BILL_ART)],
             layers,
-        },
+        }),
         tokens: [
             themed(({ accent }) => color(accent)),
             themed(({ canvas }) => color(canvas)),

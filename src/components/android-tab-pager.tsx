@@ -1,6 +1,6 @@
 import { usePathname } from "expo-router";
 import { TabSlot, type TabsDescriptor, type TabsSlotRenderOptions, useTabTrigger } from "expo-router/ui";
-import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo } from "react";
+import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { type LayoutChangeEvent, StyleSheet } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -14,7 +14,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-import { useEarningsTheme } from "@/features/earnings/theme";
 import { useBackProgress } from "@/features/navigation/predictive-back";
 
 type PagerSceneProps = PropsWithChildren<{
@@ -34,6 +33,9 @@ const LAST_PAGE_INDEX = 1;
 const VELOCITY_PROJECTION_SECONDS = 0.18;
 const BACK_GESTURE_REVEAL = 0.28;
 const BACK_CANCEL_SPRING = { damping: 28, overshootClamping: true, stiffness: 300 };
+// Mounts the hidden page after the entrance animations, keeping it out of the startup frames.
+const OFFSCREEN_PAGE_DELAY_MS = 1500;
+const OFFSCREEN_PAGE_IDLE_TIMEOUT_MS = 1000;
 
 function clampPagePosition(value: number) {
     "worklet";
@@ -67,6 +69,24 @@ function PagerScene({ children, index, isFocused, pageWidth, position }: PagerSc
     );
 }
 
+function useOffscreenPageReady() {
+    const [ready, setReady] = useState(false);
+    const markReady = useCallback(() => setReady(true), []);
+
+    useEffect(() => {
+        let idleHandle: number | undefined;
+        const timer = setTimeout(() => {
+            idleHandle = requestIdleCallback(markReady, { timeout: OFFSCREEN_PAGE_IDLE_TIMEOUT_MS });
+        }, OFFSCREEN_PAGE_DELAY_MS);
+        return () => {
+            clearTimeout(timer);
+            if (idleHandle !== undefined) cancelIdleCallback(idleHandle);
+        };
+    }, [markReady]);
+
+    return [ready, markReady] as const;
+}
+
 export function useIsTabSubpage() {
     return usePathname().split("/").filter(Boolean).length > 1;
 }
@@ -82,7 +102,6 @@ export function useAndroidTabPagerProgress() {
 }
 
 export function AndroidTabPager({ children }: PropsWithChildren) {
-    const { colors } = useEarningsTheme();
     const indexTab = useTabTrigger({ name: "index" });
     const settingsTab = useTabTrigger({ name: "settings" });
     const selectedIndex = settingsTab.trigger?.isFocused ? 1 : 0;
@@ -92,6 +111,7 @@ export function AndroidTabPager({ children }: PropsWithChildren) {
     const gestureStartPosition = useSharedValue(selectedIndex);
     const routerIndex = useSharedValue(selectedIndex);
     const contextValue = useMemo(() => ({ position }), [position]);
+    const [offscreenPageReady, markOffscreenPageReady] = useOffscreenPageReady();
 
     useEffect(() => {
         routerIndex.set(selectedIndex);
@@ -129,6 +149,9 @@ export function AndroidTabPager({ children }: PropsWithChildren) {
         .activeOffsetX([-16, 16])
         .failOffsetY([-12, 12])
         .averageTouches(true)
+        .onBegin(() => {
+            scheduleOnRN(markOffscreenPageReady);
+        })
         .onStart(() => {
             cancelAnimation(position);
             gestureStartPosition.set(position.get());
@@ -183,18 +206,20 @@ export function AndroidTabPager({ children }: PropsWithChildren) {
                 return options.isFocused ? descriptor.render() : null;
             }
 
+            if (!options.loaded && !offscreenPageReady) return null;
+
             return (
                 <PagerScene index={index} isFocused={options.isFocused} pageWidth={pageWidth} position={position}>
                     {descriptor.render()}
                 </PagerScene>
             );
         },
-        [pageWidth, position],
+        [offscreenPageReady, pageWidth, position],
     );
 
     return (
         <AndroidTabPagerContext.Provider value={contextValue}>
-            <Animated.View style={[styles.pager, { backgroundColor: colors.canvas }]}>
+            <Animated.View style={styles.pager}>
                 <GestureDetector gesture={pan}>
                     <Animated.View onLayout={handleLayout} style={styles.viewport}>
                         <TabSlot detachInactiveScreens={false} renderFn={renderScene} style={styles.slot} />
