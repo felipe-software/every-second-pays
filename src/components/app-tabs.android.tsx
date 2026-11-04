@@ -12,7 +12,7 @@ import { usePaymentComposerStore } from "@/features/earnings/payment-composer-st
 import { useEarningsTheme } from "@/features/earnings/theme";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
-import { AndroidTabPager, useAndroidTabPagerProgress, useIsTabSubpage } from "./android-tab-pager";
+import { AndroidTabScreens, useIsTabSubpage, useTabBarProgress } from "./android-tab-screens";
 
 const DOCK_HIDE_OFFSET = 24;
 const DOCK_TIMING = { duration: 220, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System };
@@ -45,7 +45,7 @@ function AndroidTabBar() {
     const insets = useSafeAreaInsets();
     const indexTab = useTabTrigger({ name: "index" });
     const settingsTab = useTabTrigger({ name: "settings" });
-    const progress = useAndroidTabPagerProgress();
+    const progress = useTabBarProgress();
     const onSubpage = useIsTabSubpage();
     const hidden = useSharedValue(onSubpage ? 1 : 0);
     const dockStyle = useAnimatedStyle(() => ({
@@ -140,9 +140,9 @@ function AndroidTabBar() {
 export default function AppTabs() {
     return (
         <Tabs>
-            <AndroidTabPager>
+            <AndroidTabScreens>
                 <AndroidTabBar />
-            </AndroidTabPager>
+            </AndroidTabScreens>
 
             <TabList style={styles.hiddenTabList}>
                 <TabTrigger href="/" name="index" />
