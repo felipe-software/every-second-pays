@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Text, TextInput } from "react-native";
+import { Platform, Text, TextInput } from "react-native";
 
 import { RaisedPressable } from "@/components/elevated/raised";
 import { appHaptics } from "@/features/haptics/haptics";
@@ -27,7 +27,8 @@ export function AmountInput({ value, onChangeText }: { value: string; onChangeTe
                 fontFamily: "Archivo-Bold",
                 fontSize: 44,
                 fontWeight: "700",
-                lineHeight: 52,
+                // iOS reuses this view for other inputs and keeps its line height, misplacing their placeholder.
+                lineHeight: Platform.OS === "ios" ? undefined : 52,
             }}
         />
     );
@@ -77,7 +78,10 @@ export function TokenButton({
                     {value}
                 </Text>
             ))}
-            <Text numberOfLines={1} className="font-sans text-[24px] leading-[27px] font-semibold text-ink tabular-nums">
+            <Text
+                numberOfLines={1}
+                className="font-sans text-[24px] leading-[27px] font-semibold text-ink tabular-nums"
+            >
                 {format ? format(children) : children}
                 {missing ? <Text style={{ color: colors.danger }}>*</Text> : null}
             </Text>
@@ -85,7 +89,17 @@ export function TokenButton({
     );
 }
 
-export function ChoiceChip({ selected, label, onPress, wide = false }: { selected: boolean; label: string; onPress: () => void; wide?: boolean }) {
+export function ChoiceChip({
+    selected,
+    label,
+    onPress,
+    wide = false,
+}: {
+    selected: boolean;
+    label: string;
+    onPress: () => void;
+    wide?: boolean;
+}) {
     const { colors } = useEarningsTheme();
 
     return (
@@ -103,7 +117,10 @@ export function ChoiceChip({ selected, label, onPress, wide = false }: { selecte
             selected={selected}
             className={`${wide ? "h-[50px]" : "px-[15px] py-2.5"} items-center justify-center`}
         >
-            <Text className="font-sans text-[13.5px] font-semibold" style={selected ? colors.onAccentText : { color: colors.muted }}>
+            <Text
+                className="font-sans text-[13.5px] font-semibold"
+                style={selected ? colors.onAccentText : { color: colors.muted }}
+            >
                 {label}
             </Text>
         </RaisedPressable>

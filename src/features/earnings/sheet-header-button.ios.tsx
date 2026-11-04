@@ -1,6 +1,15 @@
-import { GlassView } from "expo-glass-effect";
-import { SymbolView } from "expo-symbols";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Button, Host } from "@expo/ui/swift-ui";
+import {
+    accessibilityIdentifier,
+    accessibilityLabel,
+    buttonBorderShape,
+    buttonStyle,
+    controlSize,
+    disabled,
+    font,
+    foregroundStyle,
+    labelStyle,
+} from "@expo/ui/swift-ui/modifiers";
 
 import { useEarningsTheme } from "./theme";
 
@@ -15,7 +24,7 @@ type SheetHeaderButtonProps = {
 
 export function SheetHeaderButton({
     accessibilityLabel: accessibilityText,
-    disabled = false,
+    disabled: isDisabled = false,
     kind,
     label,
     onPress,
@@ -23,67 +32,26 @@ export function SheetHeaderButton({
 }: SheetHeaderButtonProps) {
     const { colors, isDark } = useEarningsTheme();
     const isClose = kind === "close";
+    const kindModifiers = isClose
+        ? [buttonBorderShape("circle"), labelStyle("iconOnly"), font({ size: 19, weight: "semibold" })]
+        : [buttonBorderShape("capsule"), foregroundStyle(colors.danger)];
 
     return (
-        <GlassView
-            glassEffectStyle="clear"
-            isInteractive
-            style={[styles.glass, isClose ? styles.closeGlass : styles.deleteGlass]}
-            tintColor={isClose ? undefined : `${colors.danger}26`}
-        >
-            <Pressable
-                accessibilityLabel={accessibilityText}
-                accessibilityRole="button"
-                accessibilityState={{ disabled }}
-                disabled={disabled}
+        <Host matchContents colorScheme={isDark ? "dark" : "light"}>
+            <Button
+                role={isClose ? "close" : "destructive"}
+                systemImage={isClose ? "xmark" : undefined}
+                label={isClose ? accessibilityText : label}
                 onPress={onPress}
-                testID={testID}
-                style={isClose ? styles.closeContent : styles.deleteContent}
-            >
-                {isClose ? (
-                    <SymbolView
-                        name="xmark"
-                        size={16}
-                        tintColor={isDark ? "#FFFFFF" : "#000000"}
-                        weight="regular"
-                    />
-                ) : (
-                    <Text style={[styles.deleteLabel, { color: isDark ? "#FFFFFF" : colors.danger }]}>{label}</Text>
-                )}
-            </Pressable>
-        </GlassView>
+                modifiers={[
+                    buttonStyle("glass"),
+                    controlSize("large"),
+                    ...kindModifiers,
+                    accessibilityLabel(accessibilityText),
+                    accessibilityIdentifier(testID),
+                    disabled(isDisabled),
+                ]}
+            />
+        </Host>
     );
 }
-
-const styles = StyleSheet.create({
-    glass: {
-        height: 40,
-        borderCurve: "continuous",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    closeGlass: {
-        width: 40,
-        borderRadius: 20,
-    },
-    deleteGlass: {
-        minWidth: 40,
-        borderRadius: 20,
-    },
-    closeContent: {
-        width: 40,
-        height: 40,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    deleteContent: {
-        height: 40,
-        alignItems: "center",
-        justifyContent: "center",
-        paddingHorizontal: 16,
-    },
-    deleteLabel: {
-        fontSize: 15,
-        fontWeight: "600",
-    },
-});
