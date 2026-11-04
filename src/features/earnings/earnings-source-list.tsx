@@ -9,6 +9,11 @@ import type { MoneyTransfer } from "./money-counter-celebration";
 import type { PaymentSource } from "./model";
 import { SourceRow } from "./source-row";
 
+function useListBottomPadding() {
+    const insets = useSafeAreaInsets();
+    return Platform.OS === "android" ? 124 : insets.bottom + 112;
+}
+
 export function EarningsSourceList({
     custom,
     earnedBySource,
@@ -37,8 +42,7 @@ export function EarningsSourceList({
     unconvertedCount: number;
 }) {
     const { t } = useI18n();
-    const insets = useSafeAreaInsets();
-    const bottomPadding = Platform.OS === "android" ? 124 : insets.bottom + 112;
+    const bottomPadding = useListBottomPadding();
 
     return (
         <ScrollView
