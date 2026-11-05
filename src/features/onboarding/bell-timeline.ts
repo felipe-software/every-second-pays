@@ -1,4 +1,4 @@
-// In ms. `service-bell.mjs` builds the art from these: regenerate it after changing one.
+// In ms. `notifications.json` is timed to these: change the art when you change one.
 export const ENTER = 700;
 export const COIN_EVERY = 3000;
 export const COIN = { hit: 420, bounce: 1020, hop: 1280, gone: 1750 };

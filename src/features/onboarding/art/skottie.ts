@@ -33,7 +33,7 @@ function compareText(a: string, b: string) {
     return a > b ? 1 : 0;
 }
 
-// Assets ship pre-serialized (optimize-animations.mjs); a fresh export still works, just slower.
+// Assets ship pre-serialized; a fresh export still works, just slower.
 function templateOf(source: OnboardingAnimation) {
     if (typeof source.animation === "string") return source.animation;
     let template = templates.get(source);
