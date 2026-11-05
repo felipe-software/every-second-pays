@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Text, View } from "react-native";
 
 import { RaisedPressable } from "@/components/elevated/raised";
+import { LowEndToggle } from "@/features/developer/low-end-toggle";
 import { useDeveloperMenuVisible } from "@/features/developer/store";
 import { appHaptics } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
@@ -124,6 +125,7 @@ export function DevJobControls() {
                         {t("settings.replayOnboarding")}
                     </Text>
                 </RaisedPressable>
+                <LowEndToggle />
             </View>
             {addError ? (
                 <Text

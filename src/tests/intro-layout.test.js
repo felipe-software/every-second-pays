@@ -12,7 +12,7 @@ const FPS = 60;
 
 describe("the intro's art shift", () => {
     test("the labels the app draws move with the art's stage layer", () => {
-        const { layers } = intro.animation;
+        const { layers } = JSON.parse(intro.animation);
         const children = (layer) => layers.filter((child) => child.parent === layer.ind).length;
         const stage = layers.find((layer) => layer.ty === 3 && children(layer) > 100);
         const keys = stage.ks.p.y.k;

@@ -6,7 +6,7 @@ import { useScoreHaptic } from "@/features/haptics/haptics";
 import { useI18n } from "@/features/i18n/i18n";
 
 import { introCounter, introWords, ONBOARDING_ART } from "./art/sources";
-import { FPS, StepArt } from "./art/step-art";
+import { FPS, StepArt, useDrawnFrame } from "./art/step-art";
 import { INTRO_HAPTICS, INTRO_HAPTICS_AT } from "./intro-haptics";
 import { IntroLabels } from "./intro-labels";
 import { artShift, introDrop, LIFT, type Stage, STORY } from "./intro-timeline";
@@ -95,9 +95,10 @@ export function IntroStep({
     const [state, setState] = useState(reduced ? SETTLED : START);
     const [replays, setReplays] = useState(0);
     const haptics = useScoreHaptic(INTRO_HAPTICS);
-    const [storyStart] = art.segments.story;
+    const [storyStart, storyEnd] = art.segments.story;
     const frame = useSharedValue(reduced ? art.segments.ambient[0] : storyStart);
-    const artShifted = useDerivedValue(() => artShift(((frame.get() - storyStart) * 1000) / FPS));
+    const drawnFrame = useDrawnFrame(frame, storyEnd);
+    const artShifted = useDerivedValue(() => artShift(((drawnFrame.get() - storyStart) * 1000) / FPS));
 
     const ready = useEffectEvent(onSkipReady);
     const finish = useEffectEvent(onDone);

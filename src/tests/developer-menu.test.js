@@ -22,7 +22,7 @@ function tapTimes(count, start = 1_000, gap = 200) {
 
 beforeEach(async () => {
     saved.clear();
-    useDeveloperStore.setState({ unlocked: false, hydrated: false, streak: 0, lastTapAt: 0 });
+    useDeveloperStore.setState({ unlocked: false, forceLowEnd: false, hydrated: false, streak: 0, lastTapAt: 0 });
     await useDeveloperStore.getState().load();
 });
 
@@ -63,4 +63,17 @@ test("taps before the saved state loads are ignored", () => {
     useDeveloperStore.setState({ hydrated: false });
     expect(tapTimes(UNLOCK_TAPS)).toBe(-1);
     expect(useDeveloperStore.getState().unlocked).toBe(false);
+});
+
+test("forcing low-end mode is saved and restored", async () => {
+    useDeveloperStore.getState().toggleForceLowEnd();
+    expect(useDeveloperStore.getState().forceLowEnd).toBe(true);
+    expect(saved.get("developer-force-low-end")).toBe("on");
+
+    useDeveloperStore.setState({ forceLowEnd: false, hydrated: false });
+    await useDeveloperStore.getState().load();
+    expect(useDeveloperStore.getState().forceLowEnd).toBe(true);
+
+    useDeveloperStore.getState().toggleForceLowEnd();
+    expect(saved.get("developer-force-low-end")).toBe("off");
 });

@@ -11,6 +11,7 @@ import Animated, { Extrapolation, interpolate, useAnimatedStyle, useSharedValue 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { withAlpha } from "@/features/appearance/color";
+import { useLowEndDevice } from "@/features/device/low-end";
 import { useEarningsTheme } from "@/features/earnings/theme";
 
 const IS_IOS = Platform.OS === "ios";
@@ -31,7 +32,11 @@ const ANDROID_FADE_OPACITY = 0.6;
 
 type LargeTitleScrollViewProps = Omit<
     ComponentProps<typeof ScrollViewWithHeaders>,
-    "HeaderComponent" | "LargeHeaderComponent" | "LargeHeaderSubtitleComponent" | "absoluteHeader" | "initialAbsoluteHeaderHeight"
+    | "HeaderComponent"
+    | "LargeHeaderComponent"
+    | "LargeHeaderSubtitleComponent"
+    | "absoluteHeader"
+    | "initialAbsoluteHeaderHeight"
 > & {
     title: string;
     headerLeft?: ReactNode;
@@ -61,18 +66,34 @@ export function LargeTitleScrollView({
                 initialAbsoluteHeaderHeight={insets.top + BAR_HEIGHT}
                 contentContainerStyle={[{ paddingHorizontal: PAGE_GUTTER }, contentContainerStyle]}
                 HeaderComponent={({ showNavBar, scrollY }) => (
-                    <TitleBar title={title} headerLeft={headerLeft} background={background} showNavBar={showNavBar} scrollY={scrollY} />
+                    <TitleBar
+                        title={title}
+                        headerLeft={headerLeft}
+                        background={background}
+                        showNavBar={showNavBar}
+                        scrollY={scrollY}
+                    />
                 )}
                 LargeHeaderComponent={() => (
-                    <Pressable accessible={false} disabled={!onTitlePress} onPress={onTitlePress} className="self-start">
-                        <Text accessibilityRole="header" className="pb-1 font-sans text-[38px] font-bold tracking-[-1.4px] text-ink">
+                    <Pressable
+                        accessible={false}
+                        disabled={!onTitlePress}
+                        onPress={onTitlePress}
+                        className="self-start"
+                    >
+                        <Text
+                            accessibilityRole="header"
+                            className="pb-1 font-sans text-[38px] font-bold tracking-[-1.4px] text-ink"
+                        >
                             {title}
                         </Text>
                     </Pressable>
                 )}
-                LargeHeaderSubtitleComponent={stickyHeader
-                    ? ({ scrollY }) => <StickyHeader scrollY={scrollY}>{stickyHeader}</StickyHeader>
-                    : undefined}
+                LargeHeaderSubtitleComponent={
+                    stickyHeader
+                        ? ({ scrollY }) => <StickyHeader scrollY={scrollY}>{stickyHeader}</StickyHeader>
+                        : undefined
+                }
             >
                 {children}
             </ScrollViewWithHeaders>
@@ -80,7 +101,10 @@ export function LargeTitleScrollView({
     );
 }
 
-function StickyHeader({ scrollY, children }: Pick<ScrollLargeHeaderSubtitleProps, "scrollY"> & { children: ReactNode }) {
+function StickyHeader({
+    scrollY,
+    children,
+}: Pick<ScrollLargeHeaderSubtitleProps, "scrollY"> & { children: ReactNode }) {
     const insets = useSafeAreaInsets();
     const { colors } = useEarningsTheme();
     const stuckTop = insets.top + BAR_HEIGHT + STICKY_BAR_GAP;
@@ -89,14 +113,29 @@ function StickyHeader({ scrollY, children }: Pick<ScrollLargeHeaderSubtitleProps
         transform: [{ translateY: Math.max(0, scrollY.get() - contentTop.get() + stuckTop) }],
     }));
     const backdropStyle = useAnimatedStyle(() => ({
-        opacity: interpolate(scrollY.get() - contentTop.get() + stuckTop, [-STICKY_FADE_IN_SCROLL, 0], [0, 1], Extrapolation.CLAMP),
+        opacity: interpolate(
+            scrollY.get() - contentTop.get() + stuckTop,
+            [-STICKY_FADE_IN_SCROLL, 0],
+            [0, 1],
+            Extrapolation.CLAMP,
+        ),
     }));
 
     return (
-        <Animated.View onLayout={(event) => contentTop.set(event.nativeEvent.layout.y)} style={[styles.sticky, stickStyle]}>
+        <Animated.View
+            onLayout={(event) => contentTop.set(event.nativeEvent.layout.y)}
+            style={[styles.sticky, stickStyle]}
+        >
             <Animated.View pointerEvents="none" style={[styles.stickyBackdrop, { top: -stuckTop }, backdropStyle]}>
                 <View style={[styles.stickyFill, { backgroundColor: colors.canvas }]} />
-                <View style={[styles.stickyFade, { experimental_backgroundImage: `linear-gradient(180deg, ${colors.canvas} 0%, ${colors.canvas}00 100%)` }]} />
+                <View
+                    style={[
+                        styles.stickyFade,
+                        {
+                            experimental_backgroundImage: `linear-gradient(180deg, ${colors.canvas} 0%, ${colors.canvas}00 100%)`,
+                        },
+                    ]}
+                />
             </Animated.View>
             {children}
         </Animated.View>
@@ -146,11 +185,12 @@ function Backdrop({
     const insets = useSafeAreaInsets();
     const { height: screenHeight } = useWindowDimensions();
     const { colors, isDark } = useEarningsTheme();
+    const lowEnd = useLowEndDevice();
     const height = insets.top + BAR_HEIGHT + BACKDROP_FADE_HEIGHT;
     const solidUntil = (insets.top + BAR_HEIGHT * BACKDROP_SOLID_BAR_FRACTION) / height;
 
     if (!IS_IOS) {
-        const fill = background ? colors.canvasGlow : colors.canvas;
+        const fill = background && !lowEnd ? colors.canvasGlow : colors.canvas;
         const solidPercent = `${Math.round(solidUntil * 100)}%`;
         return (
             <Animated.View
@@ -169,10 +209,16 @@ function Backdrop({
 
     return (
         <Animated.View pointerEvents="none" style={[styles.backdrop, { height }, style]}>
-            <MaskedView style={StyleSheet.absoluteFill} maskElement={<FadeMask solidUntil={solidUntil} stops={BLUR_MASK_STOPS} />}>
+            <MaskedView
+                style={StyleSheet.absoluteFill}
+                maskElement={<FadeMask solidUntil={solidUntil} stops={BLUR_MASK_STOPS} />}
+            >
                 <BlurView intensity={BLUR_INTENSITY} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
             </MaskedView>
-            <MaskedView style={StyleSheet.absoluteFill} maskElement={<FadeMask solidUntil={solidUntil} stops={BACKGROUND_MASK_STOPS} />}>
+            <MaskedView
+                style={StyleSheet.absoluteFill}
+                maskElement={<FadeMask solidUntil={solidUntil} stops={BACKGROUND_MASK_STOPS} />}
+            >
                 {/* Screen-tall, so a background laid out from the top lines up with the page's own. */}
                 <View style={{ height: screenHeight }}>
                     {background ?? <View className="absolute inset-0 bg-canvas" />}

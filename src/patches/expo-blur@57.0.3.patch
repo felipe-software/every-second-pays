@@ -48,3 +48,34 @@ index 71344c8..17eba61 100644
        .setFrameClearDrawable(decorView.background)
        .setBlurRadius(blurRadius / blurReduction)
  
+diff --git a/android/src/main/java/expo/modules/blur/UIManagerCompatibleBlurTarget.kt b/android/src/main/java/expo/modules/blur/UIManagerCompatibleBlurTarget.kt
+index 56993b5..98fbd6d 100644
+--- a/android/src/main/java/expo/modules/blur/UIManagerCompatibleBlurTarget.kt
++++ b/android/src/main/java/expo/modules/blur/UIManagerCompatibleBlurTarget.kt
+@@ -2,6 +2,7 @@ package expo.modules.blur
+ 
+ import android.annotation.SuppressLint
+ import android.content.Context
++import android.graphics.Canvas
+ import eightbitlab.com.blurview.BlurTarget
+ import expo.modules.kotlin.AppContext
+ 
+@@ -15,4 +16,18 @@ class UIManagerCompatibleBlurTarget(appContext: AppContext, context: Context) :
+     // No-op, terminate `requestLayout` here, UIManager handles laying out children and
+     // `layout` is called on all RN-managed views by `NativeViewHierarchyManager`
+   }
++
++  // The blur view covering this target already draws the blurred copy, so drawing the sharp copy
++  // underneath only costs GPU fill. Children are still recorded for the blur; the on-screen draw is
++  // clipped away. Software canvases (the pre-API 31 blur reads the target through one) draw as usual.
++  override fun dispatchDraw(canvas: Canvas) {
++    if (!canvas.isHardwareAccelerated) {
++      super.dispatchDraw(canvas)
++      return
++    }
++    val saveCount = canvas.save()
++    canvas.clipRect(0, 0, 0, 0)
++    super.dispatchDraw(canvas)
++    canvas.restoreToCount(saveCount)
++  }
+ }
