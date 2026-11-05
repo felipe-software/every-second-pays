@@ -1,4 +1,5 @@
 import { ScrollView, Text, type View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { HAS_TAB_DOCK } from "@/constants/tab-dock";
 import type { Currency } from "@/features/currency/currencies";
@@ -9,6 +10,11 @@ import type { MoneyTransfer } from "./money-counter-celebration";
 import type { PaymentSource } from "./model";
 import { SourceRow } from "./source-row";
 import { sourceRowLabels } from "./source-row-labels";
+
+function useListBottomPadding() {
+    const insets = useSafeAreaInsets();
+    return HAS_TAB_DOCK ? 124 : insets.bottom + 112;
+}
 
 export function EarningsSourceList({
     custom,
@@ -39,12 +45,13 @@ export function EarningsSourceList({
 }) {
     const i18n = useI18n();
     const { t } = i18n;
+    const bottomPadding = useListBottomPadding();
 
     return (
         <ScrollView
             // 38.6 keeps the list where it sat under the old rate line: 16 + 13.6 + 56 - 12 - 35.
             className="mt-[38.6px] flex-1 px-[22px]"
-            contentContainerStyle={{ gap: 10, paddingBottom: HAS_TAB_DOCK ? 124 : 32 }}
+            contentContainerStyle={{ gap: 10, paddingBottom: bottomPadding }}
             showsVerticalScrollIndicator={false}
         >
             <EarningsListStatus empty={ready && sources.length === 0} loadError={loadError} onRetry={onRetry} />
