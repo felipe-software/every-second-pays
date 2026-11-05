@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import type { IntroEvents } from "./intro-step";
 
-export function useIntroProgress(reduced: boolean, reveal: () => void) {
+export function useIntroProgress(reduced: boolean) {
     const [skipReady, setSkipReady] = useState(false);
     const [introDone, setIntroDone] = useState(false);
     const [flare, setFlare] = useState({ count: 0, big: false });
@@ -13,10 +13,7 @@ export function useIntroProgress(reduced: boolean, reveal: () => void) {
         onImpact: (big) => setFlare((value) => ({ count: value.count + 1, big })),
         onLift: setIntroLifted,
         onReplay: () => setIntroDone(false),
-        onDone: () => {
-            setIntroDone(true);
-            reveal();
-        },
+        onDone: () => setIntroDone(true),
     };
 
     return { skipReady, introDone, flare, introLifted, introEvents };

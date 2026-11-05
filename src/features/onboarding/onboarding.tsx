@@ -37,8 +37,8 @@ export function Onboarding() {
     const window = useWindowDimensions();
     const reduced = useReducedMotion();
     const playHaptic = useOnboardingHaptics();
-    const { exiting, exit, reveal } = useOnboardingExit();
-    const { skipReady, introDone, flare, introLifted, introEvents } = useIntroProgress(reduced, reveal);
+    const { exiting, exit } = useOnboardingExit();
+    const { skipReady, introDone, flare, introLifted, introEvents } = useIntroProgress(reduced);
     const fit = fitArtboard(window, insets);
     const { scale, offsetX, offsetY } = fit;
     const { step, visited, position, backdrop, pager, go, pan } = useOnboardingPager({ exiting, introDone, scale });
@@ -68,7 +68,6 @@ export function Onboarding() {
         <OnboardingLookProvider look={look} artLook={artLook}>
             <StatusBar style={look.dark ? "light" : "dark"} />
             <Animated.View
-                pointerEvents={exiting ? "none" : "auto"}
                 style={[
                     StyleSheet.absoluteFill,
                     styles.overlay,
@@ -91,7 +90,7 @@ export function Onboarding() {
                     offsetY={offsetY}
                 />
                 <GestureDetector gesture={pan}>
-                    <View style={StyleSheet.absoluteFill}>
+                    <View pointerEvents={exiting ? "none" : "auto"} style={StyleSheet.absoluteFill}>
                         <View
                             style={[
                                 styles.artboard,
