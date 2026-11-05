@@ -6,7 +6,7 @@ import { AVD_NAME, captureAdb } from "./capture-clock.mjs";
 
 const TIMEOUT_MS = 240_000;
 const EMULATOR = `${process.env.ANDROID_HOME ?? `${homedir()}/Android/Sdk`}/emulator/emulator`;
-const FLAGS = ["-no-window", "-noaudio", "-no-boot-anim", "-gpu", "auto", "-netfast", "-no-metrics"];
+const FLAGS = ["-no-window", "-noaudio", "-no-boot-anim", "-gpu", "host", "-netfast", "-no-metrics"];
 
 async function waitUntil(condition, failure) {
     const deadline = Date.now() + TIMEOUT_MS;
@@ -28,7 +28,10 @@ function isRunning() {
 function bootFinished() {
     try {
         const adb = captureAdb();
-        return adb("shell", "getprop", "sys.boot_completed") === "1" && adb("shell", "dumpsys", "window").includes("mCurrentFocus=Window");
+        return (
+            adb("shell", "getprop", "sys.boot_completed") === "1" &&
+            adb("shell", "dumpsys", "window").includes("mCurrentFocus=Window")
+        );
     } catch {
         return false;
     }
