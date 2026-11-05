@@ -11,6 +11,6 @@
         "tools/oxlint/legacy-check.mts",
         "tools/oxlint/sync-anti-slop.mts"
     ],
-    "ignoreDependencies": ["@oxlint/plugins", "expo-modules-core", "expo-system-ui"],
+    "ignoreDependencies": ["@oxlint/plugins", "canvaskit-wasm", "expo-modules-core", "expo-system-ui"],
     "ignorePatterns": ["scripts/jelly-bench/**", "tools/oxlint/anti-slop/**", "tools/oxlint/comment-policy/**"]
 }

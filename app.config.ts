@@ -7,6 +7,8 @@ const IS_DEVELOPMENT = APP_VARIANT === "development";
 const IS_PREVIEW = APP_VARIANT === "preview";
 const APP_IDENTIFIER = "software.felipe.everysecondpays";
 const EAS_PROJECT_ID = "84e9933c-067a-489e-b356-1526a665dbdc";
+// Static rendering breaks expo-sqlite's worker; a new default would change the fingerprint.
+const WEB_OUTPUT = process.env.EXPO_WEB_OUTPUT === "single" ? "single" : "static";
 
 const BACKGROUND_TASK_PROGUARD_RULES = `
 -keep class expo.modules.adapters.react.apploader.RNHeadlessAppLoader { *; }
@@ -97,7 +99,7 @@ export default (): ExpoConfig => ({
         permissions: ["android.permission.POST_NOTIFICATIONS"],
     },
     web: {
-        output: "static",
+        output: WEB_OUTPUT,
         favicon: "./src/assets/images/favicon.png",
     },
     plugins,

@@ -1,5 +1,6 @@
-import { Platform, ScrollView, Text, type View } from "react-native";
+import { ScrollView, Text, type View } from "react-native";
 
+import { HAS_TAB_DOCK } from "@/constants/tab-dock";
 import type { Currency } from "@/features/currency/currencies";
 import { useI18n } from "@/features/i18n/i18n";
 
@@ -41,7 +42,7 @@ export function EarningsSourceList({
         <ScrollView
             // 38.6 keeps the list where it sat under the old rate line: 16 + 13.6 + 56 - 12 - 35.
             className="mt-[38.6px] flex-1 px-[22px]"
-            contentContainerStyle={{ gap: 10, paddingBottom: Platform.OS === "android" ? 124 : 32 }}
+            contentContainerStyle={{ gap: 10, paddingBottom: HAS_TAB_DOCK ? 124 : 32 }}
             showsVerticalScrollIndicator={false}
         >
             <EarningsListStatus empty={ready && sources.length === 0} loadError={loadError} onRetry={onRetry} />
