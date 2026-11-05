@@ -1,6 +1,7 @@
-import { Platform, ScrollView, Text, type View } from "react-native";
+import { ScrollView, Text, type View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { HAS_TAB_DOCK } from "@/constants/tab-dock";
 import type { Currency } from "@/features/currency/currencies";
 import { useI18n } from "@/features/i18n/i18n";
 
@@ -12,7 +13,7 @@ import { sourceRowLabels } from "./source-row-labels";
 
 function useListBottomPadding() {
     const insets = useSafeAreaInsets();
-    return Platform.OS === "android" ? 124 : insets.bottom + 112;
+    return HAS_TAB_DOCK ? 124 : insets.bottom + 112;
 }
 
 export function EarningsSourceList({

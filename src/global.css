@@ -31,3 +31,10 @@
         }
     }
 }
+
+@layer base {
+    input,
+    textarea {
+        outline: none;
+    }
+}
