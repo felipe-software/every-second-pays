@@ -2,8 +2,8 @@ import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
-import { JellyTabBarHeadless } from "./fallback/components/tabs";
-import type { TabsIcon, TabsIconProps, TabsItem } from "./fallback/types";
+import { JellyTabBarHeadless, type TabsIcon, type TabsIconProps, type TabsItem } from "react-native-jelly-tabs";
+
 import type { JellyTabBar as NativeJellyTabBar } from "./jelly-tab-bar";
 
 type JellyTabBarProps = Parameters<typeof NativeJellyTabBar>[0];
@@ -26,7 +26,7 @@ function pathIcon(path: string) {
     return Icon;
 }
 
-export function JellyTabBar({ colors, contentStyle, items, onTabPress, progress, selectedIndex }: JellyTabBarProps) {
+export function JellyTabBar({ colors, contentStyle, items, onTabPress, selectedIndex }: JellyTabBarProps) {
     const tabs = useMemo<TabsItem[]>(
         () =>
             items.map((item) => ({
@@ -63,7 +63,6 @@ export function JellyTabBar({ colors, contentStyle, items, onTabPress, progress,
                 onTabPress(index);
                 return true;
             }}
-            progress={progress}
             selectedIndex={selectedIndex}
             touchFeedbackColor={colors.accent}
         />
