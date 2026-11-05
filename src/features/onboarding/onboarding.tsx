@@ -68,7 +68,6 @@ export function Onboarding() {
         <OnboardingLookProvider look={look} artLook={artLook}>
             <StatusBar style={look.dark ? "light" : "dark"} />
             <Animated.View
-                pointerEvents={exiting ? "none" : "auto"}
                 style={[
                     StyleSheet.absoluteFill,
                     styles.overlay,
@@ -91,7 +90,7 @@ export function Onboarding() {
                     offsetY={offsetY}
                 />
                 <GestureDetector gesture={pan}>
-                    <View style={StyleSheet.absoluteFill}>
+                    <View pointerEvents={exiting ? "none" : "auto"} style={StyleSheet.absoluteFill}>
                         <View
                             style={[
                                 styles.artboard,
