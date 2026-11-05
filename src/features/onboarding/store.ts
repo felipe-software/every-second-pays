@@ -1,8 +1,6 @@
 import Storage from "expo-sqlite/kv-store";
 import { create } from "zustand";
 
-import { loadPaymentSources } from "../earnings/database";
-
 const STORAGE_KEY = "onboarding";
 const COMPLETED = "done";
 
@@ -15,14 +13,6 @@ type OnboardingState = {
     replay: () => void;
 };
 
-async function hasSavedSources() {
-    try {
-        return (await loadPaymentSources()).length > 0;
-    } catch {
-        return false;
-    }
-}
-
 export const useOnboardingStore = create<OnboardingState>((set, get) => ({
     status: "unknown",
     covering: false,
@@ -31,12 +21,6 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
         try {
             if ((await Storage.getItem(STORAGE_KEY)) === COMPLETED) {
                 set({ status: "done" });
-                return;
-            }
-            // People who added sources before the onboarding existed have already started.
-            if (await hasSavedSources()) {
-                set({ status: "done" });
-                void Storage.setItem(STORAGE_KEY, COMPLETED).catch(() => undefined);
                 return;
             }
             set({ status: "pending", covering: true });
