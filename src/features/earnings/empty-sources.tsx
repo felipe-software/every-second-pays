@@ -13,11 +13,13 @@ import Animated, {
 } from "react-native-reanimated";
 import Svg, { G, Mask, Path } from "react-native-svg";
 
+import { HAS_TAB_DOCK } from "@/constants/tab-dock";
 import { useI18n } from "@/features/i18n/i18n";
 
 import { useEarningsTheme } from "./theme";
 
 const AnimatedPath = createAnimatedComponent(Path);
+const SVG_ACCEPTS_TOUCH_PROPS = Platform.OS !== "web";
 const ARROW_CURVE_LENGTH = 180;
 const ARROW_HEAD_LENGTH = 64;
 const ARROW_CURVE_DELAY = 180;
@@ -68,7 +70,13 @@ function FirstSourceArrow({ color, onPress }: { color: string; onPress: () => vo
     }, [curveOffset, headProgress]);
 
     return (
-        <Svg width={156} height={90} viewBox="0 0 156 90" fill="none" accessible={false}>
+        <Svg
+            width={156}
+            height={90}
+            viewBox="0 0 156 90"
+            fill="none"
+            accessible={SVG_ACCEPTS_TOUCH_PROPS ? false : undefined}
+        >
             <Mask id="first-source-arrow-reveal" x={0} y={0} width={156} height={90} maskUnits="userSpaceOnUse">
                 <AnimatedPath
                     animatedProps={curveAnimatedProps}
@@ -111,7 +119,7 @@ function FirstSourceArrow({ color, onPress }: { color: string; onPress: () => vo
                     strokeWidth={18}
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    onPress={onPress}
+                    onPress={SVG_ACCEPTS_TOUCH_PROPS ? onPress : undefined}
                 />
             </G>
         </Svg>
@@ -122,7 +130,7 @@ export function EmptySourcesCallout({ bottomInset }: { bottomInset: number }) {
     const { colors } = useEarningsTheme();
     const { t } = useI18n();
     const [animationKey, setAnimationKey] = useState(0);
-    const bottom = Platform.OS === "android" ? Math.max(bottomInset, 20) + 80 : Math.max(bottomInset + 4, 12);
+    const bottom = HAS_TAB_DOCK ? Math.max(bottomInset, 20) + 80 : Math.max(bottomInset + 4, 12);
 
     return (
         <Animated.View
