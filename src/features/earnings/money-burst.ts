@@ -2,6 +2,8 @@ import type { View } from "react-native";
 
 import type { MoneyTransfer } from "./money-counter-celebration";
 
+export const MAX_NOTE_SIZE = 96;
+
 export type MeasuredRect = {
     x: number;
     y: number;
@@ -68,7 +70,7 @@ export function createMoneyBurst(
         return {
             id: index,
             delay: source.delay + index * randomBetween(32, 52),
-            size: randomBetween(72, 96),
+            size: randomBetween(72, MAX_NOTE_SIZE),
             targetX: targetX - stage.x,
             targetY: targetY - stage.y,
             startX: originX - targetX,

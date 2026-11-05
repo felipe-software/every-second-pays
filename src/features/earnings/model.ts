@@ -54,10 +54,7 @@ export function parseAmount(value: string) {
 }
 
 export function hoursPerDay(source: { shifts: readonly Shift[] }) {
-    return source.shifts.reduce(
-        (total, shift) => total + Math.max(0, shift.end - shift.start) / 60,
-        0,
-    );
+    return source.shifts.reduce((total, shift) => total + Math.max(0, shift.end - shift.start) / 60, 0);
 }
 
 export function ratePerSecond(source: Pick<PaymentSource, "amount" | "frequency" | "days" | "shifts">, at: Date) {
@@ -135,6 +132,18 @@ function earnedOnPastDays(source: PaymentSource, from: Date, until: Date) {
     return total;
 }
 
+// Sources are replaced, never mutated, so an entry stays valid until the period or the day changes.
+const pastDaysEarnings = new WeakMap<PaymentSource, { from: number; until: number; total: number }>();
+
+function cachedEarnedOnPastDays(source: PaymentSource, from: Date, until: Date) {
+    const cached = pastDaysEarnings.get(source);
+    if (cached?.from === from.getTime() && cached.until === until.getTime()) return cached.total;
+
+    const total = earnedOnPastDays(source, from, until);
+    pastDaysEarnings.set(source, { from: from.getTime(), until: until.getTime(), total });
+    return total;
+}
+
 export function earnedInPeriod(source: PaymentSource, period: EarningsPeriod, now: Date, firstDayOfWeek: number) {
     const start = periodStart(period, now, firstDayOfWeek);
     if (source.frequency === "once") {
@@ -143,14 +152,16 @@ export function earnedInPeriod(source: PaymentSource, period: EarningsPeriod, no
     }
 
     const today = periodStart("today", now, firstDayOfWeek);
-    return earnedOnPastDays(source, start, today) + earnedToday(source, now);
+    return cachedEarnedOnPastDays(source, start, today) + earnedToday(source, now);
 }
 
 export function isSameDay(timestamp: number, now: Date) {
     const date = new Date(timestamp);
-    return date.getFullYear() === now.getFullYear()
-        && date.getMonth() === now.getMonth()
-        && date.getDate() === now.getDate();
+    return (
+        date.getFullYear() === now.getFullYear() &&
+        date.getMonth() === now.getMonth() &&
+        date.getDate() === now.getDate()
+    );
 }
 
 export function dateFromMinutes(totalMinutes: number) {

@@ -12,6 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
+import { useLowEndDevice } from "@/features/device/low-end";
 import { useEarningsTheme } from "@/features/earnings/theme";
 
 // iOS page sheets already recede the presenting screen natively.
@@ -42,8 +43,9 @@ function useProgressAbove(progress: SharedValue<number>, threshold: number) {
 
 export function SheetRecede({ children }: PropsWithChildren) {
     const { colors } = useEarningsTheme();
+    const lowEnd = useLowEndDevice();
     const progress = useRecedeProgress();
-    const active = useProgressAbove(progress, 0);
+    const active = useProgressAbove(progress, 0) && !lowEnd;
     const recededStyle = useAnimatedStyle(() => ({
         borderRadius: progress.get() * RECEDED_RADIUS,
         transform: [{ scale: interpolate(progress.get(), [0, 1], [1, RECEDED_SCALE]) }],
@@ -73,9 +75,10 @@ export function useSheetOpen() {
 }
 
 export function useSheetReceded() {
+    const lowEnd = useLowEndDevice();
     const progress = useRecedeProgress();
     const receded = useProgressAbove(progress, 0.5);
-    return SHEET_RECEDE_ENABLED && receded;
+    return SHEET_RECEDE_ENABLED && receded && !lowEnd;
 }
 
 const styles = StyleSheet.create({
