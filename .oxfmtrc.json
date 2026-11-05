@@ -8,6 +8,7 @@
         "goldie/out/**",
         "package.json",
         "privacy-policy-site/**",
+        "src/assets/onboarding/**",
         "src/patches/**",
         "src/uniwind-types.d.ts",
         "tools/oxlint/anti-slop/**",

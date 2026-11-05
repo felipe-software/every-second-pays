@@ -13,7 +13,7 @@ import Animated, {
     withTiming,
 } from "react-native-reanimated";
 
-import type { FlyingNote } from "./money-burst";
+import { type FlyingNote, MAX_NOTE_SIZE } from "./money-burst";
 
 const FLIGHT_DURATION = 640;
 // Where the eased flight sits at MONEY_IMPACT_DELAY, so bills reach the number before they fade.
@@ -49,12 +49,14 @@ export const FlyingMoney = memo(function FlyingMoney({ note }: { note: FlyingNot
                 )}deg`,
             },
             {
-                scale: interpolate(
-                    progress.get(),
-                    [0, 0.12, 0.78, LANDING_PROGRESS, 1],
-                    [0.45, 1.04, 0.82, 0.5, 0.28],
-                    Extrapolation.CLAMP,
-                ),
+                scale:
+                    interpolate(
+                        progress.get(),
+                        [0, 0.12, 0.78, LANDING_PROGRESS, 1],
+                        [0.45, 1.04, 0.82, 0.5, 0.28],
+                        Extrapolation.CLAMP,
+                    ) *
+                    (note.size / MAX_NOTE_SIZE),
             },
             { scaleX: note.mirrorX },
         ],
@@ -78,22 +80,10 @@ export const FlyingMoney = memo(function FlyingMoney({ note }: { note: FlyingNot
     }, [note.delay, progress]);
 
     return (
-        <Animated.View
-            style={[
-                styles.note,
-                {
-                    left: note.targetX,
-                    top: note.targetY,
-                    width: note.size,
-                    height: note.size,
-                    marginLeft: note.size / -2,
-                    marginTop: note.size / -2,
-                },
-                animatedStyle,
-            ]}
-        >
+        <Animated.View style={[styles.note, { left: note.targetX, top: note.targetY }, animatedStyle]}>
             <Image
                 source={require("@/assets/images/android-icon-foreground.png")}
+                cachePolicy="memory-disk"
                 contentFit="contain"
                 style={StyleSheet.absoluteFill}
             />
@@ -102,7 +92,12 @@ export const FlyingMoney = memo(function FlyingMoney({ note }: { note: FlyingNot
 });
 
 const styles = StyleSheet.create({
+    // One box size for every note keeps the bill's decode cached; each note's size is applied as a scale.
     note: {
         position: "absolute",
+        width: MAX_NOTE_SIZE,
+        height: MAX_NOTE_SIZE,
+        marginLeft: MAX_NOTE_SIZE / -2,
+        marginTop: MAX_NOTE_SIZE / -2,
     },
 });

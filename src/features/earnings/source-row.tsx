@@ -14,77 +14,37 @@ import Animated, {
 
 import { RaisedPressable } from "@/components/elevated/raised";
 import { RiseIn } from "@/components/elevated/rise-in";
-import { type Currency, currencyPrefix } from "@/features/currency/currencies";
 import { withTallDollar } from "@/features/currency/currency-text";
 import { useI18n } from "@/features/i18n/i18n";
 import { appHaptics } from "@/features/haptics/haptics";
 
 import { LiveDot } from "./live-dot";
-import { type PaymentSource, type Shift, currentShift, isSameDay } from "./model";
+import type { PaymentSource } from "./model";
+import type { SourceRowLabels } from "./source-row-labels";
 
 const ROW_STAGGER = 60;
 const MAX_ROW_DELAY = 480;
 
-const landingDateFormats = new Map<string, Intl.DateTimeFormat>();
-
-function formatLandingDate(timestamp: number, now: Date, locale: string) {
-    const date = new Date(timestamp);
-    const withYear = date.getFullYear() !== now.getFullYear();
-    const key = `${locale}|${withYear}`;
-    let format = landingDateFormats.get(key);
-    if (!format) {
-        const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
-        if (withYear) options.year = "numeric";
-        format = new Intl.DateTimeFormat(locale, options);
-        landingDateFormats.set(key, format);
-    }
-    return format.format(date);
-}
-
-type Translate = ReturnType<typeof useI18n>["t"];
-type FormatTime = ReturnType<typeof useI18n>["formatTime"];
-
-function oneOffSubtitle(source: PaymentSource, now: Date, t: Translate, locale: string) {
-    if (source.when !== "today") return t("home.scheduled");
-    if (source.paidAt == null || isSameDay(source.paidAt, now)) return t("home.landedToday");
-    return t("home.landedOn", { date: formatLandingDate(source.paidAt, now, locale) });
-}
-
-function stateLabel(source: PaymentSource, shift: Shift | undefined, t: Translate, formatTime: FormatTime) {
-    if (source.frequency === "once") return t(source.when === "today" ? "home.paid" : "home.scheduled");
-    if (shift) return t("home.until", { time: formatTime(shift.end) });
-    return t("home.idle");
-}
-
 export function SourceRow({
     source,
-    currency,
     index,
-    now,
+    active,
+    subtitle,
+    state,
     earned,
     onPress,
     onValueNodeChange,
     transferId,
     transferDelay,
-}: {
+}: SourceRowLabels & {
     source: PaymentSource;
-    currency: Currency;
     index: number;
-    now: Date;
-    earned: number;
-    onPress: () => void;
+    onPress: (sourceId: number) => void;
     onValueNodeChange: (sourceId: number, node: View | null) => void;
     transferId: number | null;
     transferDelay: number;
 }) {
-    const { t, locale, formatDays, formatMoney, formatTime } = useI18n();
-    const shift = currentShift(source, now);
-    const active = Boolean(shift);
-    const weekdays = source.days.length === 5 && [1, 2, 3, 4, 5].every((day) => source.days.includes(day));
-    const days = weekdays ? t("home.weekdays") : formatDays(source.days);
-    const schedule = `${days} · ${source.shifts.map((item) => `${formatTime(item.start)}-${formatTime(item.end)}`).join(", ")}`;
-    const subtitle = source.frequency === "once" ? oneOffSubtitle(source, now, t, locale) : schedule;
-    const state = stateLabel(source, shift, t, formatTime);
+    const { t } = useI18n();
     const setValueNode = useCallback(
         (node: View | null) => onValueNodeChange(source.id, node),
         [onValueNodeChange, source.id],
@@ -130,7 +90,7 @@ export function SourceRow({
                 accessibilityLabel={t("home.editSource", { name: source.name })}
                 onPress={() => {
                     appHaptics.secondaryAction();
-                    onPress();
+                    onPress(source.id);
                 }}
                 surface={active ? "active" : "card"}
                 depth={3}
@@ -151,7 +111,7 @@ export function SourceRow({
                             <Text
                                 className={`font-sans text-[17px] font-semibold ${active || source.frequency === "once" ? "text-ink" : "text-muted"}`}
                             >
-                                {withTallDollar(`${currencyPrefix(currency)}${formatMoney(earned)}`, 17)}
+                                {withTallDollar(earned, 17)}
                             </Text>
                         </Animated.View>
                     </View>

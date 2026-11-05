@@ -8,6 +8,7 @@ import { EarningsListStatus } from "./earnings-list-status";
 import type { MoneyTransfer } from "./money-counter-celebration";
 import type { PaymentSource } from "./model";
 import { SourceRow } from "./source-row";
+import { sourceRowLabels } from "./source-row-labels";
 
 export function EarningsSourceList({
     custom,
@@ -36,7 +37,8 @@ export function EarningsSourceList({
     sources: readonly PaymentSource[];
     unconvertedCount: number;
 }) {
-    const { t } = useI18n();
+    const i18n = useI18n();
+    const { t } = i18n;
 
     return (
         <ScrollView
@@ -49,12 +51,18 @@ export function EarningsSourceList({
             {sources.map((source, index) => (
                 <SourceRow
                     key={source.id}
+                    {...sourceRowLabels(
+                        {
+                            source,
+                            currency: source.currency ?? mainCurrency,
+                            earned: earnedBySource.get(source.id) ?? 0,
+                            now,
+                        },
+                        i18n,
+                    )}
                     source={source}
-                    currency={source.currency ?? mainCurrency}
                     index={index}
-                    now={now}
-                    earned={earnedBySource.get(source.id) ?? 0}
-                    onPress={() => onEditSource(source.id)}
+                    onPress={onEditSource}
                     onValueNodeChange={onValueNodeChange}
                     transferId={
                         moneyTransfer?.origins.some((origin) => origin.sourceId === source.id) ? moneyTransfer.id : null
