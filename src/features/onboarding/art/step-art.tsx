@@ -6,6 +6,7 @@ import {
     Easing,
     type SharedValue,
     useAnimatedReaction,
+    useDerivedValue,
     useSharedValue,
     withRepeat,
     withSequence,
@@ -13,6 +14,7 @@ import {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
+import { useLowEndDevice } from "@/features/device/low-end";
 import { useI18n } from "@/features/i18n/i18n";
 
 import { useOnboardingTheme } from "../look";
@@ -20,10 +22,21 @@ import { afterFramesSettle, primeArt } from "./prime";
 import { type Cue, type OnboardingAnimation, onboardingSkottie } from "./skottie";
 
 export const FPS = 60;
+// Every other frame, so slow phones draw the art at 30 fps.
+const LOW_END_FRAME_STEP = 2;
 
 function runTo(from: number, to: number) {
     "worklet";
     return withTiming(to, { duration: ((to - from) * 1000) / FPS, easing: Easing.linear });
+}
+
+export function useDrawnFrame(frame: SharedValue<number>, rest: number) {
+    const lowEnd = useLowEndDevice();
+    return useDerivedValue(() => {
+        const current = frame.get();
+        if (!lowEnd || current >= rest) return current;
+        return Math.floor(current / LOW_END_FRAME_STEP) * LOW_END_FRAME_STEP;
+    });
 }
 
 export function useArtVariants() {
@@ -105,6 +118,7 @@ export function StepArt({
     const settled = loopSpan ? loopSpan[0] : introEnd;
     const ownFrame = useSharedValue(reduced ? settled : introStart);
     const frame = sharedFrame ?? ownFrame;
+    const drawnFrame = useDrawnFrame(frame, loopSpan ? Infinity : introEnd);
 
     const replayed = useRef(replay);
 
@@ -155,9 +169,9 @@ export function StepArt({
 
     return (
         <Canvas pointerEvents="none" style={StyleSheet.absoluteFill}>
-            <Skottie animation={animation} frame={frame} />
+            <Skottie animation={animation} frame={drawnFrame} />
             {overlaid.map((overlay, index) => (
-                <Skottie key={index} animation={overlay} frame={frame} />
+                <Skottie key={index} animation={overlay} frame={drawnFrame} />
             ))}
         </Canvas>
     );
