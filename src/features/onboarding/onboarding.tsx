@@ -37,8 +37,8 @@ export function Onboarding() {
     const window = useWindowDimensions();
     const reduced = useReducedMotion();
     const playHaptic = useOnboardingHaptics();
-    const { exiting, exit, reveal } = useOnboardingExit();
-    const { skipReady, introDone, flare, introLifted, introEvents } = useIntroProgress(reduced, reveal);
+    const { exiting, exit } = useOnboardingExit();
+    const { skipReady, introDone, flare, introLifted, introEvents } = useIntroProgress(reduced);
     const fit = fitArtboard(window, insets);
     const { scale, offsetX, offsetY } = fit;
     const { step, visited, position, backdrop, pager, go, pan } = useOnboardingPager({ exiting, introDone, scale });

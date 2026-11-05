@@ -47,7 +47,7 @@ export default function EarningsScreen() {
     const save = useEarningsStore((state) => state.save);
     const remove = useEarningsStore((state) => state.remove);
     const newSourceRequest = usePaymentComposerStore((state) => state.newSourceRequest);
-    const revealed = useOnboardingStore((state) => state.revealed);
+    const onboarded = useOnboardingStore((state) => state.status === "done");
     const handledNewSourceRequest = useRef(0);
     const [sheetOpen, setSheetOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -133,7 +133,7 @@ export default function EarningsScreen() {
                         unconvertedCount={unconverted.length}
                     />
 
-                    {ready && revealed && sources.length === 0 && !loadError && !sheetOpen ? (
+                    {ready && onboarded && sources.length === 0 && !loadError && !sheetOpen ? (
                         <EmptySourcesCallout bottomInset={insets.bottom} />
                     ) : null}
                 </View>
