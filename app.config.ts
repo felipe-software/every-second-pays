@@ -95,6 +95,7 @@ export default (): ExpoConfig => ({
             backgroundImage: "./src/assets/images/android-icon-background.png",
         },
         predictiveBackGestureEnabled: true,
+        allowBackup: false,
         package: IS_DEVELOPMENT ? `${APP_IDENTIFIER}.dev` : APP_IDENTIFIER,
         permissions: ["android.permission.POST_NOTIFICATIONS"],
     },
