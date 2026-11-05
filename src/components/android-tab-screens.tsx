@@ -7,10 +7,34 @@ import { Easing, type SharedValue, useSharedValue, withTiming } from "react-nati
 const TabBarProgressContext = createContext<SharedValue<number> | null>(null);
 
 const TAB_SWITCH = { duration: 260, easing: Easing.out(Easing.cubic) };
+const KEPT_ALIVE_TABS = new Set(["index", "settings"]);
 
-// Only the focused tab stays mounted, so switching tabs remounts the page it opens.
-function renderFocusedScreen(descriptor: TabsDescriptor, { isFocused }: TabsSlotRenderOptions) {
-    return isFocused ? descriptor.render() : null;
+type TabSceneProps = PropsWithChildren<{
+    isFocused: boolean;
+}>;
+
+// display: none would zero the layout and lose scroll positions.
+function TabScene({ children, isFocused }: TabSceneProps) {
+    return (
+        <View
+            accessibilityElementsHidden={!isFocused}
+            importantForAccessibility={isFocused ? "auto" : "no-hide-descendants"}
+            pointerEvents={isFocused ? "auto" : "none"}
+            style={[styles.scene, isFocused ? styles.focused : styles.hidden]}
+        >
+            {children}
+        </View>
+    );
+}
+
+function renderTabScene(descriptor: TabsDescriptor, { isFocused, loaded }: TabsSlotRenderOptions) {
+    if (!KEPT_ALIVE_TABS.has(descriptor.route.name)) {
+        return isFocused ? descriptor.render() : null;
+    }
+
+    if (!loaded && !isFocused) return null;
+
+    return <TabScene isFocused={isFocused}>{descriptor.render()}</TabScene>;
 }
 
 export function useIsTabSubpage() {
@@ -39,7 +63,7 @@ export function AndroidTabScreens({ children }: PropsWithChildren) {
     return (
         <TabBarProgressContext.Provider value={progress}>
             <View style={styles.screens}>
-                <TabSlot detachInactiveScreens={false} renderFn={renderFocusedScreen} style={styles.slot} />
+                <TabSlot detachInactiveScreens={false} renderFn={renderTabScene} style={styles.slot} />
                 {children}
             </View>
         </TabBarProgressContext.Provider>
@@ -52,5 +76,19 @@ const styles = StyleSheet.create({
     },
     slot: {
         flex: 1,
+    },
+    scene: {
+        position: "absolute",
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+    },
+    focused: {
+        zIndex: 1,
+    },
+    hidden: {
+        opacity: 0,
+        zIndex: 0,
     },
 });
